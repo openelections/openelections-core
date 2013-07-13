@@ -1,7 +1,7 @@
-*.py[cod]
-
-# C extensions
-*.so
+*.py[co]
+*.vim
+*.sw[op]
+*~
 
 # Packages
 *.egg
@@ -15,8 +15,13 @@ var
 sdist
 develop-eggs
 .installed.cfg
-lib
-lib64
+
+#Exclude sqlite by default
+*.db
+
+# Project
+*/public
+local_settings.py
 
 # Installer logs
 pip-log.txt
@@ -24,12 +29,17 @@ pip-log.txt
 # Unit test / coverage reports
 .coverage
 .tox
-nosetests.xml
 
-# Translations
+#Translations
 *.mo
 
-# Mr Developer
+#Mr Developer
 .mr.developer.cfg
+
+# OS
+.DS_Store
+
+# Common IDEs
+.idea/
 .project
-.pydevproject
+.settings
