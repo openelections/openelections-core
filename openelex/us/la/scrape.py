@@ -1,6 +1,9 @@
-from openelex.base.scrape import BaseScraper
+#from openelex.base.scrape import BaseScraper
 
-class ScrapeSecyStateHTML(BaseScraper):
+class ScrapeSecyStateHTML(object):
 
     def __init__(self, *args, **kwargs):
-        print "foobar"
+        pass
+
+    def run(self):
+        pass
