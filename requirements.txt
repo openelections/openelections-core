@@ -6,3 +6,4 @@ pymongo==2.5.2
 requests==1.2.3
 scrapelib==0.9.0
 wsgiref==0.1.2
+nameparser==0.2.7
