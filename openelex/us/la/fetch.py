@@ -2,7 +2,6 @@ from openelex.base.fetch import BaseScraper
 
 #from bs4 import BeautifulSoup
 
-
 class FetchLA(BaseScraper):
 
     def run(self):

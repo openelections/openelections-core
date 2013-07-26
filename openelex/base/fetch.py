@@ -1,8 +1,11 @@
-from os.path import exists, join
-import urllib
+from os.path import dirname, exists, join
+import inspect
+import os
+from urllib import urlretrieve
+import urlparse
 
 
-class BaseScraper(urllib.FancyURLOpener):
+class BaseScraper(object):
     """
     Base class for downloading result files.
     Intended to be subclassed in state-specific fetch.py modules.
@@ -11,13 +14,18 @@ class BaseScraper(urllib.FancyURLOpener):
 
     """
 
-    def __init__(self, state):
-        self.state = state
+    def __init__(self):
+        self.state = self.__module__.split('.')[-2]
+        # Save files to cache/ dir inside state directory
+        self.cache_dir = join(dirname(inspect.getfile(self.__class__)), 'cache')
+        try:
+            os.makedirs(self.cache_dir)
+        except OSError:
+            pass
 
     def run(self):
         msg = "You must implement the %s.run method" % self.__class__.__name__
         raise NotImplementedError(msg)
-
 
     def fetch(self, url, fname=None, overwrite=False):
         """Fetch and cache web page or data file
@@ -25,23 +33,41 @@ class BaseScraper(urllib.FancyURLOpener):
         ARGS
 
             url - link to download
-            fname - file name with relative path. E.g. 20121106_md_general.csvrelative path which will be appended to cache dir)
+            fname - file name for local storage in cache_dir
             overwrite - if True, overwrite cached copy with fresh donwload
 
         """
-        local_file_name = self.standardized_filename(fname)
+        local_file_name = self.standardized_filename(url, fname)
+        #import pdb;pdb.set_trace()
         if overwrite:
-            name, response = self.retrieve(url, local_file_fname)
+            name, response = urlretrieve(url, local_file_fname)
         else:
             if exists(local_file_name):
                 print "File is cached: %s" % local_file_name
             else:
-                name, response = self.retrieve(url, local_file_fname)
+                name, response = urlretrieve(url, local_file_name)
                 print "Added to cache: %s" % local_file_name
 
-    def standardized_filename(self, fname)
+    def standardized_filename(self, url, fname):
         """A standardized, fully qualified path name"""
-        self.cache_dir = join((os.getcwd(),'cache'))
-        import pdb;pdb.set_trace()
-        print self.cache_dir
-        return join((self.cache_dir, fname))
+        #TODO:apply filename standardization logic
+        # non-result pages/files use default urllib name conventions
+        # result files need standardization logic (TBD)
+        if fname:
+            filename = join(self.cache_dir, fname)
+        else:
+            filename = self.filename_from_url(url)
+        return filename
+
+    def filename_from_url(self, url):
+        #TODO: this is quick and dirty
+        # see urlretrieve code for more robust conversion of
+        # url to local filepath
+        result = urlparse.urlsplit(url)
+        bits = [
+            self.cache_dir,
+            result.netloc + '_' +
+            result.path.strip('/'),
+        ]
+        name = join(*bits)
+        return name
