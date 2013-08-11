@@ -3,7 +3,8 @@ import inspect
 import os
 from urllib import urlretrieve
 import urlparse
-
+import requests
+import json
 
 class BaseScraper(object):
     """
@@ -71,3 +72,9 @@ class BaseScraper(object):
         ]
         name = join(*bits)
         return name
+        
+    def api_response(self, state, year):
+        url = "http://dashboard.openelections.net/api/state/%s/year/%s/" % (state, year)
+        response = json.loads(requests.get(url).text)
+        
+    
