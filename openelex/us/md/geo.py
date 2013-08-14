@@ -4,8 +4,6 @@ Reference functions for Maryland political geographies as they are referenced in
 
 def jurisdictions():
     """Maryland counties, plus Baltimore City"""
-    return ['Allegany', 'Anne_Arundel', 'Baltimore_City', 'Baltimore', 'Calvert',
-    'Caroline', 'Carroll', 'Cecil', 'Charles', 'Dorchester', 'Frederick',
-    'Garrett', 'Harford', 'Howard', 'Kent', 'Montgomery', 'Prince_Georges',
-    'Queen_Annes', 'St._Marys', 'Somerset', 'Talbot', 'Washington', 'Wicomico',
-    'Worcester']
+    m = self.jurisdiction_mappings(('ocd_id','fips','url_name'))
+    mappings = [x for x in m if x['url_name'] is not None]
+    return mappings
