@@ -5,8 +5,9 @@ from urllib import urlretrieve
 import urlparse
 import requests
 import json
+import csv
 
-class BaseScraper(object):
+class BaseFetcher(object):
     """
     Base class for downloading result files.
     Intended to be subclassed in state-specific fetch.py modules.
@@ -19,8 +20,13 @@ class BaseScraper(object):
         self.state = self.__module__.split('.')[-2]
         # Save files to cache/ dir inside state directory
         self.cache_dir = join(dirname(inspect.getfile(self.__class__)), 'cache')
+        self.mappings_dir = join(dirname(inspect.getfile(self.__class__)), 'mappings')
         try:
             os.makedirs(self.cache_dir)
+        except OSError:
+            pass
+        try:
+            os.makedirs(self.mappings_dir)
         except OSError:
             pass
 
@@ -39,7 +45,6 @@ class BaseScraper(object):
 
         """
         local_file_name = self.standardized_filename(url, fname)
-        #import pdb;pdb.set_trace()
         if overwrite:
             name, response = urlretrieve(url, local_file_fname)
         else:
@@ -73,8 +78,21 @@ class BaseScraper(object):
         name = join(*bits)
         return name
         
+    def clear_cache(self):
+        "Deletes all files in the cache directory"
+        [os.remove(join(self.cache_dir, file)) for file in os.listdir(self.cache_dir)]
+        return "Cache is now empty"
+    
+    def jurisdiction_mappings(self, headers):
+        "Given a tuple of headers, returns a JSON object of jurisdictional mappings based on OCD ids"
+        filename = join(self.mappings_dir, self.state+'.csv')
+        with open(filename) as csvfile:
+            reader = csv.DictReader(csvfile, fieldnames = headers)
+            mappings = json.dumps([row for row in reader])
+        return json.loads(mappings)
+    
     def api_response(self, state, year):
         url = "http://dashboard.openelections.net/api/state/%s/year/%s/" % (state, year)
         response = json.loads(requests.get(url).text)
-        
+        return response
     
