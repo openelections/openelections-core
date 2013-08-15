@@ -26,9 +26,7 @@ class FetchResults(BaseFetcher):
         urls = self.state_legislative_district_urls(year, elections)
         urls.update(self.county_urls(year, elections))
         for filename in urls.keys():
-            # pass generated name into fetcher
             self.fetch(urls[filename], filename)
-        # 
         # update_mappings(filenames)
         
     def state_legislative_district_urls(self, year, elections):
@@ -56,9 +54,13 @@ class FetchResults(BaseFetcher):
             precinct_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s__precinct.csv" % jurisdiction['url_name'].lower()
             precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_General.csv" % (year, jurisdiction['url_name'], year)
             urls[precinct_generated_name] = precinct_raw_name
-#            for party in ['Democratic', 'Republican']:
-#                urls.append("http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction, party, year))
-#                urls.append("http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction, party, year))
+            for party in ['Democratic', 'Republican']:
+                county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s.csv" % jurisdiction['url_name'].lower()
+                county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
+                urls[county_party_generated_name] = county_party_raw_name
+                precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
+                precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
+                urls[precinct_party_generated_name] = precinct_party_raw_name
         return urls
     
     def jurisdictions(self):
