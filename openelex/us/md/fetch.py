@@ -1,4 +1,5 @@
 from openelex.base.fetch import BaseFetcher
+import json
 
 """
 Retrieves CSV result files for a given year from Maryland State Board of Elections and caches them locally.
@@ -21,46 +22,45 @@ f.run(2012)
 class FetchResults(BaseFetcher):
     
     def run(self, year):
-        # retrieve elections from api
+        # create or load existing mappings.json
         elections = self.api_response(self.state, year)
-        urls = self.state_legislative_district_urls(year, elections)
-        urls.update(self.county_urls(year, elections))
-        for filename in urls.keys():
-            self.fetch(urls[filename], filename)
-        # update_mappings(filenames)
+        urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
+        for generated_name, raw_url, ocd_id in urls:
+            self.fetch(raw_url, generated_name)
+            update_mappings(generated_name, ocd_id)
         
     def state_legislative_district_urls(self, year, elections):
-        urls = {}
+        urls = []
         general = [e for e in elections if e['election_type'] == 'general'][0]
         generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__state_legislative.csv"
         raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_General.csv" % (year, year)
-        urls[generated_name] = raw_name
+        urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all'])
         primary = [e for e in elections if e['election_type'] == 'primary'][0]
         for party in ['Democratic', 'Republican']:
             generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__general__state_legislative.csv"
             raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_%s_Primary.csv" % (year, party, year)
-            urls[generated_name] = raw_name
+            urls.append(generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all')
         return urls
     
     # add generated_name code here
     def county_urls(self, year, elections):
-        urls = {}
+        urls = []
         general = [e for e in elections if e['election_type'] == 'general'][0]
         primary = [e for e in elections if e['election_type'] == 'primary'][0]
         for jurisdiction in self.jurisdictions():
             county_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s.csv" % jurisdiction['url_name'].lower()
             county_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls[county_generated_name] = county_raw_name
+            urls.append(county_generated_name, county_raw_name, jurisdiction['ocd_id'])
             precinct_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s__precinct.csv" % jurisdiction['url_name'].lower()
             precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls[precinct_generated_name] = precinct_raw_name
+            urls.append(precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id'])
             for party in ['Democratic', 'Republican']:
                 county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s.csv" % jurisdiction['url_name'].lower()
                 county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
-                urls[county_party_generated_name] = county_party_raw_name
+                urls.append(county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'])
                 precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
                 precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
-                urls[precinct_party_generated_name] = precinct_party_raw_name
+                urls.append(precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'])
         return urls
     
     def jurisdictions(self):
@@ -70,8 +70,9 @@ class FetchResults(BaseFetcher):
         return mappings
     
     # move this to base fetch.py
-    def update_mappings(self, filenames):
-        pass
+    def update_mappings(self, generated_name, ocd_id):
+        mappings = {}
+        mappings[generated_name] = ocd_id
         # store older mappings.json as a backup?
         # sort keys? use OrderedDict
         # from collections import OrderedDict
