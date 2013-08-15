@@ -29,6 +29,9 @@ class BaseFetcher(object):
             os.makedirs(self.mappings_dir)
         except OSError:
             pass
+        # check for the ocd mappings csv and the mappings.json files - if they don't exist, create them.
+        open(join(self.mappings_dir, self.state+'.csv'), 'a').close()
+        open(join(self.mappings_dir, 'mappings.json'), 'a').close()        
 
     def run(self):
         msg = "You must implement the %s.run method" % self.__class__.__name__
@@ -90,6 +93,15 @@ class BaseFetcher(object):
             reader = csv.DictReader(csvfile, fieldnames = headers)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
+    
+    def filename_mappings(self):
+        filename = join(self.mappings_dir, 'mappings.json')
+        with open(filename) as f:
+            try:
+                mappings = json.loads(f.read())
+            except:
+                mappings = {}
+            return mappings
     
     def api_response(self, state, year):
         url = "http://dashboard.openelections.net/api/state/%s/year/%s/" % (state, year)
