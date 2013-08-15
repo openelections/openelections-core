@@ -1,5 +1,4 @@
 from openelex.base.fetch import BaseFetcher
-import json
 
 """
 Retrieves CSV result files for a given year from Maryland State Board of Elections and caches them locally.
@@ -22,12 +21,12 @@ f.run(2012)
 class FetchResults(BaseFetcher):
     
     def run(self, year):
-        # create or load existing mappings.json
         elections = self.api_response(self.state, year)
         urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
         for generated_name, raw_url, ocd_id in urls:
             self.fetch(raw_url, generated_name)
-            update_mappings(generated_name, ocd_id)
+        filenames = [{ generated_name : ocd_id} for generated_name, raw_url, ocd_id in urls]
+        self.update_mappings({ k: v for d in filenames for k, v in d.items()})
         
     def state_legislative_district_urls(self, year, elections):
         urls = []
@@ -39,7 +38,7 @@ class FetchResults(BaseFetcher):
         for party in ['Democratic', 'Republican']:
             generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__general__state_legislative.csv"
             raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_%s_Primary.csv" % (year, party, year)
-            urls.append(generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all')
+            urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all'])
         return urls
     
     # add generated_name code here
@@ -50,17 +49,17 @@ class FetchResults(BaseFetcher):
         for jurisdiction in self.jurisdictions():
             county_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s.csv" % jurisdiction['url_name'].lower()
             county_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls.append(county_generated_name, county_raw_name, jurisdiction['ocd_id'])
+            urls.append([county_generated_name, county_raw_name, jurisdiction['ocd_id']])
             precinct_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s__precinct.csv" % jurisdiction['url_name'].lower()
             precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls.append(precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id'])
+            urls.append([precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id']])
             for party in ['Democratic', 'Republican']:
                 county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s.csv" % jurisdiction['url_name'].lower()
                 county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
-                urls.append(county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'])
+                urls.append([county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id']])
                 precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
                 precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
-                urls.append(precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'])
+                urls.append([precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id']])
         return urls
     
     def jurisdictions(self):
@@ -68,13 +67,4 @@ class FetchResults(BaseFetcher):
         m = self.jurisdiction_mappings(('ocd_id','fips','url_name'))
         mappings = [x for x in m if x['url_name'] is not None]
         return mappings
-    
-    # move this to base fetch.py
-    def update_mappings(self, generated_name, ocd_id):
-        mappings = {}
-        mappings[generated_name] = ocd_id
-        # store older mappings.json as a backup?
-        # sort keys? use OrderedDict
-        # from collections import OrderedDict
-        #with open('mappings.json', 'w') as f:
-            #f.write(standard_name, raw_name)
+        
