@@ -23,8 +23,8 @@ class FetchResults(BaseFetcher):
     def run(self, year):
         elections = self.api_response(self.state, year)
         urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
-        #for generated_name, raw_url, ocd_id in urls:
-        #    self.fetch(raw_url, generated_name)
+        for generated_name, raw_url, ocd_id in urls:
+            self.fetch(raw_url, generated_name)
         filenames = [{ 'generated_name': generated_name, 'ocd_id' : ocd_id, 'raw_url' : raw_url} for generated_name, raw_url, ocd_id in urls]
         self.update_mappings(year, filenames)
         
