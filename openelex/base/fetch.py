@@ -103,9 +103,12 @@ class BaseFetcher(object):
                 mappings = {}
             return mappings
 
-    def update_mappings(self, mappings_list):
+    def update_mappings(self, year, mappings_list):
         mappings = self.filename_mappings()
-        mappings.update(mappings_list)
+        if not year in mappings.keys():
+            mappings[year] = mappings_list
+        else:
+            mappings[year].update(mappings_list)
         with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
             json.dump(mappings, f)
     
