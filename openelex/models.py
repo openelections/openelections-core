@@ -1,45 +1,61 @@
 from mongoengine import Document, EmbeddedDocument
-from mongoengine.fields import DateTimeField, DictField, StringField
+from mongoengine.fields import DateTimeField, DictField, StringField, ListField, BooleanField
 
-
-#TODO: change name fields to reflect i18n-friendly conventions
-class Candidate(EmbeddedDocument):
+class Candidate(Document):
+    """
+    State is included because in nearly all cases, a candidate is unique to a state (presidential candidates run in multiple states,
+    but hail from a single state). This would help with lookups and prevent duplicates. Identifiers is a DictField because a candidate
+    may have 0 or more identifiers, including state-level IDs.
+    """
     uuid = StringField()
-    raw_party = StringField()
-    raw_name = StringField()
-    raw_first_name = StringField()
-    raw_middle_name = StringField()
-    raw_lastname = StringField()
+    state = StringField(required=True)
+    given_name = StringField(max_length=200)
+    additional_name = StringField(max_length=200)
+    family_name = StringField(max_length=200)
+    suffix = StringField(max_length=200)
+    name = StringField(max_length=300, required=True)
+    other_names = ListField(StringField(), default=list)
+    identifiers = DictField()
+    
+    """
+    identifiers = {
+        'bioguide' : <bioguide_id>,
+        'fec' : [<fecid_1>, <fecid_2>, ...],
+        'votesmart' : <votesmart_id>,
+        ...
+    }
+    
+    """
 
-    #TODO: validation - raw_name or last_name required
+class Result(EmbeddedDocument):
 
-
-class Referendum(EmbeddedDocument):
-    raw_name = StringField(help_text="e.g. yes/no")
-
-
-class Contest(Document):
-    RESULT_LEVEL_CHOICES = (
-        'cong_district',
-        'state_leg_district',
+    REPORTING_LEVEL_CHOICES = (
+        'congressional_district',
+        'state_legislative',
         'precinct',
         'parish',
         'precinct',
         'county',
         'state',
     )
-    created= DateTimeField()
-    source = StringField(help_text="slugified data source from dashboard db")
-    raw_name = StringField()
-    options = DictField(help_text="UUID as keys and candidate or ballot measure choices")
-    results = DictField()
-    """
-    results = {
-        'precinct': {
-            "total_votes": <or any other top-level figures providied in results>,
-            <cand_uuid>: <vote_count>,
-            <cand2_uuid>: <vote_count>,
-            ...
-    }
+    jurisdiction = StringField()
+    ocd_id = StringField()
+    reporting_level = StringField(required=True)
+    candidate_id = ReferenceField(Candidate)
+    party = StringField()
+    votes = IntField()
+    winner = BooleanField()
 
+class Contest(Document):
     """
+    Do we need other fields (state, year) on this for easy lookups?
+    
+    other_vote_counts would include provisional, absentee, same-day, overvotes, etc. all are optional.
+    """
+    election_id = StringField(required=True) # OpenElections generated slug
+    total_votes = IntField()
+    computed_total_votes = IntField()
+    other_vote_counts = DictField()
+    results = ListField(EmbeddedDocumentField(Result))
+    created = DateTimeField()
+    updated = DateTimeField()
