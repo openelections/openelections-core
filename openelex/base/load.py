@@ -31,7 +31,7 @@ class BaseLoader(object):
         
     def combine_name_parts(self, bits):
         # expects a list of name bits in order
-        pass
+        return join(bits, ' ')
         
     
         
