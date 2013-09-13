@@ -9,7 +9,7 @@ class LoadResults(BaseLoader):
     def run(self, year):
         files = self.filenames[year]
         check_cache(files)
-        prepare_files(files)
+        process_files(files)
         
     def check_cache(self, year, files):
         uncached_files = []
