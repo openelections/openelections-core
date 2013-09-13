@@ -1,5 +1,5 @@
 from mongoengine import Document, EmbeddedDocument
-from mongoengine.fields import DateTimeField, DictField, StringField, ListField, BooleanField
+from mongoengine.fields import DateTimeField, DictField, StringField, ListField, BooleanField, EmbeddedDocumentField, IntField
 
 class Candidate(EmbeddedDocument):
     """
@@ -15,9 +15,12 @@ class Candidate(EmbeddedDocument):
     suffix = StringField(max_length=200)
     name = StringField(max_length=300, required=True)
     other_names = ListField(StringField(), default=list)
+    parties = ListField(StringField(), default=list) # normalized? abbreviations?
     identifiers = DictField()
     
     """
+    parties = ['Democratic', 'Republican'] 
+    
     identifiers = {
         'bioguide' : <bioguide_id>,
         'fec' : [<fecid_1>, <fecid_2>, ...],
@@ -26,6 +29,11 @@ class Candidate(EmbeddedDocument):
     }
     
     """
+
+class Office(EmbeddedDocument):
+    state = StringField()
+    name = StringField()
+    district = StringField()
 
 class Result(EmbeddedDocument):
 
@@ -42,6 +50,7 @@ class Result(EmbeddedDocument):
     ocd_id = StringField()
     reporting_level = StringField(required=True)
     candidate = EmbeddedDocumentField(Candidate)
+    office = EmbeddedDocumentField(Office)
     party = StringField()
     votes = IntField()
     winner = BooleanField()
