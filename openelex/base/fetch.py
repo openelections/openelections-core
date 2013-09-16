@@ -89,7 +89,7 @@ class BaseFetcher(object):
     def jurisdiction_mappings(self, headers):
         "Given a tuple of headers, returns a JSON object of jurisdictional mappings based on OCD ids"
         filename = join(self.mappings_dir, self.state+'.csv')
-        with open(filename) as csvfile:
+        with open(filename, 'rU') as csvfile:
             reader = csv.DictReader(csvfile, fieldnames = headers)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
@@ -113,7 +113,7 @@ class BaseFetcher(object):
             json.dump(mappings, f)
     
     def api_response(self, state, year):
-        url = "http://dashboard.openelections.net/api/state/%s/year/%s/" % (state, year)
+        url = "http://dashboard.openelections.net/api/v1/state/%s/year/%s/" % (state, year)
         response = json.loads(requests.get(url).text)
         return response
     
