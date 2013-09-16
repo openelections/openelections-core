@@ -1,5 +1,6 @@
-from mongoengine import Document, EmbeddedDocument
+from mongoengine import *
 from mongoengine.fields import DateTimeField, DictField, StringField, ListField, BooleanField, EmbeddedDocumentField, IntField
+import datetime
 
 class Candidate(EmbeddedDocument):
     """
@@ -15,6 +16,7 @@ class Candidate(EmbeddedDocument):
     suffix = StringField(max_length=200)
     name = StringField(max_length=300, required=True)
     other_names = ListField(StringField(), default=list)
+    raw_parties = ListField(StringField(), default=list)
     parties = ListField(StringField(), default=list) # normalized? abbreviations?
     identifiers = DictField()
     
@@ -30,12 +32,12 @@ class Candidate(EmbeddedDocument):
     
     """
 
-class Office(EmbeddedDocument):
+class Office(Document):
     state = StringField()
     name = StringField()
     district = StringField()
 
-class Result(EmbeddedDocument):
+class Result(Document):
 
     REPORTING_LEVEL_CHOICES = (
         'congressional_district',
@@ -48,11 +50,14 @@ class Result(EmbeddedDocument):
     )
     jurisdiction = StringField()
     ocd_id = StringField()
+    raw_office = StringField()
     reporting_level = StringField(required=True)
     candidate = EmbeddedDocumentField(Candidate)
-    office = EmbeddedDocumentField(Office)
+    write_in = BooleanField(default=False)
+    office = ReferenceField(Office)
     party = StringField()
-    votes = IntField()
+    total_votes = IntField()
+    vote_breakdowns = DictField() # if vote totals are included for election day, absentee, provisional, etc, put them here.
     winner = BooleanField()
 
 class Contest(Document):
@@ -65,6 +70,6 @@ class Contest(Document):
     total_votes = IntField()
     computed_total_votes = IntField()
     other_vote_counts = DictField()
-    results = ListField(EmbeddedDocumentField(Result))
+    results = ListField(ReferenceField(Result))
     created = DateTimeField()
     updated = DateTimeField()
