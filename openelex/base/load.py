@@ -2,9 +2,7 @@ from os.path import dirname, exists, join
 from os import listdir
 import inspect
 import json
-from mongoengine import connect
 from nameparser import HumanName
-from openelex.models import Candidate, Result, Contest
 
 class BaseLoader(object):
     """
@@ -20,7 +18,6 @@ class BaseLoader(object):
         self.mappings_dir = join(dirname(inspect.getfile(self.__class__)), 'mappings')
         self.filenames = json.loads(open(join(self.mappings_dir,'filenames.json'), 'r').read())
         self.cached_files = listdir(self.cache_dir)
-        connect('openelex_results')
 
     def run(self):
         msg = "You must implement the %s.run method" % self.__class__.__name__
@@ -31,7 +28,7 @@ class BaseLoader(object):
         
     def combine_name_parts(self, bits):
         # expects a list of name bits in order
-        return join(bits, ' ')
+        return " ".join(bits)
         
     
         
