@@ -51,9 +51,10 @@ class LoadResults(BaseLoader):
                     reporting_level = 'state'
                     jurisdiction = "ocd-division/country:us/state:md"
                 for row in reader:
-                    if not row['Office Name'] in ['President - Vice Pres', 'U.S. Senator           ', 'U.S. Congress']:
+                    if not row['Office Name'] in ['President - Vice Pres', 'U.S. Senator           ', 'U.S. Congress', 'Governor / Lt. Governor', 'Comptroller', 'Attorney General', 'State Senator', 'House of Delegates']:
                         pass
                     # parse candidate - we get full names
+                    ##### TODO: UTF8 everywhere!
                     name = self.parse_name(row['Candidate Name'])
                     # if office is president, then skip state in lookup, otherwise use
                     if row['Office Name'] == 'President - Vice Pres':
