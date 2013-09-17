@@ -56,7 +56,7 @@ class Result(Document):
     write_in = BooleanField(default=False)
     office = ReferenceField(Office)
     party = StringField()
-    total_votes = IntField()
+    total_votes = IntField(default=0)
     vote_breakdowns = DictField() # if vote totals are included for election day, absentee, provisional, etc, put them here.
     winner = BooleanField()
 
