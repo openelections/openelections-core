@@ -36,7 +36,7 @@ class LoadResults(BaseLoader):
         # logging?
     
     def process_files(self, files):
-        connect('openelex_results')
+        connect('openelex_md')
         for f in files:
             with open(join(self.cache_dir, f['generated_name'])) as csvfile:
                 reader = csv.DictReader(csvfile)
@@ -51,7 +51,7 @@ class LoadResults(BaseLoader):
                     reporting_level = 'state'
                     jurisdiction = "ocd-division/country:us/state:md"
                 for row in reader:
-                    if not row['Office Name'] in ['President - Vice Pres', 'U.S. Senator           ', 'U.S. Congress', 'Governor / Lt. Governor', 'Comptroller', 'Attorney General', 'State Senator', 'House of Delegates']:
+                    if not row['Office Name'].strip() in ['President - Vice Pres', 'U.S. Senator', 'U.S. Congress', 'Governor / Lt. Governor', 'Comptroller', 'Attorney General', 'State Senator', 'House of Delegates']:
                         pass
                     # parse candidate - we get full names
                     ##### TODO: UTF8 everywhere!
@@ -76,7 +76,9 @@ class LoadResults(BaseLoader):
                                 votes = 0
                             else:
                                 votes = row[district]
-                            ocd = "ocd-division/country:us/state:md/sldl:%s" % district.strip().lower()
+                            if row['Party'] not in candidate.raw_parties:
+                                candidate.raw_parties.append(row['Party'])
+                            ocd = "ocd-division/country:us/state:md/sldl:%s" % district.strip().split(' ')[1]
                             result = Result(ocd_id=ocd, jurisdiction=district.strip(), raw_office=row['Office Name'].strip(), reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=votes, winner=winner).save()
                     elif reporting_level == 'county':
                         jurisdiction = f['name']
