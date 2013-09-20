@@ -22,12 +22,13 @@ class FetchResults(BaseFetcher):
     
     def run(self, year, urls=None):
         elections = self.api_response(self.state, year)
+        election_dates = [str(e["end_date"]) for e in elections['elections']]
         if not urls:
             urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
         for generated_name, raw_url, ocd_id, name in urls:
             self.fetch(raw_url, generated_name)
         filenames = [{ 'generated_name': generated_name, 'ocd_id' : ocd_id, 'raw_url' : raw_url, 'name' : name} for generated_name, raw_url, ocd_id, name in urls]
-        self.update_mappings(year, filenames)
+        self.update_mappings(election_dates, filenames)
         
     def state_legislative_district_urls(self, year, elections):
         urls = []
@@ -56,16 +57,16 @@ class FetchResults(BaseFetcher):
             urls.append([precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id'], jurisdiction['name']])
             for party in ['Democratic', 'Republican']:
                 county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s.csv" % jurisdiction['url_name'].lower()
-                county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
+                county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
                 urls.append([county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name']])
                 precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
-                precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction, party, year)
+                precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
                 urls.append([precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name']])
         return urls
     
     def jurisdictions(self):
         """Maryland counties, plus Baltimore City"""
         m = self.jurisdiction_mappings(('ocd_id','fips','url_name', 'name'))
-        mappings = [x for x in m if x['url_name'] is not None]
+        mappings = [x for x in m if x['url_name'] != ""]
         return mappings
         
