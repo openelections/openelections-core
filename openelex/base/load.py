@@ -3,6 +3,7 @@ from os import listdir
 import inspect
 import json
 from nameparser import HumanName
+import csv
 
 class BaseLoader(object):
     """
@@ -29,7 +30,7 @@ class BaseLoader(object):
     def combine_name_parts(self, bits):
         # expects a list of name bits in order
         return " ".join(bits)
-        
+
     
         
 

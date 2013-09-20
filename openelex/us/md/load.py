@@ -11,22 +11,19 @@ Usage:
 
 from openelex.us.md import load
 l = load.LoadResults()
-l.run(2012)
+l.run('2012-11-06')
 
-Maybe add flags to load only certain reporting levels?
+Maybe add flags to load only certain reporting levels? Should we have year-based loaders?
 
 re-run filenames loader to write election_dates
 pass files as hash with keys of election_dates and lists of interior files, with jurisdiction names
-WHY IS THERE A 20120403__md__general__state_legislative.csv file?
-delete this: 20121106__md__general____precinct.csv
 """
-
 
 class LoadResults(BaseLoader):
     
-    def run(self, year):
-        files = self.filenames[str(year)]
-        self.check_cache(str(year), files)
+    def run(self, date):
+        files = self.filenames[str(date)]
+        self.check_cache(str(date[0:4]), files)
         self.process_files(files)
         
     def check_cache(self, year, files):
@@ -59,7 +56,6 @@ class LoadResults(BaseLoader):
                     if not row['Office Name'].strip() in ['President - Vice Pres', 'U.S. Senator', 'U.S. Congress', 'Governor / Lt. Governor', 'Comptroller', 'Attorney General', 'State Senator', 'House of Delegates']:
                         pass
                     # parse candidate - we get full names
-                    ##### TODO: UTF8 everywhere!
                     name = self.parse_name(row['Candidate Name'])
                     # if office is president, then skip state in lookup, otherwise use
                     if row['Office Name'] == 'President - Vice Pres':
@@ -81,9 +77,9 @@ class LoadResults(BaseLoader):
                     if reporting_level == 'state_legislative':
                         self.process_state_legislative(row, districts, candidate, reporting_level, write_in, winner)
                     elif reporting_level == 'county':
-                        self.process_county(row, f, candidate, reporting_level, write_in, winner)
+                        self.process_county(row, f['ocd_id'], candidate, reporting_level, write_in, winner)
                     elif reporting_level == 'precinct':
-                        self.process_precinct(row, f, candidate, reporting_level, write_in, winner)
+                        self.process_precinct(row, f['ocd_id'], candidate, reporting_level, write_in, winner)
     
     def process_state_legislative(self, row, districts, candidate, reporting_level, write_in, winner):
         for district in districts:
@@ -96,7 +92,7 @@ class LoadResults(BaseLoader):
             ocd = "ocd-division/country:us/state:md/sldl:%s" % district.strip().split(' ')[1]
             result = Result(ocd_id=ocd, jurisdiction=district.strip(), raw_office=row['Office Name'].strip(), reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, winner=winner).save()
     
-    def process_county(self, f, row, candidate, reporting_level, write_in, winner):
+    def process_county(self, ocd_id, row, candidate, reporting_level, write_in, winner):
         try:
             jurisdiction = f['name']
         except:  # fix this!
@@ -105,13 +101,13 @@ class LoadResults(BaseLoader):
             total_votes = row['Total Votes']
         except:
             print row
-        vote_breakdowns = { 'election_night_total': row['Election Night Votes'], 'absentee_total': row['Absentees Votes'], 'provisional_total': row['Provisional Votes'], 'second_absentee_total': row['2nd Absentees Votes']}
-        result = Result(ocd_id=f['ocd_id'], jurisdiction=jurisdiction, raw_office=row['Office Name'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns).save()
+        #vote_breakdowns = { 'election_night_total': row['Election Night Votes'], 'absentee_total': row['Absentees Votes'], 'provisional_total': row['Provisional Votes'], 'second_absentee_total': row['2nd Absentees Votes']}
+        result = Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns={}).save()
         
-    def process_precinct(self, f, row, candidate, reporting_level, write_in, winner):
+    def process_precinct(self, ocd_id, row, candidate, reporting_level, write_in, winner):
         jurisdiction = str(row['Election District'])+"-"+str(row['Election Precinct'])
         total_votes = row['Election Night Votes']
         vote_breakdowns = { 'election_night_total': row['Election Night Votes']}
-        result = Result(ocd_id=f['ocd_id'], jurisdiction=jurisdiction, raw_office=row['Office Name'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns).save()
+        result = Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns).save()
         
                 
