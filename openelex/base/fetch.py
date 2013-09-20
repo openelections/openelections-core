@@ -5,7 +5,7 @@ from urllib import urlretrieve
 import urlparse
 import requests
 import json
-import csv
+import unicodecsv
 
 class BaseFetcher(object):
     """
@@ -86,11 +86,14 @@ class BaseFetcher(object):
         [os.remove(join(self.cache_dir, file)) for file in os.listdir(self.cache_dir)]
         return "Cache is now empty"
     
+    def clear_filenames(self):
+        open(join(self.mappings_dir, 'filenames.json'), 'w').close() 
+    
     def jurisdiction_mappings(self, headers):
         "Given a tuple of headers, returns a JSON object of jurisdictional mappings based on OCD ids"
         filename = join(self.mappings_dir, self.state+'.csv')
         with open(filename, 'rU') as csvfile:
-            reader = csv.DictReader(csvfile, fieldnames = headers)
+            reader = unicodecsv.DictReader(csvfile, fieldnames = headers)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
     
@@ -103,12 +106,13 @@ class BaseFetcher(object):
                 mappings = {}
             return mappings
 
-    def update_mappings(self, year, mappings_list):
+    def update_mappings(self, election_dates, filenames):
         mappings = self.filename_mappings()
-        if not year in mappings.keys():
-            mappings[year] = mappings_list
-        else:
-            mappings[year].update(mappings_list)
+        for date in election_dates:
+            if not date in mappings.keys():
+                mappings[date] = filenames
+            else:
+                mappings[date].update(filenames)
         with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
             json.dump(mappings, f)
     
