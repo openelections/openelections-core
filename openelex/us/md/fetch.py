@@ -21,14 +21,14 @@ f.run(2012)
 class FetchResults(BaseFetcher):
     
     def run(self, year, urls=None):
+        filenames = {}
         elections = self.api_response(self.state, year)
-        election_dates = [str(e["end_date"]) for e in elections['elections']]
         if not urls:
             urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
         for generated_name, raw_url, ocd_id, name in urls:
             self.fetch(raw_url, generated_name)
         filenames = [{ 'generated_name': generated_name, 'ocd_id' : ocd_id, 'raw_url' : raw_url, 'name' : name} for generated_name, raw_url, ocd_id, name in urls]
-        self.update_mappings(election_dates, filenames)
+        self.update_mappings(year, filenames)
         
     def state_legislative_district_urls(self, year, elections):
         urls = []
