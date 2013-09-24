@@ -14,9 +14,6 @@ l = load.LoadResults()
 l.run('2012-11-06')
 
 Maybe add flags to load only certain reporting levels? Should we have year-based loaders?
-
-re-run filenames loader to write election_dates
-pass files as hash with keys of election_dates and lists of interior files, with jurisdiction names
 """
 
 class LoadResults(BaseLoader):
