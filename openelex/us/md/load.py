@@ -44,7 +44,7 @@ class LoadResults(BaseLoader):
         # logging?
     
     def process_file(self, file):
-        connect('openelex_md_tester')
+        connect('openelex_md_test')
         print file['generated_name']
         with open(join(self.cache_dir, file['generated_name']), 'rU') as csvfile:
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
@@ -97,15 +97,15 @@ class LoadResults(BaseLoader):
             ocd = "ocd-division/country:us/state:md/sldl:%s" % district.strip().split(' ')[1]
             result = Result(ocd_id=ocd, jurisdiction=district.strip(), raw_office=row['Office Name'].strip()+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, winner=winner).save()
     
-    def process_county(self, ocd_id, jurisdiction, row, candidate, reporting_level, write_in, winner):
+    def process_county(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         try:
             total_votes = row['Total Votes']
         except:
             print row
-        #vote_breakdowns = { 'election_night_total': row['Election Night Votes'], 'absentee_total': row['Absentees Votes'], 'provisional_total': row['Provisional Votes'], 'second_absentee_total': row['2nd Absentees Votes']}
+        vote_breakdowns = { 'election_night_total': row['Election Night Votes'], 'absentee_total': row['Absentees Votes'], 'provisional_total': row['Provisional Votes'], 'second_absentee_total': row['2nd Absentees Votes']}
         result = Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns={}).save()
         
-    def process_precinct(self, ocd_id, row, jurisdiction, candidate, reporting_level, write_in, winner):
+    def process_precinct(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         jurisdiction = jurisdiction+' '+str(row['Election District'])+"-"+str(row['Election Precinct'])
         total_votes = row['Election Night Votes']
         vote_breakdowns = { 'election_night_total': row['Election Night Votes']}
