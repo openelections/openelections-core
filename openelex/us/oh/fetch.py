@@ -4,6 +4,15 @@ from openelex.base.fetch import BaseFetcher
 Retrieves CSV result files for a given year from Ohio Secretary of State and caches them locally.
 General and primary election files have multiple jurisdictions and races in a single master file (via Excel sheets).
 
+Most complete data is in precinct file, which has sheet for all counties and then sheets for each county. Likely we'll want the county
+sheets because the all counties sheet also lists candidates who did not run in every county.
+
+URL structure for precinct files: 
+    General - http://www.sos.state.oh.us/sos/upload/elections/[year]/gen/[year]precinct.xlsx
+    Primary - http://www.sos.state.oh.us/sos/upload/elections/[year]/pri/[year]precinct.xlsx
+
+Although there are variations, so probably better to use Dashboard API to get download urls. Special elections need to be scraped.
+
 Usage:
 
 from openelex.us.oh import fetch
@@ -36,4 +45,5 @@ class FetchResults(BaseFetcher):
         m = self.jurisdiction_mappings(('ocd_id','name'))
         mappings = [x for x in m if 'County' in x['name']]
         return mappings
+
 
