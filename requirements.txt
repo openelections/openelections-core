@@ -1,5 +1,6 @@
 argparse==1.2.1
 boto==2.9.7
+invoke==0.5.1
 ipython==0.13.2
 mongoengine==0.8.4
 pymongo==2.5.2
