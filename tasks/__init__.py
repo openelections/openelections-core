@@ -26,7 +26,3 @@ def fetch(state, year):
     state_dir = join(COUNTRY_DIR, state) 
     fetcher = state_mod.fetch.FetchResults()
     fetcher.run(year)
-    # introspect state filenames for target files
-    # populate
-    #print state_dir
-    #print fetcher.__class__
