@@ -116,7 +116,7 @@ class BaseFetcher(object):
             json.dump(mappings, f)
     
     def api_response(self, state, year):
-        url = "http://dashboard.openelections.net/api/v1/state/%s/year/%s/" % (state, year)
+        url = "http://openelections.net/api/v1/state/%s/year/%s/" % (state, year)
         response = json.loads(requests.get(url).text)
         return response
     
