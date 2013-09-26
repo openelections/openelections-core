@@ -66,10 +66,18 @@ class Contest(Document):
     
     other_vote_counts would include provisional, absentee, same-day, overvotes, etc. all are optional.
     """
+    state = StringField(required=True)
+    year = IntegerField(required=True)
     election_id = StringField(required=True) # OpenElections generated slug
-    total_votes = IntField()
-    computed_total_votes = IntField()
-    other_vote_counts = DictField()
+    start_date = DateField()
+    end_date = DateField()
+    election_type = StringField()
+    offices = ListField()
+    reporting_levels = ListField()
+    absentee_provisional = BooleanField(default=False)
+    source_url = StringField()
+    result_type = StringField()
+    special = BooleanField(default=False)
     results = ListField(ReferenceField(Result))
     created = DateTimeField()
     updated = DateTimeField()
