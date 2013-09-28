@@ -37,7 +37,7 @@ class Office(Document):
     name = StringField()
     district = StringField()
 
-class Result(Document):
+class Result(EmbeddedDocument):
 
     REPORTING_LEVEL_CHOICES = (
         'congressional_district',
@@ -67,17 +67,13 @@ class Contest(Document):
     other_vote_counts would include provisional, absentee, same-day, overvotes, etc. all are optional.
     """
     state = StringField(required=True)
-    year = IntegerField(required=True)
+    year = IntField(required=True)
     election_id = StringField(required=True) # OpenElections generated slug
-    start_date = DateField()
-    end_date = DateField()
+    start_date = DateTimeField()
+    end_date = DateTimeField()
     election_type = StringField()
-    offices = ListField()
-    reporting_levels = ListField()
-    absentee_provisional = BooleanField(default=False)
-    source_url = StringField()
     result_type = StringField()
     special = BooleanField(default=False)
-    results = ListField(ReferenceField(Result))
+    results = ListField(EmbeddedDocumentField(Result))
     created = DateTimeField()
     updated = DateTimeField()
