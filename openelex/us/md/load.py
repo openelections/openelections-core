@@ -59,7 +59,7 @@ class LoadResults(BaseLoader):
                 else:
                     winner = False
                 if reporting_level == 'state_legislative':
-                    contest.results.append(self.load_state_legislative(row, districts, candidate, reporting_level, write_in, winner))
+                    contest.update(push_all__results=(self.load_state_legislative(row, districts, candidate, reporting_level, write_in, winner)))
                 elif reporting_level == 'county':
                     contest.results.append(self.load_county(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
                 elif reporting_level == 'precinct':
