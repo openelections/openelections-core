@@ -61,7 +61,7 @@ class LoadResults(BaseLoader):
                 if reporting_level == 'state_legislative':
                     contest.update(push_all__results=(self.load_state_legislative(row, districts, candidate, reporting_level, write_in, winner)))
                 elif reporting_level == 'county':
-                    contest.results.append(self.load_county(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
+                    contest.update(push__results=(self.load_county(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner)))
                 elif reporting_level == 'precinct':
                     contest.results.append(self.load_precinct(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
         contest.updated = datetime.datetime.now()
@@ -77,7 +77,10 @@ class LoadResults(BaseLoader):
         election = [e for e in self.elections(year) if e['id'] == file['election']][0]
         start_year, start_month, start_day = election['start_date'].split('-')
         end_year, end_month, end_day = election['end_date'].split('-')
-        contest, created = Contest.objects.get_or_create(state=self.state, year=year, election_id=election['id'], start_date=datetime.date(int(start_year), int(start_month), int(start_day)), end_date=datetime.date(int(end_year), int(end_month), int(end_day)), election_type=election['election_type'], result_type=election['result_type'], special=election['special'], created=datetime.datetime.now())
+        contest, created = Contest.objects.get_or_create(state=self.state, year=year, election_id=election['id'], start_date=datetime.date(int(start_year), int(start_month), int(start_day)), end_date=datetime.date(int(end_year), int(end_month), int(end_day)), election_type=election['election_type'], result_type=election['result_type'], special=election['special'])
+        if created == True:
+            contest.created = datetime.datetime.now()
+            contest.save()
         return contest
     
     def load_state_legislative(self, row, districts, candidate, reporting_level, write_in, winner):
@@ -99,7 +102,7 @@ class LoadResults(BaseLoader):
         except:
             print row
         vote_breakdowns = { 'election_night_total': row['Election Night Votes'], 'absentee_total': row['Absentees Votes'], 'provisional_total': row['Provisional Votes'], 'second_absentee_total': row['2nd Absentees Votes']}
-        return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns={})
+        return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns)
         
     def load_precinct(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         jurisdiction = jurisdiction+' '+str(row['Election District'])+"-"+str(row['Election Precinct'])
