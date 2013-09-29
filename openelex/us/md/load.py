@@ -6,6 +6,7 @@ from openelex.models import Candidate, Result, Contest
 import json
 import unicodecsv
 import requests
+import datetime
 
 """
 load() accepts an object from filenames.json
@@ -63,7 +64,8 @@ class LoadResults(BaseLoader):
                     contest.results.append(self.load_county(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
                 elif reporting_level == 'precinct':
                     contest.results.append(self.load_precinct(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
-        contest.save()                    
+        contest.updated = datetime.datetime.now()
+        contest.save()
     
     def elections(self, year):
         url = "http://openelections.net/api/v1/state/%s/year/%s/" % (self.state, year)
@@ -73,7 +75,9 @@ class LoadResults(BaseLoader):
     def get_contest(self, file):
         year = int(file['generated_name'][0:4])
         election = [e for e in self.elections(year) if e['id'] == file['election']][0]
-        contest, created = Contest.objects.get_or_create(state=self.state, year=year, election_id=election['id'], start_date=election['start_date'], end_date=election['end_date'], election_type=election['election_type'], result_type=election['result_type'], special=election['special'])
+        start_year, start_month, start_day = election['start_date'].split('-')
+        end_year, end_month, end_day = election['end_date'].split('-')
+        contest, created = Contest.objects.get_or_create(state=self.state, year=year, election_id=election['id'], start_date=datetime.date(int(start_year), int(start_month), int(start_day)), end_date=datetime.date(int(end_year), int(end_month), int(end_day)), election_type=election['election_type'], result_type=election['result_type'], special=election['special'], created=datetime.datetime.now())
         return contest
     
     def load_state_legislative(self, row, districts, candidate, reporting_level, write_in, winner):
