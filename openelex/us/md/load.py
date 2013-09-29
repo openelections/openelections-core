@@ -63,7 +63,7 @@ class LoadResults(BaseLoader):
                 elif reporting_level == 'county':
                     contest.update(push__results=(self.load_county(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner)))
                 elif reporting_level == 'precinct':
-                    contest.results.append(self.load_precinct(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
+                    contest.update(push__results=(self.load_precinct(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner)))
         contest.updated = datetime.datetime.now()
         contest.save()
     
