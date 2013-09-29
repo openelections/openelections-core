@@ -25,9 +25,9 @@ class FetchResults(BaseFetcher):
         elections = self.api_response(self.state, year)
         if not urls:
             urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
-        for generated_name, raw_url, ocd_id, name in urls:
+        for generated_name, raw_url, ocd_id, name, election in urls:
             self.fetch(raw_url, generated_name)
-        filenames = [{ 'generated_name': generated_name, 'ocd_id' : ocd_id, 'raw_url' : raw_url, 'name' : name} for generated_name, raw_url, ocd_id, name in urls]
+        filenames = [{ 'generated_name': generated_name, 'ocd_id' : ocd_id, 'raw_url' : raw_url, 'name' : name, 'election': election} for generated_name, raw_url, ocd_id, name, election in urls]
         self.update_mappings(year, filenames)
         
     def state_legislative_district_urls(self, year, elections):
@@ -35,12 +35,12 @@ class FetchResults(BaseFetcher):
         general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
         generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__state_legislative.csv"
         raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_General.csv" % (year, year)
-        urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts'])
+        urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', general['id']])
         primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
         for party in ['Democratic', 'Republican']:
             generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__state_legislative.csv"
             raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_%s_Primary.csv" % (year, party, year)
-            urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts'])
+            urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', primary['id']])
         return urls
     
     # add generated_name code here
@@ -51,17 +51,17 @@ class FetchResults(BaseFetcher):
         for jurisdiction in self.jurisdictions():
             county_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s.csv" % jurisdiction['url_name'].lower()
             county_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls.append([county_generated_name, county_raw_name, jurisdiction['ocd_id'], jurisdiction['name']])
+            urls.append([county_generated_name, county_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], general['id']])
             precinct_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s__precinct.csv" % jurisdiction['url_name'].lower()
             precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls.append([precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id'], jurisdiction['name']])
+            urls.append([precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], general['id']])
             for party in ['Democratic', 'Republican']:
                 county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s.csv" % jurisdiction['url_name'].lower()
                 county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
-                urls.append([county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name']])
+                urls.append([county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
                 precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
                 precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
-                urls.append([precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name']])
+                urls.append([precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
         return urls
     
     def jurisdictions(self):

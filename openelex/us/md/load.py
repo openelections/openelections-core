@@ -5,44 +5,26 @@ from mongoengine import *
 from openelex.models import Candidate, Result, Contest
 import json
 import unicodecsv
+import requests
+import datetime
 
 """
+load() accepts an object from filenames.json
+
 Usage:
 
 from openelex.us.md import load
 l = load.LoadResults()
-l.run('2012-11-06')
-
-Maybe add flags to load only certain reporting levels? Should we have year-based loaders?
+file = l.filenames['2012'][0] # just an example
+l.load(file)
 """
 
 class LoadResults(BaseLoader):
     
-    def run(self, date):
-        # date can be year or YYYY-MM-DD date
-        files = self.filenames[str(date[0:4])] # grab all files for that year
-        self.check_cache(str(date[0:4]), files)
-        if len(date) > 4:
-            files = [f for f in files if date.replace('-', '') in f['generated_name']]
-        for file in files:
-            self.process_file(file)
-        
-    def check_cache(self, year, files):
-        uncached_files = []
-        for f in files:
-            if not exists(join(self.cache_dir, f['generated_name'])):
-                uncached_files.append(f)
-        if len(uncached_files) > 0:
-            fetch_files(year, uncached_files)
-        
-    def fetch_files(self, year, files):
-        f = fetch.FetchResults()
-        f.run(year, files)
-        # logging?
-    
-    def process_file(self, file):
+    def load(self, file):
         connect('openelex_md_test')
         print file['generated_name']
+        contest = self.get_contest(file)
         with open(join(self.cache_dir, file['generated_name']), 'rU') as csvfile:
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             if 'state_legislative' in file['generated_name']:
@@ -77,13 +59,29 @@ class LoadResults(BaseLoader):
                 else:
                     winner = False
                 if reporting_level == 'state_legislative':
-                    self.process_state_legislative(row, districts, candidate, reporting_level, write_in, winner)
+                    contest.results.append(self.load_state_legislative(row, districts, candidate, reporting_level, write_in, winner))
                 elif reporting_level == 'county':
-                    self.process_county(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner)
+                    contest.results.append(self.load_county(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
                 elif reporting_level == 'precinct':
-                    self.process_precinct(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner)
+                    contest.results.append(self.load_precinct(row, file['ocd_id'], jurisdiction, candidate, reporting_level, write_in, winner))
+        contest.updated = datetime.datetime.now()
+        contest.save()
     
-    def process_state_legislative(self, row, districts, candidate, reporting_level, write_in, winner):
+    def elections(self, year):
+        url = "http://openelections.net/api/v1/state/%s/year/%s/" % (self.state, year)
+        response = json.loads(requests.get(url).text)
+        return response['elections']
+    
+    def get_contest(self, file):
+        year = int(file['generated_name'][0:4])
+        election = [e for e in self.elections(year) if e['id'] == file['election']][0]
+        start_year, start_month, start_day = election['start_date'].split('-')
+        end_year, end_month, end_day = election['end_date'].split('-')
+        contest, created = Contest.objects.get_or_create(state=self.state, year=year, election_id=election['id'], start_date=datetime.date(int(start_year), int(start_month), int(start_day)), end_date=datetime.date(int(end_year), int(end_month), int(end_day)), election_type=election['election_type'], result_type=election['result_type'], special=election['special'], created=datetime.datetime.now())
+        return contest
+    
+    def load_state_legislative(self, row, districts, candidate, reporting_level, write_in, winner):
+        results = []
         for district in districts:
             if row[district].strip() == '':
                 total_votes = 0
@@ -92,20 +90,19 @@ class LoadResults(BaseLoader):
             if row['Party'] not in candidate.raw_parties:
                 candidate.raw_parties.append(row['Party'])
             ocd = "ocd-division/country:us/state:md/sldl:%s" % district.strip().split(' ')[1]
-            result = Result(ocd_id=ocd, jurisdiction=district.strip(), raw_office=row['Office Name'].strip()+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, winner=winner).save()
+            results.append(Result(ocd_id=ocd, jurisdiction=district.strip(), raw_office=row['Office Name'].strip()+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, winner=winner))
+        return results
     
-    def process_county(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
+    def load_county(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         try:
             total_votes = row['Total Votes']
         except:
             print row
         vote_breakdowns = { 'election_night_total': row['Election Night Votes'], 'absentee_total': row['Absentees Votes'], 'provisional_total': row['Provisional Votes'], 'second_absentee_total': row['2nd Absentees Votes']}
-        result = Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns={}).save()
+        return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns={})
         
-    def process_precinct(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
+    def load_precinct(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         jurisdiction = jurisdiction+' '+str(row['Election District'])+"-"+str(row['Election Precinct'])
         total_votes = row['Election Night Votes']
         vote_breakdowns = { 'election_night_total': row['Election Night Votes']}
-        result = Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns).save()
-        
-                
+        return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns)
