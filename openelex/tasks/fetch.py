@@ -2,7 +2,7 @@ import os
 
 from invoke import task
 
-from .constants import COUNTRY_DIR
+from openelex import COUNTRY_DIR
 from .utils import load_module
 
 @task(help={

@@ -81,11 +81,6 @@ class BaseFetcher(object):
         name = join(*bits)
         return name
         
-    def clear_cache(self):
-        "Deletes all files in the cache directory"
-        [os.remove(join(self.cache_dir, file)) for file in os.listdir(self.cache_dir)]
-        return "Cache is now empty"
-    
     def clear_filenames(self):
         open(join(self.mappings_dir, 'filenames.json'), 'w').close() 
     
