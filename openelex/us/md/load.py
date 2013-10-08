@@ -108,4 +108,4 @@ class LoadResults(BaseLoader):
         jurisdiction = jurisdiction+' '+str(row['Election District'])+"-"+str(row['Election Precinct'])
         total_votes = row['Election Night Votes']
         vote_breakdowns = { 'election_night_total': row['Election Night Votes']}
-        return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns)
+        return Result(ocd_id=ocd_id+"/precinct:"+str(row['Election District'])+"-"+str(row['Election Precinct']), jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns)
