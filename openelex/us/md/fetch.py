@@ -11,7 +11,7 @@ File name for primary election precinct-level files is County_Name_by_Precinct_p
 File name for primary election state legislative district-level files is State_Legislative_Districts_party_year_primary.csv
 File name for primary election county-level files is County_Name_party_year_primary.csv
 
-Exceptions: 2004 files put the year at the end of the file name, and 2002 and 2000 have single text files with all results for a single election.
+Exceptions: 2004 and 2000 files put the year at the end of the file name, and 2002 has single text files with all results for a single election. 2000 primary is also a single csv file.
 
 Usage:
 
@@ -27,7 +27,18 @@ class FetchResults(BaseFetcher):
         elections = self.api_response(self.state, year)
         if year == 2002:
             # generate 2002 files, which have single text files for all results
-            urls = [['gen_name', 'http://www.elections.state.md.us/elections/%s/results/g_all_offices.txt' % year, 'ocd-division/country:us/state:md', 'Maryland', [e for e in elections['elections'] if e['election_type'] == 'general'][0]['id']],['gen_name', 'http://www.elections.state.md.us/elections/%s/results/p_all_offices.txt' % year, 'ocd-division/country:us/state:md', 'Maryland', [e for e in elections['elections'] if e['election_type'] == 'primary'][0]['id']]
+            general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
+            g_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general.txt"
+            primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
+            p_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary.txt"
+            urls = [[g_generated_name, 'http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt', 'ocd-division/country:us/state:md', 'Maryland', general['id']],[p_generated_name, 'http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt', 'ocd-division/country:us/state:md', 'Maryland', primary['id']]]
+        elif year == 2000:
+            general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
+            g_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general.txt"
+            primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
+            p_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary.csv"
+            urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
+            urls.append([p_generated_name, 'http://www.elections.state.md.us/elections/2000/results/prepaa.csv', 'ocd-division/country:us/state:md', 'Maryland', primary['id']])
         else:
             if not urls:
                 urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
@@ -40,19 +51,20 @@ class FetchResults(BaseFetcher):
         urls = []
         general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
         generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__state_legislative.csv"
-        if year == 2004:
+        if year in (2000, 2004):
             raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_General_%s.csv" % (year, year)
         else:
             raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_General.csv" % (year, year)
         urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', general['id']])
         primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
-        for party in ['Democratic', 'Republican']:
-            generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__state_legislative.csv"
-            if year == 2004:
-                raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_Primary_%s.csv" % (year, party, year)
-            else:
-                raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_%s_Primary.csv" % (year, party, year)
-            urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', primary['id']])
+        if primary and year > 2000:
+            for party in ['Democratic', 'Republican']:
+                generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__state_legislative.csv"
+                if year == 2004:
+                    raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_Primary_%s.csv" % (year, party, year)
+                else:
+                    raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_%s_Primary.csv" % (year, party, year)
+                urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', primary['id']])
         return urls
     
     # add generated_name code here
@@ -62,30 +74,31 @@ class FetchResults(BaseFetcher):
         primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
         for jurisdiction in self.jurisdictions():
             county_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s.csv" % jurisdiction['url_name'].lower()
-            if year == 2004:
+            if year in (2000, 2004):
                 county_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_General_%s.csv" % (year, jurisdiction['url_name'], year)
             else:
                 county_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_General.csv" % (year, jurisdiction['url_name'], year)
             urls.append([county_generated_name, county_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], general['id']])
             precinct_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s__precinct.csv" % jurisdiction['url_name'].lower()
-            if year == 2004:
+            if year in (2000, 2004):
                 precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_General_%s.csv" % (year, jurisdiction['url_name'], year)
             else:
                 precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_General.csv" % (year, jurisdiction['url_name'], year)
             urls.append([precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], general['id']])
-            for party in ['Democratic', 'Republican']:
-                county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s.csv" % jurisdiction['url_name'].lower()
-                if year == 2004:
-                    county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_Primary_%s.csv" % (year, jurisdiction['url_name'], party, year)
-                else:
-                    county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
-                urls.append([county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
-                precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
-                if year == 2004:
-                    precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_Primary_%s.csv" % (year, jurisdiction['url_name'], party, year)
-                else:
-                    precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
-                urls.append([precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
+            if primary and year > 2000:
+                for party in ['Democratic', 'Republican']:
+                    county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s.csv" % jurisdiction['url_name'].lower()
+                    if year == 2004:
+                        county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_Primary_%s.csv" % (year, jurisdiction['url_name'], party, year)
+                    else:
+                        county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
+                    urls.append([county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
+                    precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
+                    if year == 2004:
+                        precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_Primary_%s.csv" % (year, jurisdiction['url_name'], party, year)
+                    else:
+                        precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
+                    urls.append([precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
         return urls
     
     def jurisdictions(self):
