@@ -15,7 +15,7 @@ Usage:
 
 from openelex.us.md import load
 l = load.LoadResults()
-file = l.filenames['2012'][0] # just an example
+file = l.filenames['2004'][0] # just an example
 l.load(file)
 """
 
@@ -29,13 +29,14 @@ class LoadResults(BaseLoader):
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             if 'state_legislative' in file['generated_name']:
                 reporting_level = 'state_legislative'
-                districts = [j for j in reader.fieldnames if j not in ['Vote Type (FOR=1,AGAINST=2)', 'County', 'Candidate Name', 'Party', 'Office Name', 'Office District', 'Winner', 'Write-In?']]
+                districts = [j for j in reader.fieldnames if j not in ['Vote Type','Vote Type (FOR=1,AGAINST=2)', 'County', 'Candidate Name', 'Party', 'Office Name', 'Office District', 'Winner', 'Write-In?']]
             elif 'precinct' in file['generated_name']:
                 reporting_level = 'precinct'
                 jurisdiction = file['name']
             else:
                 reporting_level = 'county'
                 jurisdiction = file['name']
+            next(reader)
             for row in reader:
                 if not row['Office Name'].strip() in ['President - Vice Pres', 'U.S. Senator', 'U.S. Congress', 'Governor / Lt. Governor', 'Comptroller', 'Attorney General', 'State Senator', 'House of Delegates']:
                     continue
@@ -89,7 +90,7 @@ class LoadResults(BaseLoader):
             if row[district].strip() == '':
                 total_votes = 0
             else:
-                total_votes = row[district]
+                total_votes = int(float(row[district]))
             if row['Party'] not in candidate.raw_parties:
                 candidate.raw_parties.append(row['Party'])
             ocd = "ocd-division/country:us/state:md/sldl:%s" % district.strip().split(' ')[1]
@@ -98,14 +99,14 @@ class LoadResults(BaseLoader):
     
     def load_county(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         try:
-            total_votes = row['Total Votes']
+            total_votes = int(float(row['Total Votes']))
         except:
             print row
-        vote_breakdowns = { 'election_night_total': row['Election Night Votes'], 'absentee_total': row['Absentees Votes'], 'provisional_total': row['Provisional Votes'], 'second_absentee_total': row['2nd Absentees Votes']}
+        vote_breakdowns = { 'election_night_total': int(float(row['Election Night Votes'])), 'absentee_total': int(float(row['Absentees Votes'])), 'provisional_total': int(float(row['Provisional Votes'])), 'second_absentee_total': int(float(row['2nd Absentees Votes']))}
         return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns)
         
     def load_precinct(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         jurisdiction = jurisdiction+' '+str(row['Election District'])+"-"+str(row['Election Precinct'])
-        total_votes = row['Election Night Votes']
-        vote_breakdowns = { 'election_night_total': row['Election Night Votes']}
+        total_votes = int(float(row['Election Night Votes']))
+        vote_breakdowns = { 'election_night_total': int(float(row['Election Night Votes']))}
         return Result(ocd_id=ocd_id+"/precinct:"+str(row['Election District'])+"-"+str(row['Election Precinct']), jurisdiction=jurisdiction, raw_office=row['Office Name']+' '+row['Office District'], reporting_level=reporting_level, candidate=candidate, party=row['Party'], write_in=write_in, total_votes=total_votes, vote_breakdowns=vote_breakdowns)
