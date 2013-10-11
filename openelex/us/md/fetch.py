@@ -67,7 +67,6 @@ class FetchResults(BaseFetcher):
                 urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', primary['id']])
         return urls
     
-    # add generated_name code here
     def county_urls(self, year, elections):
         urls = []
         general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
