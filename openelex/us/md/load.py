@@ -36,7 +36,6 @@ class LoadResults(BaseLoader):
             else:
                 reporting_level = 'county'
                 jurisdiction = file['name']
-            next(reader)
             for row in reader:
                 if not row['Office Name'].strip() in ['President - Vice Pres', 'U.S. Senator', 'U.S. Congress', 'Governor / Lt. Governor', 'Comptroller', 'Attorney General', 'State Senator', 'House of Delegates']:
                     continue
