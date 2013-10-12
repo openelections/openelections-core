@@ -109,9 +109,10 @@ class DataSource(object):
     def update_mappings(self, year, filenames):
         mappings = self.filename_mappings()
         try:
-            mappings[str(year)].update(filenames)
-        except KeyError:
-            mappings[str(year)] = filenames
+            del mappings[str(year)]
+        except:
+            pass
+        mappings[str(year)] = filenames
         with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
             json.dump(mappings, f)
 
