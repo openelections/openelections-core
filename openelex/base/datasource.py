@@ -1,22 +1,26 @@
 from os.path import dirname, exists, join
-import inspect
-import os
 from urllib import urlretrieve
-import urlparse
-import requests
+import inspect
 import json
+import os
+import urlparse
+
+import requests
 import unicodecsv
 
-class BaseFetcher(object):
+class DataSource(object):
     """
-    Base class for downloading result files.
-    Intended to be subclassed in state-specific fetch.py modules.
+    Base class for interacting with source data.
+    Primary use is fetching data files from source and standardizing names of files,
+    which are then cached on S3 by their standardized name and used downstream to load
+    results into data store.
 
-    Caches resources inside each state directory.
+    Intended to be subclassed in state-specific stdz/datasource.py modules.
 
     """
 
-    def __init__(self):
+    def __init__(self, source_id):
+        self.source_id = source_id
         self.state = self.__module__.split('.')[-2]
         # Save files to cache/ dir inside state directory
         self.cache_dir = join(dirname(inspect.getfile(self.__class__)), 'cache')
@@ -29,9 +33,10 @@ class BaseFetcher(object):
             os.makedirs(self.mappings_dir)
         except OSError:
             pass
-        # check for the ocd mappings csv and the filenames.json files - if they don't exist, create them.
+        # Check for the ocd mappings csv and the filenames.json files;
+        # if they don't exist, create them.
         open(join(self.mappings_dir, self.state+'.csv'), 'a').close()
-        open(join(self.mappings_dir, 'filenames.json'), 'a').close()        
+        open(join(self.mappings_dir, 'filenames.json'), 'a').close()
 
     def run(self):
         msg = "You must implement the %s.run method" % self.__class__.__name__
@@ -80,10 +85,10 @@ class BaseFetcher(object):
         ]
         name = join(*bits)
         return name
-        
+
     def clear_filenames(self):
         open(join(self.mappings_dir, 'filenames.json'), 'w').close() 
-    
+
     def jurisdiction_mappings(self, headers):
         "Given a tuple of headers, returns a JSON object of jurisdictional mappings based on OCD ids"
         filename = join(self.mappings_dir, self.state+'.csv')
@@ -91,7 +96,7 @@ class BaseFetcher(object):
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
-    
+
     def filename_mappings(self):
         filename = join(self.mappings_dir, 'filenames.json')
         with open(filename) as f:
@@ -109,9 +114,8 @@ class BaseFetcher(object):
             mappings[str(year)] = filenames
         with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
             json.dump(mappings, f)
-    
+
     def api_response(self, state, year):
         url = "http://openelections.net/api/v1/state/%s/year/%s/" % (state, year)
         response = json.loads(requests.get(url).text)
         return response
-    
