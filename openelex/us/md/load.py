@@ -133,7 +133,7 @@ class LoadResults(BaseLoader):
     
     def load_county_2002(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         total_votes = int(float(row['votes']))
-        return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['office'], reporting_level=reporting_level, candidate=candidate, party=row['party'], write_in=write_in, total_votes=total_votes, vote_breakdowns={})
+        return Result(ocd_id=ocd_id, jurisdiction=jurisdiction, raw_office=row['office'].strip(), reporting_level=reporting_level, candidate=candidate, party=row['party'].strip(), write_in=write_in, total_votes=total_votes, vote_breakdowns={})
     
     def load_county(self, row, ocd_id, jurisdiction, candidate, reporting_level, write_in, winner):
         try:
