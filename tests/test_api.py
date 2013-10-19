@@ -44,15 +44,12 @@ class FakeApiResponse(object):
         self.status_code = status
         self.content = md_data
 
+
 class TestApi(TestCase):
 
     @patch('openelex.api.elections.get')
-    def test_find_all_elections(self, mock_get):
-        "Api find returns all elections with just state"
+    def test_find(self, mock_get):
+        "openelex.api.find method checks response status and returns array of elections"
         mock_get.return_value = FakeApiResponse(200)
-        elecs = api.elections.find('md')['objects']
+        elecs = api.elections.find('md')
         self.assertEquals(len(elecs), 15)
-
-    #def test_all_races_in_one_year(self):
-        #"Api supports search for elections for state"
-        #self.api.search('md', datefilter='2012')
