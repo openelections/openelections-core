@@ -1,11 +1,11 @@
 import json
+from os.path import abspath, dirname, join
 from collections import OrderedDict
-from mock import MagicMock
+from mock import patch
 from unittest import TestCase
 
 from openelex import api
 from openelex.api.base import prepare_api_params
-
 
 
 class TestUrlBuilder(TestCase):
@@ -32,19 +32,25 @@ class TestUrlBuilder(TestCase):
         actual = prepare_api_params(unordered)
         self.assertEquals(expected, actual)
 
-# load fixture globally to avoid reloads
-with open('fixtures/election_api_response_md.json','r') as f:
-    md_data = json.load(f)
+tests_dir = abspath(dirname(__file__))
+fixture_path = join(tests_dir, 'fixtures/election_api_response_md.json')
+with open(fixture_path, 'r') as f:
+    md_data = f.read()
 
+
+class FakeApiResponse(object):
+
+    def __init__(self, status):
+        self.status_code = status
+        self.content = md_data
 
 class TestApi(TestCase):
 
-    def setUp(self):
-        api.get = MagicMock(return_value=md_data)
-
-    def test_find_all_elections(self):
+    @patch('openelex.api.elections.get')
+    def test_find_all_elections(self, mock_get):
         "Api find returns all elections with just state"
-        elecs = api.elections.find('md')
+        mock_get.return_value = FakeApiResponse(200)
+        elecs = api.elections.find('md')['objects']
         self.assertEquals(len(elecs), 15)
 
     #def test_all_races_in_one_year(self):
