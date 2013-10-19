@@ -16,7 +16,14 @@ class FetchResults(BaseFetcher):
         elections = self.api_response(self.state, year)
         for generated_name, raw_url, ocd_id, name, election in self.target_urls:
             self.fetch(raw_url, generated_name)
-        filenames = [{ 'generated_name': generated_name, 'ocd_id' : ocd_id, 'raw_url' : raw_url, 'name' : name, 'election': election} for generated_name, raw_url, ocd_id, name, election in urls]
+        filenames = [{
+            'generated_name': generated_name,
+            'ocd_id': ocd_id,
+            'raw_url': raw_url,
+            'name': name,
+            'election': election
+        } for generated_name, raw_url, ocd_id, name, election in urls]
+
         self.update_mappings(year, filenames)
         #TODO: INTEGRATE BELOW EDGE CASE LOGIC FOR 2000 & 2002
         """

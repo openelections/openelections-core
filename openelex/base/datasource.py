@@ -15,7 +15,7 @@ class DataSource(object):
     which are then cached on S3 by their standardized name and used downstream to load
     results into data store.
 
-    Intended to be subclassed in state-specific stdz/datasource.py modules.
+    Intended to be subclassed in state-specific datasource.py modules.
 
     """
 
