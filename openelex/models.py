@@ -59,7 +59,7 @@ class Result(EmbeddedDocument):
     total_votes = IntField(default=0)
     vote_breakdowns = DictField() # if vote totals are included for election day, absentee, provisional, etc, put them here.
     winner = BooleanField()
-
+    
 class Contest(Document):
     """
     Do we need other fields (state, year) on this for easy lookups?
