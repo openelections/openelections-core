@@ -4,6 +4,7 @@ import inspect
 import json
 from nameparser import HumanName
 import csv
+import unicodecsv
 
 class BaseLoader(object):
     """
@@ -29,7 +30,15 @@ class BaseLoader(object):
         
     def combine_name_parts(self, bits):
         # expects a list of name bits in order
-        return " ".join(bits)
+        return " ".join([x.strip() for x in bits])
+    
+    def jurisdiction_mappings(self, headers):
+        "Given a tuple of headers, returns a JSON object of jurisdictional mappings based on OCD ids"
+        filename = join(self.mappings_dir, self.state+'.csv')
+        with open(filename, 'rU') as csvfile:
+            reader = unicodecsv.DictReader(csvfile, fieldnames = headers)
+            mappings = json.dumps([row for row in reader])
+        return json.loads(mappings)
 
     
         

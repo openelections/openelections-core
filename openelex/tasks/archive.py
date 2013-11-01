@@ -1,7 +1,7 @@
 from invoke import task, run
 
-from .constants import COUNTRY_DIR
-from .cache import list_dir
+from openelex import COUNTRY_DIR
+from .cache import StateCache
 from .utils import help_text
 
 @task(help=help_text({'cachefile': 'Path to file in state cache directory'}))
@@ -21,7 +21,8 @@ def save(state='', datefilter='', cachefile=''):
         pass
     # Save all files for a given state, applying datefilter if present
     if state:
-        files = list_dir(state, datefilter)
+        cache = StateCache(COUNTRY_DIR, state)
+        files = cache.list_dir(datefilter)
         if files:
             #TODO: save to S3
             pass

@@ -9,4 +9,9 @@ def help_text(extra):
     default.update(extra)
     return default
 
+def print_files(files):
+    for f in files:
+        print f
+    print "%s files found" % len(files)
+
 HELP_TEXT = help_text({})

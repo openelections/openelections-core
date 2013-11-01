@@ -81,11 +81,6 @@ class BaseFetcher(object):
         name = join(*bits)
         return name
         
-    def clear_cache(self):
-        "Deletes all files in the cache directory"
-        [os.remove(join(self.cache_dir, file)) for file in os.listdir(self.cache_dir)]
-        return "Cache is now empty"
-    
     def clear_filenames(self):
         open(join(self.mappings_dir, 'filenames.json'), 'w').close() 
     
@@ -96,7 +91,7 @@ class BaseFetcher(object):
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
-    
+        
     def filename_mappings(self):
         filename = join(self.mappings_dir, 'filenames.json')
         with open(filename) as f:
@@ -109,9 +104,10 @@ class BaseFetcher(object):
     def update_mappings(self, year, filenames):
         mappings = self.filename_mappings()
         try:
-            mappings[str(year)].update(filenames)
-        except KeyError:
-            mappings[str(year)] = filenames
+            del mappings[str(year)]
+        except:
+            pass
+        mappings[str(year)] = filenames
         with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
             json.dump(mappings, f)
     
