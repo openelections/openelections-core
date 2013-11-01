@@ -8,14 +8,14 @@ import urlparse
 import requests
 import unicodecsv
 
-class DataSource(object):
+class BaseFetcher(object):
     """
     Base class for interacting with source data.
     Primary use is fetching data files from source and standardizing names of files,
     which are then cached on S3 by their standardized name and used downstream to load
     results into data store.
 
-    Intended to be subclassed in state-specific datasource.py modules.
+    Intended to be subclassed in state-specific fetch.py modules.
 
     """
 
@@ -114,7 +114,7 @@ class DataSource(object):
             pass
         mappings[str(year)] = filenames
         with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
-            json.dump(mappings, f)
+            json.dump(mappings, f, indent=2)
 
     def api_response(self, state, year):
         url = "http://openelections.net/api/v1/state/%s/year/%s/" % (state, year)
