@@ -74,7 +74,7 @@ class MDData(DataSource):
         start_date = start_date.replace('-','')
         if 'state_leg' in url.lower():
             bits = (
-                start_date
+                start_date,
                 "__",
                 self.state,
                 "__general__state_legislative.csv"
