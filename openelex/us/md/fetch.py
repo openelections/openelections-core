@@ -29,12 +29,12 @@ class FetchResults(BaseFetcher):
 
     def run(self, year):
         elections = elec_api.find(self.state, year)
-        #TODO: add election slug to filenames in build_meta
         meta = self.build_metadata(year, elections)
         # DOWNLOAD FILES
         for item in meta:
             self.fetch(item['raw_url'], item['generated_filename'])
 
+        #TODO: re-enable mapping updates
         # UPDATE md/filenames.json
         #self.update_mappings(year, meta)
 
@@ -48,7 +48,7 @@ class FetchResults(BaseFetcher):
                     "raw_url": 'http://www.elections.state.md.us/elections/2000/results/prepaa.csv',
                     "ocd_id": 'ocd-division/country:us/state:md',
                     "name": 'Maryland',
-                    "election": primary['id']
+                    "election": primary['slug']
                 }
             ]
         elif year_int == 2002:
@@ -59,14 +59,14 @@ class FetchResults(BaseFetcher):
                     "raw_url": 'http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt',
                     "ocd_id": 'ocd-division/country:us/state:md',
                     "name": 'Maryland',
-                    "election": general['id']
+                    "election": general['slug']
                 },
                 {
                     "generated_name": "__".join((primary['start_date'].replace('-',''), self.state, "primary.txt")),
                     "raw_url": 'http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt',
                     "ocd_id": 'ocd-division/country:us/state:md',
                     "name": 'Maryland',
-                    "election": primary['id']
+                    "election": primary['slug']
                 }
             ]
         else:
@@ -89,7 +89,7 @@ class FetchResults(BaseFetcher):
         gen_meta.update({
             'raw_url': general_url,
             'generated_filename': general_filename,
-            'election': general['id']
+            'election': general['slug']
         })
         payload.append(gen_meta)
 
@@ -102,14 +102,17 @@ class FetchResults(BaseFetcher):
                 pri_meta.update({
                     'raw_url': primary_url,
                     'generated_filename': primary_filename,
-                    'election': primary['id']
+                    'election': primary['slug']
                 })
                 payload.append(pri_meta)
         return payload
 
     def races_by_type(self, elections):
+        "Filter races by type and add election slug"
         general = filter(lambda elec: elec['race_type'] == 'general', elections)[0]
+        general['slug'] = "-".join((self.state, general['start_date'], 'general'))
         primary = filter(lambda elec: elec['race_type'] == 'primary', elections)[0]
+        primary['slug'] = "-".join((self.state, primary['start_date'], 'primary'))
         return general, primary
 
     def build_state_leg_url(self, year, party=""):
@@ -159,7 +162,7 @@ class FetchResults(BaseFetcher):
             gen_meta.update({
                 'raw_url': general_url,
                 'generated_filename': general_filename,
-                'election': general['id']
+                'election': general['slug']
             })
             payload.append(gen_meta)
 
@@ -175,7 +178,7 @@ class FetchResults(BaseFetcher):
                         pri_meta.update({
                             'raw_url': primary_url,
                             'generated_filename': primary_filename,
-                            'election': primary['id']
+                            'election': primary['slug']
                         })
                         payload.append(pri_meta)
 
