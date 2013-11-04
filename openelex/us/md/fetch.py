@@ -44,7 +44,7 @@ class FetchResults(BaseFetcher):
             general, primary = self.races_by_type(elections)
             meta = [
                 {
-                    "generated_name": "__".join((primary['start_date'].replace('-',''), self.state, "primary.csv")),
+                    "generated_filename": "__".join((primary['start_date'].replace('-',''), self.state, "primary.csv")),
                     "raw_url": 'http://www.elections.state.md.us/elections/2000/results/prepaa.csv',
                     "ocd_id": 'ocd-division/country:us/state:md',
                     "name": 'Maryland',
@@ -55,15 +55,15 @@ class FetchResults(BaseFetcher):
             general, primary = self.races_by_type(elections)
             meta = [
                 {
-                    "generated_name": "__".join((general['start_date'].replace('-',''), self.state, "general.txt")),
-                    "raw_url": 'http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt',
+                    "generated_filename": "__".join((general['start_date'].replace('-',''), self.state, "general.txt")),
+                    "raw_url": self.get_2002_source_url('general'),
                     "ocd_id": 'ocd-division/country:us/state:md',
                     "name": 'Maryland',
                     "election": general['slug']
                 },
                 {
-                    "generated_name": "__".join((primary['start_date'].replace('-',''), self.state, "primary.txt")),
-                    "raw_url": 'http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt',
+                    "generated_filename": "__".join((primary['start_date'].replace('-',''), self.state, "primary.txt")),
+                    "raw_url": self.get_2002_source_url('primary'),
                     "ocd_id": 'ocd-division/country:us/state:md',
                     "name": 'Maryland',
                     "election": primary['slug']
