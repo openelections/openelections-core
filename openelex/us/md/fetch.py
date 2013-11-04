@@ -32,10 +32,7 @@ class FetchResults(BaseFetcher):
         meta = self.build_metadata(year, elections)
         # DOWNLOAD FILES
         for item in meta:
-            try:
-                self.fetch(item['raw_url'], item['generated_filename'])
-            except TypeError:
-                import pdb;pdb.set_trace()
+            self.fetch(item['raw_url'], item['generated_filename'])
 
         # UPDATE md/filenames.json
         #self.update_mappings(year, meta)
@@ -86,24 +83,26 @@ class FetchResults(BaseFetcher):
         # Add General meta to payload
         general_url = self.build_state_leg_url(year)
         general_filename = self.generate_state_leg_filename(general_url, general['start_date'])
-        meta.update({
+        gen_meta = meta.copy()
+        gen_meta.update({
             'raw_url': general_url,
             'generated_filename': general_filename,
             'election': general['id']
         })
-        payload.append(meta)
+        payload.append(gen_meta)
 
         # Add Primary meta to payload
-        if primary and year > 2000:
+        if primary and int(year) > 2000:
             for party in ['Democratic', 'Republican']:
+                pri_meta = meta.copy()
                 primary_url = self.build_state_leg_url(year, party)
                 primary_filename = self.generate_state_leg_filename(primary_url, primary['start_date'])
-                meta.update({
+                pri_meta.update({
                     'raw_url': primary_url,
                     'generated_filename': primary_filename,
                     'election': primary['id']
                 })
-                payload.append(meta)
+                payload.append(pri_meta)
         return payload
 
     def races_by_type(self, elections):
@@ -113,19 +112,20 @@ class FetchResults(BaseFetcher):
 
     def build_state_leg_url(self, year, party=""):
         tmplt = self.base_url + "State_Legislative_Districts"
-        kwargs = {'year': str(year)}
+        kwargs = {'year': year}
+        year_int = int(year)
         # PRIMARY
         # Assume it's a primary if party is present
-        if party and year > 2000:
-            kwargs['party'] = party.title()
-            if year == 2004:
+        if party and year_int > 2000:
+            kwargs['party'] = party
+            if year_int == 2004:
                 tmplt += "_%(party)s_Primary_%(year)s"
             else:
                 tmplt += "_%(party)s_%(year)s_Primary"
         # GENERAL
         else:
             # 2000 and 2004 urls end in the 4-digit year
-            if year in (2000, 2004):
+            if year_int in (2000, 2004):
                 tmplt += "_General_%(year)s"
             # All others have the year preceding the race type (General/Primary)
             else:
@@ -140,8 +140,8 @@ class FetchResults(BaseFetcher):
         for jurisdiction in self.jurisdictions():
 
             meta = {
-                jurisdiction['ocd_id'],
-                jurisdiction['name'],
+                'ocd_id': jurisdiction['ocd_id'],
+                'name': jurisdiction['name'],
             }
 
             county = jurisdiction['url_name']
@@ -153,33 +153,35 @@ class FetchResults(BaseFetcher):
                 general_filename = self.generate_county_filename(general_url, general['start_date'], jurisdiction)
 
             # Add General metadata to payload
-            meta.update({
-                    'raw_url': general_url,
-                    'generated_filename': general_filename,
-                    'election': general['id']
+            gen_meta = meta.copy()
+            gen_meta.update({
+                'raw_url': general_url,
+                'generated_filename': general_filename,
+                'election': general['id']
             })
-            payload.append(meta)
+            payload.append(gen_meta)
 
             # PRIMARIES
             # For each primary and party and party combo, generate countywide and precinct metadata
             if primary and year > 2000:
                 for party in ['Democratic', 'Republican']:
                     for precinct_val in (True, False):
+                        pri_meta = meta.copy()
                         primary_url = self.build_county_url(year, county, party, precinct_val)
                         primary_filename = self.generate_county_filename(primary_url, year, jurisdiction)
                         # Add Primary metadata to payload
-                        meta.update({
+                        pri_meta.update({
                             'raw_url': primary_url,
                             'generated_filename': primary_filename,
                             'election': primary['id']
                         })
-                        payload.append(meta)
+                        payload.append(pri_meta)
 
         return payload
 
     def build_county_url(self, year, name, party='', precinct=False):
         url_kwargs = {
-            'year': str(year),
+            'year': year,
             'race_type': 'General'
         }
         tmplt = self.base_url + name
@@ -191,7 +193,7 @@ class FetchResults(BaseFetcher):
             url_kwargs['party'] = party
             url_kwargs['race_type'] = 'Primary'
             tmplt += "_%(party)s"
-        if year == 2004:
+        if int(year) == 2004:
             tmplt += "_%(race_type)s_%(year)s.csv"
         else:
             tmplt += "_%(year)s_%(race_type)s.csv"
