@@ -1,110 +1,266 @@
 """
-Retrieves CSV result files from Maryland State Board of Elections and caches them locally.
-Accepts a datefilter argument to limit files that are downloaded.
+Standardize names of data files on Maryland State Board of Elections and 
+save to mappings/filenames.json
 
-USAGE
+File-name convention on MD site (2004-2012):
 
-Exceptions: 2004 and 2000 files put the year at the end of the file name, and 2002 has single text files with all results for a single election. 2000 primary is also a single csv file.
+    general election
+        precinct:            countyname_by_precinct_year_general.csv
+        state leg. district: state_leg_districts_year_general.csv
+        county:              countyname_party_year_general.csv
+
+    primary election
+        precinct:            countyname_by_Precinct_party_year_Primary.csv
+        state leg. district: state_leg_districts_party_year_primary.csv
+        county:              countyname_party_year_primary.csv
+
+    Exceptions: 2000 + 2002
 
 """
+import re
+
+from openelex.api import elections as elec_api
 from openelex.base.fetch import BaseFetcher
+
 
 class FetchResults(BaseFetcher):
 
-    def run(self, datefilter=''):
-        filenames = {}
-        elections = self.api_response(self.state, year)
-        for generated_name, raw_url, ocd_id, name, election in self.target_urls:
-            self.fetch(raw_url, generated_name)
-        filenames = [{
-            'generated_name': generated_name,
-            'ocd_id': ocd_id,
-            'raw_url': raw_url,
-            'name': name,
-            'election': election
-        } for generated_name, raw_url, ocd_id, name, election in urls]
+    base_url = "http://www.elections.state.md.us/elections/%(year)s/election_data/"
 
-        self.update_mappings(year, filenames)
-        #TODO: INTEGRATE BELOW EDGE CASE LOGIC FOR 2000 & 2002
-        """
-        if year == 2002:
-            # generate 2002 files, which have single text files for all results
-            general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
-            g_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general.txt"
-            primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
-            p_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary.txt"
-            urls = [[g_generated_name, 'http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt', 'ocd-division/country:us/state:md', 'Maryland', general['id']],[p_generated_name, 'http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt', 'ocd-division/country:us/state:md', 'Maryland', primary['id']]]
-        elif year == 2000:
-            general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
-            g_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general.txt"
-            primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
-            p_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__primary.csv"
-            urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
-            urls.append([p_generated_name, 'http://www.elections.state.md.us/elections/2000/results/prepaa.csv', 'ocd-division/country:us/state:md', 'Maryland', primary['id']])
-        else:
-            if not urls:
-                urls = self.state_legislative_district_urls(year, elections) + self.county_urls(year, elections)
-        for generated_name, raw_url, ocd_id, name, election in urls:
-            self.fetch(raw_url, generated_name)
-        filenames = [{ 'generated_name': generated_name, 'ocd_id' : ocd_id, 'raw_url' : raw_url, 'name' : name, 'election': election} for generated_name, raw_url, ocd_id, name, election in urls]
-        self.update_mappings(year, filenames)
+    def run(self, year):
+        elections = elec_api.find(self.state, year)
+        meta = self.build_metadata(year, elections)
+        # DOWNLOAD FILES
+        for item in meta:
+            try:
+                self.fetch(item['raw_url'], item['generated_filename'])
+            except TypeError:
+                import pdb;pdb.set_trace()
 
-    def state_legislative_district_urls(self, year, elections):
-        urls = []
-        general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
-        generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__state_legislative.csv"
-        if year in (2000, 2004):
-            raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_General_%s.csv" % (year, year)
+        # UPDATE md/filenames.json
+        #self.update_mappings(year, meta)
+
+    def build_metadata(self, year, elections):
+        if year == 2000:
+            general, primary = self.races_by_type(elections)
+            meta = [
+                {
+                    "generated_name": "__".join((primary['start_date'].replace('-',''), self.state, "primary.csv")),
+                    "raw_url": 'http://www.elections.state.md.us/elections/2000/results/prepaa.csv',
+                    "ocd_id": 'ocd-division/country:us/state:md',
+                    "name": 'Maryland',
+                    "election": primary['id']
+                }
+            ]
+        elif year == 2002:
+            general, primary = self.races_by_type(elections)
+            meta = [
+                {
+                    "generated_name": "__".join((general['start_date'].replace('-',''), self.state, "general.txt")),
+                    "raw_url": 'http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt',
+                    "ocd_id": 'ocd-division/country:us/state:md',
+                    "name": 'Maryland',
+                    "election": general['id']
+                },
+                {
+                    "generated_name": "__".join((primary['start_date'].replace('-',''), self.state, "primary.txt")),
+                    "raw_url": 'http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt',
+                    "ocd_id": 'ocd-division/country:us/state:md',
+                    "name": 'Maryland',
+                    "election": primary['id']
+                }
+            ]
         else:
-            raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_General.csv" % (year, year)
-        urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', general['id']])
-        primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
+            meta = self.state_leg_meta(year, elections) + self.county_meta(year, elections)
+        return meta
+
+    def state_leg_meta(self, year, elections):
+        payload = []
+        meta = {
+            'ocd_id': 'ocd-division/country:us/state:md/sldl:all',
+            'name': 'State Legislative Districts',
+        }
+
+        general, primary = self.races_by_type(elections)
+
+        # Add General meta to payload
+        general_url = self.build_state_leg_url(year)
+        general_filename = self.generate_state_leg_filename(general_url, general['start_date'])
+        meta.update({
+            'raw_url': general_url,
+            'generated_filename': general_filename,
+            'election': general['id']
+        })
+        payload.append(meta)
+
+        # Add Primary meta to payload
         if primary and year > 2000:
             for party in ['Democratic', 'Republican']:
-                generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__state_legislative.csv"
-                if year == 2004:
-                    raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_Primary_%s.csv" % (year, party, year)
-                else:
-                    raw_name = "http://www.elections.state.md.us/elections/%s/election_data/State_Legislative_Districts_%s_%s_Primary.csv" % (year, party, year)
-                urls.append([generated_name, raw_name, 'ocd-division/country:us/state:md/sldl:all', 'State Legislative Districts', primary['id']])
-        return urls
+                primary_url = self.build_state_leg_url(year, party)
+                primary_filename = self.generate_state_leg_filename(primary_url, primary['start_date'])
+                meta.update({
+                    'raw_url': primary_url,
+                    'generated_filename': primary_filename,
+                    'election': primary['id']
+                })
+                payload.append(meta)
+        return payload
 
-    def county_urls(self, year, elections):
-        urls = []
-        general = [e for e in elections['elections'] if e['election_type'] == 'general'][0]
-        primary = [e for e in elections['elections'] if e['election_type'] == 'primary'][0]
+    def races_by_type(self, elections):
+        general = filter(lambda elec: elec['race_type'] == 'general', elections)[0]
+        primary = filter(lambda elec: elec['race_type'] == 'primary', elections)[0]
+        return general, primary
+
+    def build_state_leg_url(self, year, party=""):
+        tmplt = self.base_url + "State_Legislative_Districts"
+        kwargs = {'year': str(year)}
+        # PRIMARY
+        # Assume it's a primary if party is present
+        if party and year > 2000:
+            kwargs['party'] = party.title()
+            if year == 2004:
+                tmplt += "_%(party)s_Primary_%(year)s"
+            else:
+                tmplt += "_%(party)s_%(year)s_Primary"
+        # GENERAL
+        else:
+            # 2000 and 2004 urls end in the 4-digit year
+            if year in (2000, 2004):
+                tmplt += "_General_%(year)s"
+            # All others have the year preceding the race type (General/Primary)
+            else:
+                tmplt += "_%(year)s_General"
+        tmplt += ".csv"
+        return tmplt % kwargs
+
+    def county_meta(self, year, elections):
+        payload = []
+        general, primary = self.races_by_type(elections)
+
         for jurisdiction in self.jurisdictions():
-            county_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s.csv" % jurisdiction['url_name'].lower()
-            if year in (2000, 2004):
-                county_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_General_%s.csv" % (year, jurisdiction['url_name'], year)
-            else:
-                county_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls.append([county_generated_name, county_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], general['id']])
-            precinct_generated_name = general['start_date'].replace('-','')+"__"+self.state+"__general__%s__precinct.csv" % jurisdiction['url_name'].lower()
-            if year in (2000, 2004):
-                precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_General_%s.csv" % (year, jurisdiction['url_name'], year)
-            else:
-                precinct_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_General.csv" % (year, jurisdiction['url_name'], year)
-            urls.append([precinct_generated_name, precinct_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], general['id']])
+
+            meta = {
+                jurisdiction['ocd_id'],
+                jurisdiction['name'],
+            }
+
+            county = jurisdiction['url_name']
+
+            # GENERALS
+            # Create countywide and precinct-level metadata for general
+            for precinct_val in (True, False):
+                general_url = self.build_county_url(year, county, precinct=precinct_val)
+                general_filename = self.generate_county_filename(general_url, general['start_date'], jurisdiction)
+
+            # Add General metadata to payload
+            meta.update({
+                    'raw_url': general_url,
+                    'generated_filename': general_filename,
+                    'election': general['id']
+            })
+            payload.append(meta)
+
+            # PRIMARIES
+            # For each primary and party and party combo, generate countywide and precinct metadata
             if primary and year > 2000:
                 for party in ['Democratic', 'Republican']:
-                    county_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s.csv" % jurisdiction['url_name'].lower()
-                    if year == 2004:
-                        county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_Primary_%s.csv" % (year, jurisdiction['url_name'], party, year)
-                    else:
-                        county_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_County_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
-                    urls.append([county_party_generated_name, county_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
-                    precinct_party_generated_name = primary['start_date'].replace('-','')+"__"+self.state+"__"+party.lower()+"__primary__%s__precinct.csv" % jurisdiction['url_name'].lower()
-                    if year == 2004:
-                        precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_Primary_%s.csv" % (year, jurisdiction['url_name'], party, year)
-                    else:
-                        precinct_party_raw_name = "http://www.elections.state.md.us/elections/%s/election_data/%s_By_Precinct_%s_%s_Primary.csv" % (year, jurisdiction['url_name'], party, year)
-                    urls.append([precinct_party_generated_name, precinct_party_raw_name, jurisdiction['ocd_id'], jurisdiction['name'], primary['id']])
-        return urls
+                    for precinct_val in (True, False):
+                        primary_url = self.build_county_url(year, county, party, precinct_val)
+                        primary_filename = self.generate_county_filename(primary_url, year, jurisdiction)
+                        # Add Primary metadata to payload
+                        meta.update({
+                            'raw_url': primary_url,
+                            'generated_filename': primary_filename,
+                            'election': primary['id']
+                        })
+                        payload.append(meta)
+
+        return payload
+
+    def build_county_url(self, year, name, party='', precinct=False):
+        url_kwargs = {
+            'year': str(year),
+            'race_type': 'General'
+        }
+        tmplt = self.base_url + name
+        if precinct:
+            tmplt += "_By_Precinct"
+        else:
+            tmplt += "_County"
+        if party:
+            url_kwargs['party'] = party
+            url_kwargs['race_type'] = 'Primary'
+            tmplt += "_%(party)s"
+        if year == 2004:
+            tmplt += "_%(race_type)s_%(year)s.csv"
+        else:
+            tmplt += "_%(year)s_%(race_type)s.csv"
+        return tmplt % url_kwargs
+
+    def get_2002_source_url(self, race_type):
+        if race_type == 'general':
+            url = "http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt"
+        elif race_type == 'primary':
+            url = "http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt"
+        else:
+            url = None
+        return url
 
     def jurisdictions(self):
-        "Maryland counties, plus Baltimore City"
-        m = self.jurisdiction_mappings(('ocd_id','fips','url_name', 'name'))
+        """Maryland counties, plus Baltimore City"""
+        m = self.jurisdiction_mappings()
         mappings = [x for x in m if x['url_name'] != ""]
-    """
         return mappings
+
+    def generate_state_leg_filename(self, url, start_date):
+        bits = [
+            start_date.replace('-',''),
+            self.state.lower(),
+        ]
+        matches = self._apply_party_racetype_regex(url)
+        if matches['party']:
+            bits.append(matches['party'].lower())
+        bits.extend([
+            matches['race_type'].lower(),
+            'state_legislative.csv',
+        ])
+        name = "__".join(bits)
+        return name
+
+    def generate_county_filename(self, url, start_date, jurisdiction):
+        bits = [
+            start_date.replace('-',''),
+            self.state,
+        ]
+        matches = self._apply_party_racetype_regex(url)
+        if matches['party']:
+            bits.append(matches['party'].lower())
+        bits.extend([
+            matches['race_type'].lower(),
+            jurisdiction['url_name'].lower()
+        ])
+        if 'by_precinct' in url.lower():
+            bits.append('precinct')
+        filename = "__".join(bits) + '.csv'
+        return filename
+
+    def _apply_party_racetype_regex(self, url):
+        if re.search(r'(2000|2004)', url):
+            pattern = re.compile(r"""
+                (?P<party>Democratic|Republican)?
+                _
+                (?P<race_type>General|Primary)""", re.IGNORECASE | re.VERBOSE)
+        else:
+            pattern = re.compile(r"""
+                (?P<party>Democratic|Republican)?
+                _\d{4}_
+                (?P<race_type>General|Primary)""", re.IGNORECASE | re.VERBOSE)
+        matches = re.search(pattern, url).groupdict()
+        return matches
+
+    def generate_2002_filename(self, url):
+        if url.endswith('g_all_offices.txt'):
+            filename = "20021105__md__general.txt"
+        else:
+            filename = "20020910__md__primary.txt"
+        return filename

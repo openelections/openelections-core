@@ -1,6 +1,6 @@
 import os
 import json
-from openelex.base.archiver import BaseArchiver
+from openelex.base.archive import BaseArchiver
 import boto
 from boto.s3.key import Key
 
