@@ -5,7 +5,7 @@ from openelex.us.md.fetch import FetchResults
 class TestSourceUrlBuilder(TestCase):
 
     def setUp(self):
-        self.fetcher = MDFetcher()
+        self.fetcher = FetchResults()
 
     def test_build_state_leg_urls(self):
         # supplying only a year returns a state legislative url for a general election
@@ -73,7 +73,7 @@ class TestStandardizedFilenames(TestCase):
     """
 
     def setUp(self):
-        self.fetcher = MDFetcher()
+        self.fetcher = FetchResults()
         self.allegany_jurisdiction = {
             'ocd_id': 'ocd-division/country:us/state:md/county:allegany',
             'fips': '24001',
