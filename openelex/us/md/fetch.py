@@ -29,6 +29,7 @@ class FetchResults(BaseFetcher):
 
     def run(self, year):
         elections = elec_api.find(self.state, year)
+        #TODO: add election slug to filenames in build_meta
         meta = self.build_metadata(year, elections)
         # DOWNLOAD FILES
         for item in meta:
@@ -38,7 +39,8 @@ class FetchResults(BaseFetcher):
         #self.update_mappings(year, meta)
 
     def build_metadata(self, year, elections):
-        if year == 2000:
+        year_int = int(year)
+        if year_int == 2000:
             general, primary = self.races_by_type(elections)
             meta = [
                 {
@@ -49,7 +51,7 @@ class FetchResults(BaseFetcher):
                     "election": primary['id']
                 }
             ]
-        elif year == 2002:
+        elif year_int == 2002:
             general, primary = self.races_by_type(elections)
             meta = [
                 {
@@ -163,7 +165,7 @@ class FetchResults(BaseFetcher):
 
             # PRIMARIES
             # For each primary and party and party combo, generate countywide and precinct metadata
-            if primary and year > 2000:
+            if primary and int(year) > 2000:
                 for party in ['Democratic', 'Republican']:
                     for precinct_val in (True, False):
                         pri_meta = meta.copy()
