@@ -38,6 +38,14 @@ class FetchResults(BaseFetcher):
         # UPDATE md/filenames.json
         #self.update_mappings(year, meta)
 
+    def races_by_type(self, elections):
+        "Filter races by type and add election slug"
+        general = filter(lambda elec: elec['race_type'] == 'general', elections)[0]
+        general['slug'] = "-".join((self.state, general['start_date'], 'general'))
+        primary = filter(lambda elec: elec['race_type'] == 'primary', elections)[0]
+        primary['slug'] = "-".join((self.state, primary['start_date'], 'primary'))
+        return general, primary
+
     def build_metadata(self, year, elections):
         year_int = int(year)
         if year_int == 2000:
@@ -107,14 +115,6 @@ class FetchResults(BaseFetcher):
                 payload.append(pri_meta)
         return payload
 
-    def races_by_type(self, elections):
-        "Filter races by type and add election slug"
-        general = filter(lambda elec: elec['race_type'] == 'general', elections)[0]
-        general['slug'] = "-".join((self.state, general['start_date'], 'general'))
-        primary = filter(lambda elec: elec['race_type'] == 'primary', elections)[0]
-        primary['slug'] = "-".join((self.state, primary['start_date'], 'primary'))
-        return general, primary
-
     def build_state_leg_url(self, year, party=""):
         tmplt = self.base_url + "State_Legislative_Districts"
         kwargs = {'year': year}
@@ -137,6 +137,21 @@ class FetchResults(BaseFetcher):
                 tmplt += "_%(year)s_General"
         tmplt += ".csv"
         return tmplt % kwargs
+
+    def generate_state_leg_filename(self, url, start_date):
+        bits = [
+            start_date.replace('-',''),
+            self.state.lower(),
+        ]
+        matches = self._apply_party_racetype_regex(url)
+        if matches['party']:
+            bits.append(matches['party'].lower())
+        bits.extend([
+            matches['race_type'].lower(),
+            'state_legislative.csv',
+        ])
+        name = "__".join(bits)
+        return name
 
     def county_meta(self, year, elections):
         payload = []
@@ -204,36 +219,6 @@ class FetchResults(BaseFetcher):
             tmplt += "_%(year)s_%(race_type)s.csv"
         return tmplt % url_kwargs
 
-    def get_2002_source_url(self, race_type):
-        if race_type == 'general':
-            url = "http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt"
-        elif race_type == 'primary':
-            url = "http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt"
-        else:
-            url = None
-        return url
-
-    def jurisdictions(self):
-        """Maryland counties, plus Baltimore City"""
-        m = self.jurisdiction_mappings()
-        mappings = [x for x in m if x['url_name'] != ""]
-        return mappings
-
-    def generate_state_leg_filename(self, url, start_date):
-        bits = [
-            start_date.replace('-',''),
-            self.state.lower(),
-        ]
-        matches = self._apply_party_racetype_regex(url)
-        if matches['party']:
-            bits.append(matches['party'].lower())
-        bits.extend([
-            matches['race_type'].lower(),
-            'state_legislative.csv',
-        ])
-        name = "__".join(bits)
-        return name
-
     def generate_county_filename(self, url, start_date, jurisdiction):
         bits = [
             start_date.replace('-',''),
@@ -265,9 +250,24 @@ class FetchResults(BaseFetcher):
         matches = re.search(pattern, url).groupdict()
         return matches
 
+    def get_2002_source_url(self, race_type):
+        if race_type == 'general':
+            url = "http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt"
+        elif race_type == 'primary':
+            url = "http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt"
+        else:
+            url = None
+        return url
+
     def generate_2002_filename(self, url):
         if url.endswith('g_all_offices.txt'):
             filename = "20021105__md__general.txt"
         else:
             filename = "20020910__md__primary.txt"
         return filename
+
+    def jurisdictions(self):
+        """Maryland counties, plus Baltimore City"""
+        m = self.jurisdiction_mappings()
+        mappings = [x for x in m if x['url_name'] != ""]
+        return mappings
