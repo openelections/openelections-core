@@ -8,6 +8,8 @@ import urlparse
 import requests
 import unicodecsv
 
+from openelex import COUNTRY_DIR
+
 class BaseFetcher(object):
     """
     Base class for interacting with source data.
@@ -19,12 +21,11 @@ class BaseFetcher(object):
 
     """
 
-    def __init__(self, source_id):
-        self.source_id = source_id
+    def __init__(self):
         self.state = self.__module__.split('.')[-2]
         # Save files to cache/ dir inside state directory
-        self.cache_dir = join(dirname(inspect.getfile(self.__class__)), 'cache')
-        self.mappings_dir = join(dirname(inspect.getfile(self.__class__)), 'mappings')
+        self.cache_dir = join(COUNTRY_DIR, self.state, 'cache')
+        self.mappings_dir = join(COUNTRY_DIR, self.state, 'mappings')
         try:
             os.makedirs(self.cache_dir)
         except OSError:
@@ -89,11 +90,11 @@ class BaseFetcher(object):
     def clear_filenames(self):
         open(join(self.mappings_dir, 'filenames.json'), 'w').close() 
 
-    def jurisdiction_mappings(self, headers):
-        "Given a tuple of headers, returns a JSON object of jurisdictional mappings based on OCD ids"
-        filename = join(self.mappings_dir, self.state+'.csv')
+    def jurisdiction_mappings(self):
+        "Returns a JSON object of jurisdictional mappings based on OCD ids"
+        filename = join(self.mappings_dir, self.state + '.csv')
         with open(filename, 'rU') as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers)
+            reader = unicodecsv.DictReader(csvfile)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
 
@@ -115,8 +116,3 @@ class BaseFetcher(object):
         mappings[str(year)] = filenames
         with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
             json.dump(mappings, f, indent=2)
-
-    def api_response(self, state, year):
-        url = "http://openelections.net/api/v1/state/%s/year/%s/" % (state, year)
-        response = json.loads(requests.get(url).text)
-        return response
