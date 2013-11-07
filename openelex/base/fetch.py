@@ -21,9 +21,6 @@ class BaseFetcher(StateBase):
 
     """
 
-    def run(self):
-        raise NotImplementedError()
-
     def fetch(self, url, fname=None, overwrite=False):
         """Fetch and cache web page or data file
 

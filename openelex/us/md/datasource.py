@@ -22,7 +22,7 @@ import re
 from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
 
-class MDDatasource(BaseDatasource):
+class Datasource(BaseDatasource):
 
     base_url = "http://www.elections.state.md.us/elections/%(year)s/election_data/"
 
@@ -41,9 +41,9 @@ class MDDatasource(BaseDatasource):
         "Get list of source data urls, optionally filtered by year"
         return [item['raw_url'] for item in self.mappings(year)]
 
-    #TODO: Do we really need this?
-    def standard_filenames(self, year=None):
-        return [item['generated_name'] for item in self.mappings(year)]
+    def filename_url_pairs(self, year=None):
+        return [(item['generated_filename'], item['raw_url']) 
+                for item in self.mappings(year)]
 
     def elections(self, year=None):
         # Fetch all elections initially and stash on instance
@@ -54,7 +54,8 @@ class MDDatasource(BaseDatasource):
                 yr = int(elec['start_date'][:4])
                 self._elections.setdefault(yr, []).append(elec)
         if year:
-            return {year: self._elections[year]}
+            year_int = int(year)
+            return {year_int: self._elections[year_int]}
         return self._elections
 
     # PRIVATE METHODS
@@ -190,18 +191,17 @@ class MDDatasource(BaseDatasource):
             for precinct_val in (True, False):
                 general_url = self._build_county_url(year, county, precinct=precinct_val)
                 general_filename = self._generate_county_filename(general_url, general['start_date'], jurisdiction)
-
-            # Add General metadata to payload
-            gen_meta = meta.copy()
-            gen_meta.update({
-                'raw_url': general_url,
-                'generated_filename': general_filename,
-                'election': general['slug']
-            })
-            payload.append(gen_meta)
+                gen_meta = meta.copy()
+                gen_meta.update({
+                    'raw_url': general_url,
+                    'generated_filename': general_filename,
+                    'election': general['slug']
+                })
+                payload.append(gen_meta)
 
             # PRIMARIES
             # For each primary and party and party combo, generate countywide and precinct metadata
+            # Primary results not available in 2000
             if primary and int(year) > 2000:
                 for party in ['Democratic', 'Republican']:
                     for precinct_val in (True, False):
@@ -227,12 +227,14 @@ class MDDatasource(BaseDatasource):
         if precinct:
             tmplt += "_By_Precinct"
         else:
-            tmplt += "_County"
+            # 2000/2004 don't use "_County" in file names
+            if int(year) not in (2000, 2004):
+                tmplt += "_County"
         if party:
             url_kwargs['party'] = party
             url_kwargs['race_type'] = 'Primary'
             tmplt += "_%(party)s"
-        if int(year) == 2004:
+        if int(year) in (2000, 2004):
             tmplt += "_%(race_type)s_%(year)s.csv"
         else:
             tmplt += "_%(year)s_%(race_type)s.csv"

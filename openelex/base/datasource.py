@@ -29,9 +29,8 @@ class BaseDatasource(StateBase):
     def target_urls(self):
         raise NotImplementedError()
 
-    #TODO: do we really need this?
-    def standard_filenames(self):
-        "Should return an array of filenames"
+    def filename_url_pairs(self):
+        "Returns array of tuples of standardized filename, source url pairs"
         raise NotImplementedError()
 
     def standardized_filename(self, url, fname):

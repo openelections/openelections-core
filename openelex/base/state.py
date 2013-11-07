@@ -10,8 +10,11 @@ class StateBase(object):
     state specific modules
     """
 
-    def __init__(self):
-        self.state = self.__module__.split('.')[-2]
+    def __init__(self, state=''):
+        if not state:
+            self.state = self.__module__.split('.')[-2]
+        else:
+            self.state = state
         # Save files to cache/ dir inside state directory
         self.cache_dir = os.path.join(COUNTRY_DIR, self.state, 'cache')
         self.mappings_dir = os.path.join(COUNTRY_DIR, self.state, 'mappings')

@@ -4,7 +4,7 @@ import json
 
 from mock import patch
 
-from openelex.us.md.datasource import MDDatasource
+from openelex.us.md.datasource import Datasource
 
 ## Mock api data
 tests_dir = abspath(dirname(__file__))
@@ -13,10 +13,10 @@ with open(fixture_path, 'r') as f:
     md_data = json.loads(f.read())
 
 
-class TestUrlFilenameMappings(TestCase):
+class TestMappings(TestCase):
 
     def setUp(self):
-        self.datasource = MDDatasource()
+        self.datasource = Datasource()
 
     @patch('openelex.us.md.datasource.elec_api.find')
     def test_mappings_default(self, mock_elec_find):
@@ -52,12 +52,12 @@ class TestUrlFilenameMappings(TestCase):
             'raw_url': 'http://www.elections.state.md.us/elections/2000/election_data/State_Legislative_Districts_General_2000.csv'
         }
         self.assertDictEqual(expected_2000, mappings[0])
-        self.assertEqual(len(mappings), 26)
+        self.assertEqual(len(mappings), 50)
 
 class TestTargetUrls(TestCase):
 
     def setUp(self):
-        self.datasource = MDDatasource()
+        self.datasource = Datasource()
 
     @patch('openelex.us.md.datasource.elec_api.find')
     def test_target_urls_default(self, mock_elec_find):
@@ -96,10 +96,66 @@ class TestTargetUrls(TestCase):
         for url in unexpected_urls:
             self.assertNotIn(url, target_urls)
 
+class TestUrlFilenameMappings(TestCase):
+
+    def setUp(self):
+        self.datasource = Datasource()
+
+    @patch('openelex.us.md.datasource.elec_api.find')
+    def test_filename_url_pairs_default(self, mock_elec_find):
+        # By default, ls returns all URLs
+        expected = [
+            ("20121106__md__general__state_legislative.csv", "http://www.elections.state.md.us/elections/2012/election_data/State_Legislative_Districts_2012_General.csv"),
+            ("20120403__md__democratic__primary__state_legislative.csv", "http://www.elections.state.md.us/elections/2012/election_data/State_Legislative_Districts_Democratic_2012_Primary.csv"),
+            ("20121106__md__general__allegany.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_County_2012_General.csv"),
+            ("20121106__md__general__allegany__precinct.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_By_Precinct_2012_General.csv"),
+            ("20120403__md__democratic__primary__allegany.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_County_Democratic_2012_Primary.csv"),
+            ("20120403__md__democratic__primary__allegany__precinct.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_By_Precinct_Democratic_2012_Primary.csv"),
+            ("20001107__md__general__state_legislative.csv", "http://www.elections.state.md.us/elections/2000/election_data/State_Legislative_Districts_General_2000.csv"),
+            ("20041102__md__general__state_legislative.csv", "http://www.elections.state.md.us/elections/2004/election_data/State_Legislative_Districts_General_2004.csv"),
+            ("20041102__md__general__allegany.csv", "http://www.elections.state.md.us/elections/2004/election_data/Allegany_General_2004.csv"),
+            ("20040302__md__democratic__primary__allegany.csv", "http://www.elections.state.md.us/elections/2004/election_data/Allegany_Democratic_Primary_2004.csv"),
+            ("20021105__md__general.txt", "http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt"),
+            ("20020910__md__primary.txt", "http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt"),
+        ]
+        mock_elec_find.return_value = md_data['objects']
+        pairs = self.datasource.filename_url_pairs()
+        urls = set([pair[1] for pair in pairs])
+        for pair in expected:
+            self.assertTrue(pair[1] in urls)
+
+    @patch('openelex.us.md.datasource.elec_api.find')
+    def test_filename_url_pairs_filterd_by_year(self, mock_elec_find):
+        # supplying only a year returns a state legislative url for a general election
+        mock_elec_find.return_value = md_data['objects']
+        pairs = self.datasource.filename_url_pairs(2012)
+        expected = [
+            ("20121106__md__general__state_legislative.csv", "http://www.elections.state.md.us/elections/2012/election_data/State_Legislative_Districts_2012_General.csv"),
+            ("20120403__md__democratic__primary__state_legislative.csv", "http://www.elections.state.md.us/elections/2012/election_data/State_Legislative_Districts_Democratic_2012_Primary.csv"),
+            ("20121106__md__general__allegany.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_County_2012_General.csv"),
+            ("20121106__md__general__allegany__precinct.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_By_Precinct_2012_General.csv"),
+            ("20120403__md__democratic__primary__allegany.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_County_Democratic_2012_Primary.csv"),
+            ("20120403__md__democratic__primary__allegany__precinct.csv", "http://www.elections.state.md.us/elections/2012/election_data/Allegany_By_Precinct_Democratic_2012_Primary.csv"),
+        ]
+        unexpected = [
+            ("20001107__md__general__state_legislative.csv", "http://www.elections.state.md.us/elections/2000/election_data/State_Legislative_Districts_General_2000.csv"),
+            ("20041102__md__general__state_legislative.csv", "http://www.elections.state.md.us/elections/2004/election_data/State_Legislative_Districts_General_2004.csv"),
+            ("20041102__md__general__allegany.csv", "http://www.elections.state.md.us/elections/2004/election_data/Allegany_County_General_2004.csv"),
+            ("20040302__md__democratic__primary__allegany.csv", "http://www.elections.state.md.us/elections/2004/election_data/Allegany_County_Democratic_Primary_2004.csv"),
+            ("20021105__md__general.txt", "http://www.elections.state.md.us/elections/2002/results/g_all_offices.txt"),
+            ("20020910__md__primary.txt", "http://www.elections.state.md.us/elections/2002/results/p_all_offices.txt"),
+        ]
+        # 2012 pairs should be there
+        for pair in expected:
+            self.assertIn(pair, pairs)
+        # and other years should not
+        for pair in unexpected:
+            self.assertNotIn(pair, pairs)
+
 class TestSourceUrlBuilder(TestCase):
 
     def setUp(self):
-        self.datasource = MDDatasource()
+        self.datasource = Datasource()
 
     def test_build_state_leg_urls(self):
         # supplying only a year returns a state legislative url for a general election
@@ -138,14 +194,22 @@ class TestSourceUrlBuilder(TestCase):
             "http://www.elections.state.md.us/elections/2012/election_data/Allegany_By_Precinct_Democratic_2012_Primary.csv",
             self.datasource._build_county_url(2012, 'Allegany', 'Democratic', precinct=True)
         )
-        # 2000 and 2004 files end with the 4-digit year
+        # 2000 and 2004 files end with the 4-digit year and do not use the _County"
         self.assertEquals(
-            "http://www.elections.state.md.us/elections/2004/election_data/Allegany_County_General_2004.csv",
+            "http://www.elections.state.md.us/elections/2004/election_data/Allegany_General_2004.csv",
             self.datasource._build_county_url(2004, 'Allegany')
         )
         self.assertEquals(
-            "http://www.elections.state.md.us/elections/2004/election_data/Allegany_County_Democratic_Primary_2004.csv",
+            "http://www.elections.state.md.us/elections/2004/election_data/Allegany_Democratic_Primary_2004.csv",
             self.datasource._build_county_url(2004, 'Allegany', 'Democratic')
+        )
+        self.assertEquals(
+            "http://www.elections.state.md.us/elections/2000/election_data/Allegany_General_2000.csv",
+            self.datasource._build_county_url(2000, 'Allegany')
+        )
+        self.assertEquals(
+            "http://www.elections.state.md.us/elections/2000/election_data/Allegany_By_Precinct_General_2000.csv",
+            self.datasource._build_county_url(2000, 'Allegany', precinct=True)
         )
 
     def test_2002_source_urls(self):
@@ -171,7 +235,7 @@ class TestStandardizedFilenames(TestCase):
     """
 
     def setUp(self):
-        self.datasource = MDDatasource()
+        self.datasource = Datasource()
         self.allegany_jurisdiction = {
             'ocd_id': 'ocd-division/country:us/state:md/county:allegany',
             'fips': '24001',
@@ -229,6 +293,20 @@ class TestStandardizedFilenames(TestCase):
         raw_url = "http://www.elections.state.md.us/elections/2004/election_data/Allegany_County_Democratic_Primary_2004.csv"
         actual = self.datasource._generate_county_filename(raw_url, '2004-03-02', self.allegany_jurisdiction)
         self.assertEquals("20040302__md__democratic__primary__allegany.csv", actual)
+
+    def test_2000_county_filename_general_countywide_results(self):
+        raw_url = "http://www.elections.state.md.us/elections/2000/election_data/Allegany_County_General_2000.csv"
+        actual = self.datasource._generate_county_filename(raw_url, '2000-11-07', self.allegany_jurisdiction)
+        self.assertEquals("20001107__md__general__allegany.csv", actual)
+
+    def test_2000_county_filename_precinct_results(self):
+        raw_url = "http://www.elections.state.md.us/elections/2000/election_data/Allegany_By_Precinct_2000.csv"
+        # there are no 2000 precinct results so this should raise an error
+        self.assertRaises(
+            AttributeError,
+            self.datasource._generate_county_filename,
+            raw_url, '2000-11-07', self.allegany_jurisdiction,
+        )
 
     # 2002 only has two files -- primary and general
     def test_2002_general_filename(self):
