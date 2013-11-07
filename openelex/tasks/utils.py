@@ -1,5 +1,13 @@
-def load_module(state, modname):
-    return __import__('openelex.us.%s' % state.lower(), fromlist=[modname])
+def load_module(state, mod_list=[]):
+    """Dynamically load modules for states
+
+    USAGE
+
+       mod = load_module(state, ['datasource', 'loader'])
+       mod.datasource.Datasource()
+
+    """
+    return __import__('openelex.us.%s' % state.lower(), fromlist=mod_list)
 
 def help_text(extra):
     default = {
