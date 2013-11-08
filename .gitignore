@@ -21,7 +21,7 @@ develop-eggs
 
 # Project
 */public
-local_settings.py
+settings.py
 cache/
 
 # Installer logs
