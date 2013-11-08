@@ -1,0 +1,11 @@
+# For caching raw result files on Amazon S3
+AWS_ACCESS_KEY_ID = ''
+AWS_SECRET_ACCESS_KEY =''
+
+MONGO = {
+    'host': '127.0.0.1',
+    'port': 27017,
+    'database': 'openelex',
+    #'username':'your_username',
+    #'password': 'password',
+}
