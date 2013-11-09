@@ -1,6 +1,15 @@
-from mongoengine import *
-from mongoengine.fields import DateTimeField, DictField, StringField, ListField, BooleanField, EmbeddedDocumentField, IntField
 import datetime
+import settings
+from mongoengine import *
+from mongoengine.fields import (
+    BooleanField,
+    DateTimeField,
+    DictField,
+    EmbeddedDocumentField,
+    IntField,
+    ListField,
+    StringField,
+)
 
 class Candidate(EmbeddedDocument):
     """
