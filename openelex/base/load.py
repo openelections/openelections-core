@@ -2,11 +2,14 @@ from os.path import dirname, exists, join
 from os import listdir
 import inspect
 import json
+
 from nameparser import HumanName
 import csv
 import unicodecsv
 
-class BaseLoader(object):
+from .state import StateBase
+
+class BaseLoader(StateBase):
     """
     Base class for loading results data into MongoDB
     Intended to be subclassed in state-specific load.py modules.
@@ -15,16 +18,16 @@ class BaseLoader(object):
     
     
     def __init__(self):
-        self.state = self.__module__.split('.')[-2]
-        self.cache_dir = join(dirname(inspect.getfile(self.__class__)), 'cache')
-        self.mappings_dir = join(dirname(inspect.getfile(self.__class__)), 'mappings')
-        self.filenames = json.loads(open(join(self.mappings_dir,'filenames.json'), 'r').read())
+        super(BaseLoader, self).__init__()
+        #TODO: use datasource.mappings instead
+        #self.filenames = json.loads(open(join(self.mappings_dir,'filenames.json'), 'r').read())
+        #TODO: use mappings instead
         self.cached_files = listdir(self.cache_dir)
 
     def run(self):
-        msg = "You must implement the %s.run method" % self.__class__.__name__
-        raise NotImplementedError(msg)
-    
+        raise NotImplementedError()
+
+    #TODO: Migrate name parsing bits to a transforms/name module or function
     def parse_name(self, name):
         return HumanName(name)
         
@@ -39,12 +42,3 @@ class BaseLoader(object):
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
-
-    
-        
-
-    
-    
-            
-        
-    
