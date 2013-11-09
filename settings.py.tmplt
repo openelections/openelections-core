@@ -1,4 +1,6 @@
-# For caching raw result files on Amazon S3
+from mongoengine import connect, ConnectionError
+
+# AWS S3 keys For caching raw result files
 AWS_ACCESS_KEY_ID = ''
 AWS_SECRET_ACCESS_KEY =''
 
@@ -9,3 +11,9 @@ MONGO = {
     #'username':'your_username',
     #'password': 'password',
 }
+config = MONGO.copy()
+db_name = config.pop('database')
+try:
+    db = connect(db_name, **config)
+except ConnectionError, e:
+    print "Could not connect to Mongo. Are you sure it's running and configured correctly?"
