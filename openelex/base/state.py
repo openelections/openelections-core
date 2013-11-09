@@ -26,6 +26,5 @@ class StateBase(object):
             os.makedirs(self.mappings_dir)
         except OSError:
             pass
-        # Check for the ocd mappings csv and the filenames.json files;
-        # if they don't exist, create them.
+        # Create ocd mappings csv if it doesn't exist
         open(os.path.join(self.mappings_dir, self.state + '.csv'), 'a').close()
