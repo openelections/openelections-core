@@ -2,7 +2,7 @@ import re
 import string
 
 
-def slugify(text, space_sub='_'):
+def slugify(text, substitute='_'):
     """Slugify text, with option of character subsitution for whitespace.
 
     USAGE
@@ -10,9 +10,11 @@ def slugify(text, space_sub='_'):
         >>> slugify("Testing.  1! 2! 3?")
         'testing_1_2_3'
 
-        >>> slugify("Testing.  1! 2! 3?", space_sub='-')
+        >>> slugify("Testing.  1! 2! 3?", substitute='-')
         'testing-1-2-3'
 
     """
-    text = text.translate(string.maketrans("",""), string.punctuation)
-    return re.sub(r'\s+', space_sub, text).lower()
+    # remove punctuation and lower case
+    text = re.sub(r'[^\w\s]', '', text).lower()
+    # Collapse whitespace and convert to substitution string
+    return re.sub(r'\s+', ' ', text).replace(' ', substitute)
