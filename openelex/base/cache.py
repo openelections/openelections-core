@@ -13,6 +13,10 @@ class StateCache(object):
         except OSError:
             pass
 
+    @property
+    def abspath(self):
+        return os.path.abspath(self.path)
+
     def list_dir(self, datefilter='', full_path=False):
         if full_path:
             filtered = [os.path.join(PROJECT_ROOT, self.path, f)
