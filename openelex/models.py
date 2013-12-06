@@ -85,7 +85,7 @@ class Candidate(DynamicDocument):
     identifiers = DictField()
 
     def __unicode__(self):
-        name =  u'%s - %s' % (self.name, self.contest_slug)
+        name =  u'%s - %s' % (self.contest_slug, self.name)
         parties = ""
         if self.raw_parties:
             parties = ", ".join([party for party in self.raw_parties])
@@ -116,22 +116,23 @@ class Result(DynamicDocument):
     )
     source = StringField(required=True, help_text="Name of data source for this file, preferably standardized filename from datasource.py")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
+    state = StringField(max_length=2, required=True, help_text="Capitalized postal code")
     contest = ReferenceField(Contest, reverse_delete_rule=CASCADE, required=True)
-    candidate = ReferenceField(Candidate, reverse_delete_rule=CASCADE, required=True)
     contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
+    candidate = ReferenceField(Candidate, reverse_delete_rule=CASCADE, required=True)
     candidate_slug = StringField(required=True, help_text="Denormalized candidate slug for easier querying and obj repr")
-    #TODO: Do we need jurisdiction here if we have OCD id? And if so, should it be simply the raw name?
-    #jurisdiction = StringField(help_text="Political geography of this result, such as a County name, congressional district, state, etec.")
     ocd_id = StringField(required=True)
     reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
-    raw_total_votes = IntField(required=True)
+    raw_jurisdiction = StringField(help_text="Political geography of this result, such as a County name, congressional district, state, etec.")
+    raw_total_votes = IntField(required=True, default=0)
     raw_winner = BooleanField()
+    raw_vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
 
     # Should this write-in field be raw?
     write_in = BooleanField(default=False)
     total_votes = IntField(default=0)
-    raw_vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
     winner = BooleanField(help_text="Winner as determined by OpenElex, if not provided natively in data")
+    #vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
 
     def __unicode__(self):
         return u'%s-%s-%s' % (self.contest_slug, self.candidate_slug, self.result_slug)
