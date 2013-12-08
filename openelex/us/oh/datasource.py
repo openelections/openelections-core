@@ -39,8 +39,6 @@ from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
     
-    base_url = "http://www.sos.state.oh.us/sos/elections/Research/electResultsMain/%(year)sElectionsResults/"
-    
     # PUBLIC INTERFACE
     def mappings(self, year=None):
         """Return array of dicts containing source url and 
@@ -66,6 +64,8 @@ class Datasource(BaseDatasource):
             # Store elections by year
             self._elections = {}
             for elec in elec_api.find(self.state):
+                rtype = elec['race_type'].lower()
+                elec['slug'] = "-".join((self.state, elec['start_date'], rtype))
                 yr = int(elec['start_date'][:4])
                 self._elections.setdefault(yr, []).append(elec)
         if year:
@@ -74,14 +74,6 @@ class Datasource(BaseDatasource):
         return self._elections
 
     # PRIVATE METHODS
-    def _races_by_type(self, elections):
-        "Filter races by type and add election slug"
-        races = {} 
-        for elec in elections:
-            rtype = elec['race_type'].lower()
-            elec['slug'] = "-".join((self.state, elec['start_date'], rtype))
-            races[rtype] = elec
-        return races['general'], races['primary']
 
     def _build_metadata(self, year, elections):
         meta = []
@@ -90,66 +82,56 @@ class Datasource(BaseDatasource):
         precinct_elections = [e for e in elections if e['precinct_level'] == True]
         other_elections = [e for e in elections if e['precinct_level'] == False]
         if precinct_elections:
-            meta.append(self._precinct_meta(year, elections))
+            meta.append(self._precinct_meta(year, precinct_elections))
         if other_elections:
             for election in other_elections:
-                if election['portal_link'] == election['direct_link']:
-                    results_links = self._results_links(self, year, election['portal_link'])
-                    # generate offices to filter for
-                    # filter offices
-                    for link in results_links:
-                        meta.append(self._)
-                        meta.append({
-                            "generated_filename": self._generate_office_filename(election['direct_link'], election['start_date'], election['race_type'], office),
-                            "raw_url": election['direct_link'],
-                            "ocd_id": 'ocd-division/country:us/state:oh',
-                            "name": 'Ohio',
-                            "election": election['slug']
-                        })
-                else:
-                    # always a special election
+                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+                for result in results:
                     meta.append({
-                        "generated_filename": self.__generate_special_filename(election['direct_link'], election['start_date'], election['race_type']),
-                        "raw_url": election['direct_link'],
+                        "generated_filename": self._generate_office_filename(election['direct_link'], election['start_date'], election['race_type'], result),
+                        "raw_url": self._build_raw_url(year, result['path']),
                         "ocd_id": 'ocd-division/country:us/state:oh',
                         "name": 'Ohio',
                         "election": election['slug']
                     })
-                    # special case for 20050614
-                    if election['direct_link'] == 'https://www.sos.state.oh.us/sos/elections/Research/electResultsMain/2005ElectionsResults/05-0614Dem2ndCongDist.aspx':
-                        meta.append({
-                            "generated_filename": self.__generate_special_filename('https://www.sos.state.oh.us/sos/elections/Research/electResultsMain/2005ElectionsResults/05-0614Rep2ndCongDist.aspx', election['start_date'], election['race_type']),
-                            "raw_url": 'https://www.sos.state.oh.us/sos/elections/Research/electResultsMain/2005ElectionsResults/05-0614Rep2ndCongDist.aspx',
-                            "ocd_id": 'ocd-division/country:us/state:oh',
-                            "name": 'Ohio',
-                            "election": election['slug']
-                        })
         return meta
+    
+    def _build_raw_url(self, year, path):
+        return "http://www.sos.state.oh.us/sos/elections/Research/electResultsMain/%sElectionsResults/%s" % (year, path)        
 
     def _precinct_meta(self, year, elections):
         payload = []
         meta = {
             'ocd_id': 'ocd-division/country:us/state:oh/precinct:all',
-            'name': 'Precincts',
+            'name': 'Ohio',
         }
-
-        general, primary = self._races_by_type(elections)
-
-        # Add General meta to payload
-        general_url = general['source_url']
-        general_filename = self._generate_precinct_filename(general_url, general['start_date'], 'general')
-        gen_meta = meta.copy()
-        gen_meta.update({
-            'raw_url': general_url,
-            'generated_filename': general_filename,
-            'election': general['slug']
-        })
-        payload.append(gen_meta)
+        
+        try:
+            general = [e for e in elections if e['race_type'] == 'general'][0]
+        except:
+            general = None
+        
+        try:
+            primary = [e for e in elections if e['race_type'] == 'primary'][0]
+        except:
+            primary = None
+            
+        if general:
+            # Add General meta to payload
+            general_url = general['direct_link']
+            general_filename = self._generate_precinct_filename(general_url, general['start_date'], 'general')
+            gen_meta = meta.copy()
+            gen_meta.update({
+                'raw_url': general_url,
+                'generated_filename': general_filename,
+                'election': general['slug']
+            })
+            payload.append(gen_meta)
 
         # Add Primary meta to payload
         if primary and int(year) > 2000:
             pri_meta = meta.copy()
-            primary_url = primary['source_url']
+            primary_url = primary['direct_link']
             primary_filename = self._generate_precinct_filename(primary_url, primary['start_date'], 'primary')
             pri_meta.update({
                 'raw_url': primary_url,
@@ -159,97 +141,45 @@ class Datasource(BaseDatasource):
             payload.append(pri_meta)
         return payload
 
-    def _build_state_leg_url(self, year, offices, party=""):
-            tmplt = self.base_url
-            kwargs = {'year': year}
-            year_int = int(year)
-            # PRIMARY
-            # Assume it's a primary if party is present
-            if party and year_int > 2000:
-                kwargs['party'] = party
-                if year_int == 2004:
-                    tmplt += "_%(party)s_Primary_%(year)s"
-                else:
-                    tmplt += "_%(party)s_%(year)s_Primary"
-            # GENERAL
-            else:
-                # 2000 and 2004 urls end in the 4-digit year
-                if year_int in (2000, 2004):
-                    tmplt += "_General_%(year)s"
-                # All others have the year preceding the race type (General/Primary)
-                else:
-                    tmplt += "_%(year)s_General"
-            tmplt += ".csv"
-            return tmplt % kwargs
-
     def _generate_precinct_filename(self, url, start_date, election_type):
         # example: 20121106__oh__general__precincts.xlsx
         bits = [
             start_date.replace('-',''),
             self.state.lower(),
-            election_type
+            election_type,
+            'precincts'
         ]
         path = urlparse.urlparse(url).path
         ext = os.path.splitext(path)[1]
-        bits.extend(['precincts'])
         name = "__".join(bits)+ ext
         return name
 
-    def _generate_county_filename(self, url, start_date, jurisdiction):
-        bits = [
-            start_date.replace('-',''),
-            self.state,
-        ]
-        matches = self._apply_party_racetype_regex(url)
-        if matches['party']:
-            bits.append(matches['party'].lower())
-        bits.extend([
-            matches['race_type'].lower(),
-            jurisdiction['url_name'].lower()
-        ])
-        if 'by_precinct' in url.lower():
-            bits.append('precinct')
-        filename = "__".join(bits) + '.csv'
-        return filename
-        
-    def _apply_party_racetype_regex(self, url):
-        if re.search(r'(2000|2004)', url):
-            pattern = re.compile(r"""
-                (?P<party>Dem|Rep|Lib)
-                )""", re.IGNORECASE | re.VERBOSE)
-        else:
-            pattern = re.compile(r"""
-                (?P<party>Democratic|Republican)?
-                _\d{4}_
-                (?P<race_type>General|Primary)""", re.IGNORECASE | re.VERBOSE)
-        matches = re.search(pattern, url).groupdict()
-        return matches
-
-    def _generate_office_filename(self, url, start_date, election_type, office):
+    def _generate_office_filename(self, url, start_date, election_type, result):
         # example: 20021105__oh__general__gov.aspx
-        bits = [
-            start_date.replace('-',''),
-            self.state.lower(),
-            election_type,
-            office
-        ]
+        if result['district'] == '':
+            office = result['office']
+        else:
+            office = result['office'] + '__' + result['district']
+        if result['special'] == '1':
+            election_type = election_type + '__special'
+        if result['race_type'] == 'general':
+            bits = [
+                start_date.replace('-',''),
+                self.state.lower(),
+                election_type,
+                office
+            ]
+        else:
+            bits = [
+                start_date.replace('-',''),
+                self.state.lower(),
+                result['party'],
+                election_type,
+                office
+            ]
         path = urlparse.urlparse(url).path
         ext = os.path.splitext(path)[1]
         name = "__".join(bits)+ ext
-        return name
-
-    def _generate_special_filename(self, url, start_date, election_type, party=None):
-        # example: 20081118__oh__special__general.aspx
-        bits = [
-            start_date.replace('-',''),
-            self.state.lower(),
-            'special',
-            election_type,
-            party
-        ]
-        path = urlparse.urlparse(url).path
-        ext = os.path.splitext(path)[1]
-        name = "__".join(bits) + ext
         return name
    
     # returns a list of html links from results page
@@ -268,18 +198,6 @@ class Datasource(BaseDatasource):
             reader = unicodecsv.DictReader(csvfile)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
-    
-        
-    def _url_date_segment(self, date):
-        if date.year == 2000:
-            fmt = date.strftime("%m%d%Y")
-        elif date.year < 2008:
-            fmt = date.strftime("%y-%m%d")
-        elif date.year == 2008: # special only, not primary
-            fmt = date.strftime("%m%d-%Y")
-        elif date.year == 2010:
-            fmt = date.strftime("%Y%m%d")
-        return fmt
     
     def _jurisdictions(self):
         """Ohio counties"""
