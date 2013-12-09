@@ -179,15 +179,6 @@ class Datasource(BaseDatasource):
         ext = os.path.splitext(path)[1]
         name = "__".join(bits)+ ext
         return name
-   
-    # returns a list of html links from results page
-    def _results_links(self, year, election):
-        s = scrapelib.Scraper(requests_per_minute=10, follow_robots=True)
-        html = s.urlopen(election['portal_link'])
-        soup = BeautifulSoup(html)
-        links = [x.get('href') for x in soup.find_all('a')]
-        results = [l for l in links if 'xlsx' in str(l)]
-        # filter on paths for election
     
     def _url_paths(self):
         "Returns a JSON array of url path mappings"
