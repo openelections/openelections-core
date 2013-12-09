@@ -31,8 +31,6 @@ import re
 import json
 import unicodecsv
 import urlparse
-import scrapelib
-from bs4 import BeautifulSoup
 
 from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
