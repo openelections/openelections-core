@@ -67,7 +67,7 @@ class Candidate(DynamicDocument):
     # Keep state denormalized to ease querying?
     state = StringField(max_length=2, required=True, help_text="Capitalized postal code")
     #TODO: Add validation to require raw_full_name or raw_family_name
-    raw_full_name = StringField(max_length=300, required=True)
+    raw_full_name = StringField(max_length=300)
     slug = StringField(max_length=300, required=True, help_text="Slugified name for easier querying and obj repr")
     raw_given_name = StringField(max_length=200)
     raw_family_name = StringField(max_length=200)
@@ -106,33 +106,41 @@ class Candidate(DynamicDocument):
 class Result(DynamicDocument):
 
     REPORTING_LEVEL_CHOICES = (
+        'state',
         'congressional_district',
         'state_legislative',
+        'county',
         'precinct',
         'parish',
-        'precinct',
-        'county',
-        'state',
     )
     source = StringField(required=True, help_text="Name of data source for this file, preferably standardized filename from datasource.py")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     state = StringField(max_length=2, required=True, help_text="Capitalized postal code")
+    reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
     contest = ReferenceField(Contest, reverse_delete_rule=CASCADE, required=True)
     contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
     candidate = ReferenceField(Candidate, reverse_delete_rule=CASCADE, required=True)
     candidate_slug = StringField(required=True, help_text="Denormalized candidate slug for easier querying and obj repr")
-    ocd_id = StringField(required=True)
-    reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
-    raw_jurisdiction = StringField(help_text="Political geography of this result, such as a County name, congressional district, state, etec.")
-    raw_total_votes = IntField(required=True, default=0)
-    raw_winner = BooleanField()
+    ocd_id = StringField()
+    #TODO: Add validation to require raw_jurisdiction or jurisdiction
+    raw_jurisdiction = StringField(help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number.")
+    raw_total_votes = IntField(required=True)
+    raw_winner = StringField()
+    raw_write_in = StringField()
     raw_vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
 
-    # Should this write-in field be raw?
-    write_in = BooleanField(default=False)
-    total_votes = IntField(default=0)
+    jurisdiction = StringField(help_text="Derived/standardized political geography, typically when not found in raw results.")
+    total_votes = IntField()
     winner = BooleanField(help_text="Winner as determined by OpenElex, if not provided natively in data")
+    write_in = BooleanField()
     #vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
 
     def __unicode__(self):
-        return u'%s-%s-%s' % (self.contest_slug, self.candidate_slug, self.result_slug)
+        bits = (
+            self.contest_slug,
+            self.candidate_slug,
+            self.reporting_level,
+            self.raw_jurisdiction,
+            self.raw_total_votes,
+        )
+        return u'%s-%s-%s-%s (%s)' % bits
