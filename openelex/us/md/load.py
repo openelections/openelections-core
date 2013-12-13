@@ -29,7 +29,7 @@ class LoadResults(BaseLoader):
         # Reload results fresh every time
         result_count = Result.objects.filter(source=self.source).count()
         if result_count > 0:
-            print("\tDeleting %s previously loaded Result documents" % result_count)
+            print("\tDeleting %s previously loaded results" % result_count)
             Result.objects.filter(source=self.source).delete()
 
         # Load results based on file type
