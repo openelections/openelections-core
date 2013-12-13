@@ -8,6 +8,7 @@ import urlparse
 import requests
 import unicodecsv
 
+from openelex import PROJECT_ROOT
 from .state import StateBase
 
 class BaseDatasource(StateBase):
@@ -58,18 +59,18 @@ class BaseDatasource(StateBase):
         return name
 
     def clear_filenames(self):
-        open(join(self.mappings_dir, 'filenames.json'), 'w').close() 
+        open(join(PROJECT_ROOT, self.mappings_dir, 'filenames.json'), 'w').close() 
 
     def jurisdiction_mappings(self):
         "Returns a JSON object of jurisdictional mappings based on OCD ids"
-        filename = join(self.mappings_dir, self.state + '.csv')
+        filename = join(PROJECT_ROOT, self.mappings_dir, self.state + '.csv')
         with open(filename, 'rU') as csvfile:
             reader = unicodecsv.DictReader(csvfile)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
 
     def filename_mappings(self):
-        filename = join(self.mappings_dir, 'filenames.json')
+        filename = join(PROJECT_ROOT, self.mappings_dir, 'filenames.json')
         with open(filename) as f:
             try:
                 mappings = json.loads(f.read())
@@ -84,5 +85,5 @@ class BaseDatasource(StateBase):
         except:
             pass
         mappings[str(year)] = filenames
-        with open(join(self.mappings_dir, 'filenames.json'), 'w') as f:
+        with open(join(PROJECT_ROOT, self.mappings_dir, 'filenames.json'), 'w') as f:
             json.dump(mappings, f, indent=2)

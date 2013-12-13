@@ -1,6 +1,7 @@
 import os
 
-from openelex import COUNTRY_DIR
+
+from .cache import StateCache
 
 class StateBase(object):
     """Base class with common functionality for working 
@@ -15,16 +16,13 @@ class StateBase(object):
             self.state = self.__module__.split('.')[-2]
         else:
             self.state = state
-        # Save files to cache/ dir inside state directory
-        self.cache_dir = os.path.join(COUNTRY_DIR, self.state, 'cache')
-        self.mappings_dir = os.path.join(COUNTRY_DIR, self.state, 'mappings')
-        try:
-            os.makedirs(self.cache_dir)
-        except OSError:
-            pass
+        self.cache = StateCache(self.state)
+        # Create mappings directory if it doesn't exist
+        self.mappings_dir = os.path.join('us', self.state, 'mappings')
         try:
             os.makedirs(self.mappings_dir)
         except OSError:
             pass
         # Create ocd mappings csv if it doesn't exist
         open(os.path.join(self.mappings_dir, self.state + '.csv'), 'a').close()
+
