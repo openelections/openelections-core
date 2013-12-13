@@ -71,13 +71,13 @@ class Datasource(BaseDatasource):
     def _generate_filename(self, election):
         # example: 20021105__fl__general.txt
         if election['special'] == True:
-            election['race_type'] = election['race_type'] + '__special'
+            race_type = election['race_type'] + '__special'
         if election['race_type'] == 'primary-runoff':
-            election['race_type'] = 'primary__runoff'
+            race_type = 'primary__runoff'
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),
-            election['race_type']
+            race_type
         ]
         name = "__".join(bits) + '.txt'
         return name

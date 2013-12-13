@@ -58,7 +58,7 @@
       "election": "fl-2000-10-03-primary-runoff", 
       "raw_url": "https://doe.dos.state.fl.us/elections/resultsarchive/downloadresults.asp?ElectionDate=10/3/2000&DATAMODE=", 
       "name": "Florida", 
-      "generated_filename": "20001003__fl__primary-runoff.txt"
+      "generated_filename": "20001003__fl__primary__runoff.txt"
     }, 
     {
       "ocd_id": "ocd-division/country:us/state:fl", 
@@ -72,21 +72,21 @@
       "election": "fl-2000-04-25-general", 
       "raw_url": "https://doe.dos.state.fl.us/elections/resultsarchive/downloadresults.asp?ElectionDate=4/25/2000&DATAMODE=", 
       "name": "Florida", 
-      "generated_filename": "20000425__fl__general__special.txt"
+      "generated_filename": "20000425__fl__general__special__special__special__special.txt"
     }, 
     {
       "ocd_id": "ocd-division/country:us/state:fl", 
       "election": "fl-2000-04-18-primary-runoff", 
       "raw_url": "https://doe.dos.state.fl.us/elections/resultsarchive/downloadresults.asp?ElectionDate=4/18/2000&DATAMODE=", 
       "name": "Florida", 
-      "generated_filename": "20000418__fl__primary-runoff__special.txt"
+      "generated_filename": "20000418__fl__primary-runoff__special__special__special__special.txt"
     }, 
     {
       "ocd_id": "ocd-division/country:us/state:fl", 
       "election": "fl-2000-04-11-primary", 
       "raw_url": "https://doe.dos.state.fl.us/elections/resultsarchive/downloadresults.asp?ElectionDate=4/11/2000&DATAMODE=", 
       "name": "Florida", 
-      "generated_filename": "20000411__fl__primary__special.txt"
+      "generated_filename": "20000411__fl__primary__special__special__special__special.txt"
     }, 
     {
       "ocd_id": "ocd-division/country:us/state:fl", 
@@ -100,14 +100,14 @@
       "election": "fl-2000-01-25-general", 
       "raw_url": "https://doe.dos.state.fl.us/elections/resultsarchive/downloadresults.asp?ElectionDate=1/25/2000&DATAMODE=", 
       "name": "Florida", 
-      "generated_filename": "20000125__fl__general__special.txt"
+      "generated_filename": "20000125__fl__general__special__special__special__special.txt"
     }, 
     {
       "ocd_id": "ocd-division/country:us/state:fl", 
       "election": "fl-2000-01-11-primary-runoff", 
       "raw_url": "https://doe.dos.state.fl.us/elections/resultsarchive/downloadresults.asp?ElectionDate=1/11/2000&DATAMODE=", 
       "name": "Florida", 
-      "generated_filename": "20000111__fl__primary-runoff__special.txt"
+      "generated_filename": "20000111__fl__primary-runoff__special__special__special__special.txt"
     }
   ], 
   "2001": [
