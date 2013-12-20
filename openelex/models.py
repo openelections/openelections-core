@@ -72,6 +72,7 @@ class Candidate(DynamicDocument):
     raw_given_name = StringField(max_length=200)
     raw_family_name = StringField(max_length=200)
     raw_suffix = StringField(max_length=200)
+    raw_additional_name = StringField(max_length=200, help_text="For middle names, nicknames, etc")
     raw_parties = ListField(StringField(), default=list)
 
     # FIELDS FOR TRANSFORMED/CLEANED DATA or LINKS TO OTHER DATA SETS
@@ -79,7 +80,7 @@ class Candidate(DynamicDocument):
     given_name = StringField(max_length=200)
     family_name = StringField(max_length=200)
     suffix = StringField(max_length=200)
-    additional_name = StringField(max_length=200)
+    additional_name = StringField(max_length=200, help_text="For middle names, nicknames, etc")
     other_names = ListField(StringField(), default=list)
     parties = ListField(StringField(), default=list) # normalized? abbreviations?
     identifiers = DictField()
