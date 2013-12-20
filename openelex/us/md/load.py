@@ -304,7 +304,7 @@ class LoadResults(BaseLoader):
     def load_2002_file(self, mapping):
         headers = [
             'office',
-            'fill',
+            'district',
             'jurisdiction',
             'last',
             'middle',
@@ -322,40 +322,60 @@ class LoadResults(BaseLoader):
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers, delimiter='|', encoding='latin-1')
             reporting_level = 'county'
             #TODO: replace jurisidctions with datasource.mappings
-            #jurisdictions = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
+	  
+            geographies = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
+            
             for row in reader:
                 # Jurisdiction
+		#TODO:
                 if row['jurisdiction'].strip() == 'Baltimore City':
-                    jurisdiction = [x for x in jurisdictions if x['name'] == "Baltimore City"][0]
+                    geo_obj = [x for x in geographies if x['name'] == "Baltimore City"][0]
                 else:
-                    jurisdiction = [x for x in jurisdictions if x['name']+" County" == row['jurisdiction'].strip()][0]
+                    geo_obj = [x for x in geographies if x['name']+" County" == row['jurisdiction'].strip()][0]
 
                 # Winner
-                if row['winner'] == '1':
-                    winner = True
-                else:
-                    winner = False
+                #TODO: make this raw_winner
+                #TODO: push this to transform step
+                raw_winner = row['winner']
+                #if row['winner'] == '1':
+                #    raw_winner = True
+                #else:
+                #    raw_winner = False
 
+		#TODO: push name parsing to transform step
+		# zz998 is for write-ins
                 if row['last'].strip() == 'zz998':
-                    name = row['last'].strip()
-                    candidate = Candidate(state=self.state.upper(), family_name=name)
-                    write_in=True
+                #    name = row['last'].strip()
+                #    #candidate = Candidate(state=self.state.upper(), family_name=name)
+                     write_in=True
                 else:
-                    cand_name = self.combine_name_parts([row['first'], row['middle'], row['last']])
-                    name = self.parse_name(cand_name)
-                    write_in=False
-                    candidate = Candidate(state=self.state.upper(), given_name=name.first, additional_name=name.middle, family_name=name.last, suffix=name.suffix, name=name.full_name)
+                #    cand_name = self.combine_name_parts([row['first'], row['middle'], row['last']])
+                #    name = self.parse_name(cand_name)
+                     write_in=False
+                #    candidate = Candidate(state=self.state.upper(), given_name=name.first, additional_name=name.middle, family_name=name.last, suffix=name.suffix, name=name.full_name)
+	
+		#TODO: handle below using the self._get_candidate_whatever(row)
+		#TODO: need a new function/method to handle 2002?
+                cand_kwargs = {
+		    'raw_family_name': row['last'].strip(),
+                    'raw_given_name': row['first'].strip(),
+                    'raw_additional_name': row['middle'].strip(),
+                }
+                 #TODO: add raw_party to candidate.raw_parties
 
                 result_kwargs = {
-                    'ocd_id': ocd_id + "/precinct:" + str(row['Election District']) + "-" + str(row['Election Precinct']),
-                    'jurisdiction': jurisdiction,
-                    'raw_office': row['Office Name'] + ' ' + row['Office District'],
-                    'reporting_level': reporting_level,
-                    'candidate': candidate,
-                    'party': row['Party'],
+	            #'election':
+                    #'candidate': candidate,
+                    'ocd_id': geo_obj['ocd_id'],
+                    #TODO: make this the county number from file
+		    'raw_jurisdiction': row['jurisdiction'],
+                    'jurisdiction': geo_obj['name'],
+                    'raw_office': row['office'].strip(),
+                    'raw_district': row['district'].strip(),
+                    'reporting_level': 'county',
+                    'raw_party': row['party'], # needs to be a member of a list
                     'write_in': write_in,
-                    'total_votes': total_votes,
-                    'vote_breakdowns': vote_breakdowns
+                    'raw_total_votes': row['votes'],
                 }
                 result = Result(**result_kwargs)
         Result.objects.insert(results)
@@ -372,6 +392,7 @@ class LoadResults(BaseLoader):
                 if line.strip() == '':
                     continue # skip blank lines
                 else: # determine if this is a row with an office
+                    #TODO: push party and office to transform step
                     cols = line.strip().split(',')
                     if cols[0][1:29] == 'President and Vice President':
                         office_name = 'President - Vice Pres'
@@ -396,6 +417,9 @@ class LoadResults(BaseLoader):
                             party = 'REP'
                         continue
                     # skip offices we don't want
+	            #TODO: replace below with a regex?
+		    #elif re.search(r'(Judge|Female|Male|Delegates)', col[0]):
+		    #    continue
                     elif cols[0][1:21] == 'Judge of the Circuit':
                         continue
                     elif cols[0][1:31] == 'Female Delegates and Alternate':
@@ -406,10 +430,10 @@ class LoadResults(BaseLoader):
                         continue
                     elif cols[0] == '""':
                         candidates = [x.replace('"','').strip() for x in cols if x.replace('"','') != '']
-                        winner = [i for i, j in enumerate(candidates) if 'Winner' in j][0] # index of winning candidate
-                        candidates[winner] = candidates[winner].split(' Winner')[0]
+                        winner_index = [i for i, j in enumerate(candidates) if 'Winner' in j][0] # index of winning candidate
+                        candidates[winner_index], raw_winner = candidates[winner].split(' Winner') # trims "Winner" from candidate name; we can save the remainder for raw_winner
                         # handle name_parse and Uncommitted candidate
-                    else: # county results
+                    else: # has to be a county result
                         result = [x.replace('"','').strip() for x in cols if x != '']
                         #juris = [j for j in jurisdictions if j['name'] == result[0].strip()][0]
                         juris = [j for j in self.datasource.mappings() if j['name'] == result[0].strip()][0]
