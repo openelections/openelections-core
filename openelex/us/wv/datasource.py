@@ -127,24 +127,14 @@ class Datasource(BaseDatasource):
             office = result['office'] + '__' + result['district']
         if result['special'] == '1':
             election_type = election_type + '__special'
-        if result['race_type'] == 'general':
-            bits = [
-                start_date.replace('-',''),
-                self.state.lower(),
-                election_type,
-                office
-            ]
-        else:
-            bits = [
-                start_date.replace('-',''),
-                self.state.lower(),
-                result['party'],
-                election_type,
-                office
-            ]
+        bits = [
+            start_date.replace('-',''),
+            self.state.lower(),
+            election_type,
+            office
+        ]
         path = urlparse.urlparse(url).path
-        ext = os.path.splitext(path)[1]
-        name = "__".join(bits)+ ext
+        name = "__".join(bits) + '.pdf'
         return name
     
     def _find_csv_links(self, url):
