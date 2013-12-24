@@ -1,0 +1,1234 @@
+{
+  "2002": [
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20US%20Senate%20Gen.pdf", 
+      "generated_filename": "20021105__wv__general__senate.pdf", 
+      "election": "wv-2002-11-05-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20House%20of%20Rep%20Gen.pdf", 
+      "generated_filename": "20021105__wv__general__house.pdf", 
+      "election": "wv-2002-11-05-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20State%20Senate%20Gen.pdf", 
+      "generated_filename": "20021105__wv__general__state_leg_1.pdf", 
+      "election": "wv-2002-11-05-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20House%20of%20Delegates%20Gen.pdf", 
+      "generated_filename": "20021105__wv__general__state_leg_2.pdf", 
+      "election": "wv-2002-11-05-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20US%20Senate%20Pri.pdf", 
+      "generated_filename": "20020514__wv__primary__senate.pdf", 
+      "election": "wv-2002-05-14-primary", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20House%20of%20Rep%20Pri.pdf", 
+      "generated_filename": "20020514__wv__primary__house.pdf", 
+      "election": "wv-2002-05-14-primary", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20State%20Senate%20Pri.pdf", 
+      "generated_filename": "20020514__wv__primary__state_leg_1.pdf", 
+      "election": "wv-2002-05-14-primary", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2002/2002%20House%20of%20Delegates%20Pri.pdf", 
+      "generated_filename": "20020514__wv__primary__state_leg_2.pdf", 
+      "election": "wv-2002-05-14-primary", 
+      "name": "West Virginia"
+    }
+  ], 
+  "2000": [
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20US%20President%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__prez.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20US%20Senate%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__senate.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20House%20of%20Rep%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__house.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Governor%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__gov.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20SoS%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__state_officers_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Auditor%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__state_officers_2.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Treasurer%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__state_officers_3.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Com%20of%20Ag%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__state_officers_4.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Attorney%20General%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__state_officers_5.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20State%20Senate%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__state_leg_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-11-07-general", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20House%20of%20Delegates%20Gen.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20001107__wv__general__state_leg_2.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20US%20President%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__prez.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20US%20Senate%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__senate.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20House%20of%20Rep%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__house.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Governor%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__gov.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20SoS%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__state_officers_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Auditor%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__state_officers_2.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Treasurer%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__state_officers_3.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Com%20of%20Ag%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__state_officers_4.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20Attorney%20General%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__state_officers_5.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20State%20Senate%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__state_leg_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "election": "wv-2000-05-09-primary", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2000/2000%20House%20of%20Delegates%20Pri.pdf", 
+      "name": "West Virginia", 
+      "generated_filename": "20000509__wv__primary__state_leg_2.pdf"
+    }
+  ], 
+  "2006": [
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2006/2006%20US%20Senate%20Gen.pdf", 
+      "generated_filename": "20061107__wv__general__senate.pdf", 
+      "election": "wv-2006-11-07-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2006/2006%20House%20of%20Rep%20Gen.pdf", 
+      "generated_filename": "20061107__wv__general__house.pdf", 
+      "election": "wv-2006-11-07-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2006/2006%20State%20Senate%20Gen.pdf", 
+      "generated_filename": "20061107__wv__general__state_leg_1.pdf", 
+      "election": "wv-2006-11-07-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2006/2006%20House%20of%20Delegates%20Gen.pdf", 
+      "generated_filename": "20061107__wv__general__state_leg_2.pdf", 
+      "election": "wv-2006-11-07-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2006/2006%20US%20Senate%20Pri.pdf", 
+      "generated_filename": "20060509__wv__primary__senate.pdf", 
+      "election": "wv-2006-05-09-primary", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2006/2006%20House%20of%20Rep%20Pri.pdf", 
+      "generated_filename": "20060509__wv__primary__house.pdf", 
+      "election": "wv-2006-05-09-primary", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2006/2006%20State%20Senate%20Pri.pdf", 
+      "generated_filename": "20060509__wv__primary__state_leg_1.pdf", 
+      "election": "wv-2006-05-09-primary", 
+      "name": "West Virginia"
+    }
+  ], 
+  "2004": [
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20President%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__prez.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20House%20of%20Rep%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__house.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Governor%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__gov.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20SoS%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__state_officers_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Auditor%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__state_officers_2.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20State%20Treasurer%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__state_officers_3.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Com%20of%20Ag%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__state_officers_4.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Attorney%20General%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__state_officers_5.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20State%20Senate%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__state_leg_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20House%20of%20Delegates%20Gen.pdf", 
+      "election": "wv-2004-11-02-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20041102__wv__general__state_leg_2.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20President%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__prez.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20House%20of%20Rep%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__house.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Governor%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__gov.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20SoS%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__state_officers_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Auditor%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__state_officers_2.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20State%20Treasurer%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__state_officers_3.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Com%20of%20Ag%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__state_officers_4.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Attorney%20General%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__state_officers_5.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20State%20Senate%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__state_leg_1.pdf"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20House%20of%20Delegates%20Pri.pdf", 
+      "election": "wv-2004-05-11-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20040511__wv__primary__state_leg_2.pdf"
+    }
+  ], 
+  "2008": [
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=NC80LVN0YXRlQ291bnR5VG90YWxzLmNzdg==", 
+      "election": "wv-2008-11-04-general", 
+      "name": "West Virginia", 
+      "generated_filename": "20081104__wv__general.csv"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=My8zLVN0YXRlQ291bnR5VG90YWxzLmNzdg==", 
+      "election": "wv-2008-05-13-primary", 
+      "name": "West Virginia", 
+      "generated_filename": "20080513__wv__primary.csv"
+    }
+  ], 
+  "2010": [
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=Ni82LVN0YXRlQ291bnR5VG90YWxzLmNzdg==", 
+      "generated_filename": "20101102__wv__general.csv", 
+      "election": "wv-2010-11-02-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=Ny83LVN0YXRlQ291bnR5VG90YWxzLmNzdg==", 
+      "generated_filename": "20100828__wv__primary__special.csv", 
+      "election": "wv-2010-08-28-primary", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=NS81LVN0YXRlQ291bnR5VG90YWxzLmNzdg==", 
+      "generated_filename": "20100511__wv__primary.csv", 
+      "election": "wv-2010-05-11-primary", 
+      "name": "West Virginia"
+    }
+  ], 
+  "2012": [
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtU3RhdGVDb3VudHlUb3RhbHMuY3N2", 
+      "generated_filename": "20121106__wv__general.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:barbour", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMS5jc3Y=", 
+      "generated_filename": "20121106__wv__general__barbour.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Barbour"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:berkeley", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMi5jc3Y=", 
+      "generated_filename": "20121106__wv__general__berkeley.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Berkeley"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:boone", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMy5jc3Y=", 
+      "generated_filename": "20121106__wv__general__boone.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Boone"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:braxton", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNC5jc3Y=", 
+      "generated_filename": "20121106__wv__general__braxton.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Braxton"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:brooke", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNS5jc3Y=", 
+      "generated_filename": "20121106__wv__general__brooke.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Brooke"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:cabell", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNi5jc3Y=", 
+      "generated_filename": "20121106__wv__general__cabell.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Cabell"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:calhoun", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNy5jc3Y=", 
+      "generated_filename": "20121106__wv__general__calhoun.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Calhoun"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:clay", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtOC5jc3Y=", 
+      "generated_filename": "20121106__wv__general__clay.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Clay"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:doddridge", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtOS5jc3Y=", 
+      "generated_filename": "20121106__wv__general__doddridge.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Doddridge"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:fayette", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTAuY3N2", 
+      "generated_filename": "20121106__wv__general__fayette.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Fayette"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:gilmer", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTEuY3N2", 
+      "generated_filename": "20121106__wv__general__gilmer.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Gilmer"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:grant", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTIuY3N2", 
+      "generated_filename": "20121106__wv__general__grant.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Grant"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:greenbrier", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTMuY3N2", 
+      "generated_filename": "20121106__wv__general__greenbrier.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Greenbrier"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:hampshire", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTQuY3N2", 
+      "generated_filename": "20121106__wv__general__hampshire.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Hampshire"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:hancock", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTUuY3N2", 
+      "generated_filename": "20121106__wv__general__hancock.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Hancock"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:hardy", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTYuY3N2", 
+      "generated_filename": "20121106__wv__general__hardy.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Hardy"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:harrison", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTcuY3N2", 
+      "generated_filename": "20121106__wv__general__harrison.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Harrison"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:jackson", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTguY3N2", 
+      "generated_filename": "20121106__wv__general__jackson.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Jackson"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:jefferson", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMTkuY3N2", 
+      "generated_filename": "20121106__wv__general__jefferson.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Jefferson"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:kanawha", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjAuY3N2", 
+      "generated_filename": "20121106__wv__general__kanawha.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Kanawha"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:lewis", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjEuY3N2", 
+      "generated_filename": "20121106__wv__general__lewis.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Lewis"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:lincoln", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjIuY3N2", 
+      "generated_filename": "20121106__wv__general__lincoln.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Lincoln"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:logan", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjMuY3N2", 
+      "generated_filename": "20121106__wv__general__logan.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Logan"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:marion", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjQuY3N2", 
+      "generated_filename": "20121106__wv__general__marion.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Marion"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:marshall", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjUuY3N2", 
+      "generated_filename": "20121106__wv__general__marshall.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Marshall"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mason", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjYuY3N2", 
+      "generated_filename": "20121106__wv__general__mason.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Mason"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mcdowell", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjcuY3N2", 
+      "generated_filename": "20121106__wv__general__mcdowell.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "McDowell"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mercer", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjguY3N2", 
+      "generated_filename": "20121106__wv__general__mercer.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Mercer"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mineral", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMjkuY3N2", 
+      "generated_filename": "20121106__wv__general__mineral.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Mineral"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mingo", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzAuY3N2", 
+      "generated_filename": "20121106__wv__general__mingo.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Mingo"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:monongalia", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzEuY3N2", 
+      "generated_filename": "20121106__wv__general__monongalia.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Monongalia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:monroe", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzIuY3N2", 
+      "generated_filename": "20121106__wv__general__monroe.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Monroe"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:morgan", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzMuY3N2", 
+      "generated_filename": "20121106__wv__general__morgan.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Morgan"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:nicholas", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzQuY3N2", 
+      "generated_filename": "20121106__wv__general__nicholas.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Nicholas"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:ohio", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzUuY3N2", 
+      "generated_filename": "20121106__wv__general__ohio.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Ohio"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:pendleton", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzYuY3N2", 
+      "generated_filename": "20121106__wv__general__pendleton.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Pendleton"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:pleasants", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzcuY3N2", 
+      "generated_filename": "20121106__wv__general__pleasants.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Pleasants"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:pocahontas", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzguY3N2", 
+      "generated_filename": "20121106__wv__general__pocahontas.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Pocahontas"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:preston", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtMzkuY3N2", 
+      "generated_filename": "20121106__wv__general__preston.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Preston"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:putnam", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDAuY3N2", 
+      "generated_filename": "20121106__wv__general__putnam.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Putnam"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:raleigh", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDEuY3N2", 
+      "generated_filename": "20121106__wv__general__raleigh.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Raleigh"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:randolph", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDIuY3N2", 
+      "generated_filename": "20121106__wv__general__randolph.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Randolph"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:ritchie", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDMuY3N2", 
+      "generated_filename": "20121106__wv__general__ritchie.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Ritchie"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:roane", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDQuY3N2", 
+      "generated_filename": "20121106__wv__general__roane.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Roane"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:summers", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDUuY3N2", 
+      "generated_filename": "20121106__wv__general__summers.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Summers"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:taylor", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDYuY3N2", 
+      "generated_filename": "20121106__wv__general__taylor.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Taylor"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:tucker", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDcuY3N2", 
+      "generated_filename": "20121106__wv__general__tucker.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Tucker"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:tyler", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDguY3N2", 
+      "generated_filename": "20121106__wv__general__tyler.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Tyler"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:upshur", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNDkuY3N2", 
+      "generated_filename": "20121106__wv__general__upshur.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Upshur"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wayne", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNTAuY3N2", 
+      "generated_filename": "20121106__wv__general__wayne.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Wayne"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:webster", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNTEuY3N2", 
+      "generated_filename": "20121106__wv__general__webster.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Webster"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wetzel", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNTIuY3N2", 
+      "generated_filename": "20121106__wv__general__wetzel.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Wetzel"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wirt", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNTMuY3N2", 
+      "generated_filename": "20121106__wv__general__wirt.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Wirt"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wood", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNTQuY3N2", 
+      "generated_filename": "20121106__wv__general__wood.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Wood"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wyoming", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=MTMvMTMtNTUuY3N2", 
+      "generated_filename": "20121106__wv__general__wyoming.csv", 
+      "election": "wv-2012-11-06-general", 
+      "name": "Wyoming"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LVN0YXRlQ291bnR5VG90YWxzLmNzdg==", 
+      "generated_filename": "20120508__wv__primary.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "West Virginia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:barbour", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTEuY3N2", 
+      "generated_filename": "20120508__wv__primary__barbour.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Barbour"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:berkeley", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTIuY3N2", 
+      "generated_filename": "20120508__wv__primary__berkeley.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Berkeley"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:boone", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTMuY3N2", 
+      "generated_filename": "20120508__wv__primary__boone.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Boone"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:braxton", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQuY3N2", 
+      "generated_filename": "20120508__wv__primary__braxton.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Braxton"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:brooke", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTUuY3N2", 
+      "generated_filename": "20120508__wv__primary__brooke.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Brooke"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:cabell", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTYuY3N2", 
+      "generated_filename": "20120508__wv__primary__cabell.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Cabell"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:calhoun", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTcuY3N2", 
+      "generated_filename": "20120508__wv__primary__calhoun.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Calhoun"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:clay", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTguY3N2", 
+      "generated_filename": "20120508__wv__primary__clay.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Clay"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:doddridge", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTkuY3N2", 
+      "generated_filename": "20120508__wv__primary__doddridge.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Doddridge"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:fayette", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTEwLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__fayette.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Fayette"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:gilmer", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTExLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__gilmer.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Gilmer"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:grant", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTEyLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__grant.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Grant"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:greenbrier", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTEzLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__greenbrier.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Greenbrier"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:hampshire", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTE0LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__hampshire.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Hampshire"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:hancock", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTE1LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__hancock.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Hancock"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:hardy", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTE2LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__hardy.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Hardy"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:harrison", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTE3LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__harrison.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Harrison"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:jackson", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTE4LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__jackson.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Jackson"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:jefferson", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTE5LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__jefferson.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Jefferson"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:kanawha", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTIwLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__kanawha.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Kanawha"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:lewis", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTIxLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__lewis.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Lewis"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:lincoln", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTIyLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__lincoln.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Lincoln"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:logan", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTIzLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__logan.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Logan"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:marion", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTI0LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__marion.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Marion"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:marshall", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTI1LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__marshall.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Marshall"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mason", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTI2LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__mason.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Mason"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mcdowell", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTI3LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__mcdowell.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "McDowell"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mercer", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTI4LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__mercer.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Mercer"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mineral", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTI5LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__mineral.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Mineral"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:mingo", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTMwLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__mingo.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Mingo"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:monongalia", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTMxLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__monongalia.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Monongalia"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:monroe", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTMyLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__monroe.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Monroe"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:morgan", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTMzLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__morgan.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Morgan"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:nicholas", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTM0LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__nicholas.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Nicholas"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:ohio", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTM1LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__ohio.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Ohio"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:pendleton", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTM2LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__pendleton.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Pendleton"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:pleasants", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTM3LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__pleasants.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Pleasants"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:pocahontas", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTM4LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__pocahontas.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Pocahontas"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:preston", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTM5LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__preston.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Preston"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:putnam", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQwLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__putnam.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Putnam"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:raleigh", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQxLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__raleigh.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Raleigh"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:randolph", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQyLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__randolph.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Randolph"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:ritchie", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQzLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__ritchie.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Ritchie"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:roane", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQ0LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__roane.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Roane"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:summers", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQ1LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__summers.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Summers"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:taylor", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQ2LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__taylor.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Taylor"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:tucker", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQ3LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__tucker.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Tucker"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:tyler", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQ4LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__tyler.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Tyler"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:upshur", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTQ5LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__upshur.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Upshur"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wayne", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTUwLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__wayne.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Wayne"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:webster", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTUxLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__webster.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Webster"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wetzel", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTUyLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__wetzel.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Wetzel"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wirt", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTUzLmNzdg==", 
+      "generated_filename": "20120508__wv__primary__wirt.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Wirt"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wood", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTU0LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__wood.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Wood"
+    }, 
+    {
+      "ocd_id": "ocd-division/country:us/state:wv/county:wyoming", 
+      "raw_url": "http://apps.sos.wv.gov/elections/results/readfile.aspx?path=OC84LTU1LmNzdg==", 
+      "generated_filename": "20120508__wv__primary__wyoming.csv", 
+      "election": "wv-2012-05-08-primary", 
+      "name": "Wyoming"
+    }
+  ]
+}
