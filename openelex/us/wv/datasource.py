@@ -20,6 +20,7 @@ import urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from openelex import PROJECT_ROOT
 from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
 
@@ -151,6 +152,14 @@ class Datasource(BaseDatasource):
         r = requests.get(url)
         soup = BeautifulSoup(r.text)
         return ['http://apps.sos.wv.gov/elections/results/'+x['href'] for x in soup.find_all('a') if x.text == 'Download Comma Separated Values (CSV)']
+
+    def _url_paths(self):
+        "Returns a JSON array of url path mappings"
+        filename = join(PROJECT_ROOT, self.mappings_dir, 'url_paths.csv')
+        with open(filename, 'rU') as csvfile:
+            reader = unicodecsv.DictReader(csvfile)
+            mappings = json.dumps([row for row in reader])
+        return json.loads(mappings)
     
     def _jurisdictions(self):
         """West Virginia counties"""

@@ -182,7 +182,7 @@ class Datasource(BaseDatasource):
     
     def _url_paths(self):
         "Returns a JSON array of url path mappings"
-        filename = join(self.mappings_dir, 'url_paths.csv')
+        filename = join(PROJECT_ROOT, self.mappings_dir, 'url_paths.csv')
         with open(filename, 'rU') as csvfile:
             reader = unicodecsv.DictReader(csvfile)
             mappings = json.dumps([row for row in reader])
