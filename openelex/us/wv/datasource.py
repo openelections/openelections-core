@@ -103,10 +103,13 @@ class Datasource(BaseDatasource):
         return "http://www.sos.wv.gov/elections/history/electionreturns/Documents/%s/%s" % (year, path)
     
     def _generate_statewide_filename(self, election):
+        election_type = election['race_type']
+        if election['special'] == True:
+            election_type = election_type + '__special'
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),
-            election['race_type']
+            election_type
         ]
         return "__".join(bits) + '.csv'
         
