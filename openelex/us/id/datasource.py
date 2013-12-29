@@ -12,15 +12,19 @@ although earlier files have a slightly different format:
     http://www.sos.idaho.gov/elect/2000rslt/primary/00_pri_fed.xls
     http://www.sos.idaho.gov/elect/2000rslt/general/00_gen_lgpc.xls
 
-There are two files for each election; one covers federal and statewide offices, with the other covers the state legislature.
+There are two files for each election; one covers federal and statewide offices, with the other covers the state legislature. We put these into a dict
+structured like so:
+    
+    {'primary_2012_statewide':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_fed_prec.xls', 'primary_2012_state_legislature':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_leg_prec.xls'}
 
-These are represented in the dashboard API as the `direct_link` attribute on elections.
 """
 import os
 from os.path import join
 import re
 import json
 import unicodecsv
+import requests
+from bs4 import BeautifulSoup
 
 from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
@@ -60,8 +64,42 @@ class Datasource(BaseDatasource):
             year_int = int(year)
             return {year_int: self._elections[year_int]}
         return self._elections
-
+    
+    def results_links(self):
+        url = "http://www.sos.idaho.gov/elect/results.htm"
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        table = soup.find_all('table')[3]
+        precincts = [x for x in table.find_all('a') if 'prec' in x['href'] or 'pct' in x['href']]
+        self._results_links = [x for x in precincts if x.text == 'Statewide' or x.text == 'Legislature']
+        return self._results_links
+        
     # PRIVATE METHODS
+    
+    def __filter_results_links(self, year):
+        links = {}
+        for link in [x for x in self._results_links if str(year) in x['href']]:
+            if 'primary' in link['href'] and link.text == 'Statewide':
+                slug = 'primary_%s_statewide' % str(year)
+                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif 'primary' in link['href']:
+                slug = 'primary_%s_state_legislature' % str(year)
+                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif 'general' in link['href'] and link.text == 'Statewide':
+                slug = 'general_%s_statewide' % str(year)
+                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            else:
+                slug = 'general_%s_state_legislature' % str(year)
+                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
+        return links
+    
+    def __build_absentee_url(self, year, election):
+        # absentee files available from 2002-forward
+        if election['race_type'] == 'general':
+            slug = str(year)[2:4] + 'Gen'
+        else:
+            slug = str(year)[2:4] + 'Pri'
+        return "http://www.sos.idaho.gov/elect/absentee/%s_Absentee.xls" % slug
 
     def _build_metadata(self, year, elections):
         meta = []
