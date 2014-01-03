@@ -93,33 +93,42 @@ class Datasource(BaseDatasource):
                 links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
         return links
     
-    def __build_absentee_url(self, year, election):
+    def __build_absentee_metadata(self, year, election):
         # absentee files available from 2002-forward
         if election['race_type'] == 'general':
             slug = str(year)[2:4] + 'Gen'
         else:
             slug = str(year)[2:4] + 'Pri'
-        return "http://www.sos.idaho.gov/elect/absentee/%s_Absentee.xls" % slug
+        raw_url = "http://www.sos.idaho.gov/elect/absentee/%s_Absentee.xls" % slug
+        return {
+                    "generated_filename": self._generate_filename(election, absentee=True),
+                    "raw_url": raw_url,
+                    "ocd_id": 'ocd-division/country:us/state:id',
+                    "name": 'Idaho',
+                    "election": election['slug']
+                }
 
     def _build_metadata(self, year, elections):
+        # TODO: need to handle multiple files per election
+        # ID has two files for each election
         meta = []
         year_int = int(year)
+        results_links = self.__filter_results_links(year)
         for election in elections:
-            meta.append({
-                "generated_filename": self._generate_filename(election),
-                "raw_url": election['direct_link'],
-                "ocd_id": 'ocd-division/country:us/state:id',
-                "name": 'Idaho',
-                "election": election['slug']
-            })
+            if year > 2000:
+                meta.append(self.__build_absentee_metadata(year, election))
+            for link in results_links:
+                meta.append({
+                    "generated_filename": self._generate_filename(election),
+                    "raw_url": election['direct_link'],
+                    "ocd_id": 'ocd-division/country:us/state:id',
+                    "name": 'Idaho',
+                    "election": election['slug']
+                })
         return meta
     
-    def _generate_filename(self, election):
-        # example: 20021105__fl__general.txt
-        if election['race_type'] == 'primary-runoff':
-            race_type = 'primary__runoff'
-        else:
-            race_type = election['race_type']
+    def _generate_filename(self, election, absentee=False):
+        race_type = election['race_type']
         if election['special'] == True:
             race_type = race_type + '__special'
         bits = [
@@ -127,7 +136,9 @@ class Datasource(BaseDatasource):
             self.state.lower(),
             race_type
         ]
-        name = "__".join(bits) + '.txt'
+        if absentee:
+            bits.append('absentee')
+        name = "__".join(bits) + '.xls'
         return name
     
     def _jurisdictions(self):
