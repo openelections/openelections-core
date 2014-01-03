@@ -32,6 +32,7 @@ import json
 import unicodecsv
 import urlparse
 
+from openelex import PROJECT_ROOT
 from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
 
