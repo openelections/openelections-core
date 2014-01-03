@@ -16,6 +16,10 @@ File-name convention on MD site (2004-2012):
 
     Exceptions: 2000 + 2002
 
+To run mappings from invoke task:
+
+    invoke datasource.mappings -s md > us/md/mappings/filenames.json
+
 """
 import re
 
