@@ -22,7 +22,7 @@ class Office(EmbeddedDocument):
 class Contest(DynamicDocument):
     created = DateTimeField()
     updated = DateTimeField()
-    source = StringField(required=True, help_text="Name of data source for this file, preferably standardized filename from datasource.py")
+    source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     slug = StringField(required=True, help_text="Slugified office name, plus district and party if relevant")
     state = StringField(required=True)
@@ -60,7 +60,7 @@ class Candidate(DynamicDocument):
     }
 
     """
-    source = StringField(required=True, help_text="Name of data source for this file, preferably standardized filename from datasource.py")
+    source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     contest = ReferenceField(Contest, reverse_delete_rule=CASCADE, required=True)
     contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
@@ -91,7 +91,7 @@ class Candidate(DynamicDocument):
         if self.raw_parties:
             parties = ", ".join([party for party in self.raw_parties])
             if parties:
-                name += " (%s)" % paries
+                name += " (%s)" % parties
         return name
 
     @property
