@@ -41,7 +41,11 @@ class Contest(DynamicDocument):
     party = StringField(help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
 
     def __unicode__(self):
-        return u'%s-%s' % (self.election_id, self.slug)
+        return u'%s-%s' % self.key
+
+    @property
+    def key(self):
+        return (self.election_id, self.slug)
 
 
 class Candidate(DynamicDocument):
@@ -103,6 +107,11 @@ class Candidate(DynamicDocument):
             if self.raw_suffix:
                 name += " %s" % self.raw_suff
         return name
+
+    @property
+    def key(self):
+        return (self.election_id, self.contest_slug, self.slug)
+
 
 class Result(DynamicDocument):
 
