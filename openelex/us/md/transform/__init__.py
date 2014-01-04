@@ -26,8 +26,7 @@ class After2002Files(object):
 
     @staticmethod
     def standardize_office_and_district():
-        import ipdb;ipdb.set_trace()
-        print "bar"
+        pass
 
     @staticmethod
     def clean_vote_counts():
