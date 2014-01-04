@@ -18,8 +18,7 @@ def run(state):
     for name in dir(state_mod.validate):
         if name.startswith('validate_'):
             func = getattr(state_mod.validate, name)
-            print '* %s' % func.func_name
             try:
                 func()
             except AssertionError, e:
-                sys.exit("Error: %s - %s" % (name, e))
+                sys.exit("Error: %s - %s - %s" % (state.upper(), name, e))
