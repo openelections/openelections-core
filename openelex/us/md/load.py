@@ -17,22 +17,12 @@ class LoadResults(BaseLoader):
 
         self.timestamp = datetime.datetime.now()
         self.datasource = Datasource()
-        # No party on elec_type_id
-        self.elec_type_id = mapping['election']
-        # Elec id includes party for primaries
-        self.election_id = self.elec_type_id
-        if 'primary' in self.elec_type_id:
-            try:
-                party_abbrev = re.search(r'(dem|rep)', self.source).groups()[0]
-                self.election_id += "-%s" % party_abbrev
-            except AttributeError:
-                import ipdb; ipdb.set_trace()
-
+        self.election_id = mapping['election']
         # Unlike Results, Contest and Candidate metadata is not deleted and reloaded each
         # time, since this metadata is required for multiple file types.
         # We build lookups for this data to optimize Results data loading.
-        self.contest_lkup = self._build_lkup(Contest, self.source)
-        self.cand_lkup = self._build_lkup(Candidate, self.source)
+        self.contest_lkup = self._build_lkup(Contest)
+        self.cand_lkup = self._build_lkup(Candidate)
 
         print("LOAD: %s" % self.source)
         # Reload results fresh every time
@@ -51,16 +41,17 @@ class LoadResults(BaseLoader):
             self.load_non2002_file(mapping)
 
     # Private methods
-    def _build_lkup(self, doc_klass, source):
-        """Build lkup for given document class
+    def _build_lkup(self, doc_klass):
+        """Build lkup for Contests/Candiates
 
         self_build_lkup(Candidate, mapping['generated_filename'])
 
         """
+        # Fetch all contests or candidates for given election
         lkup = {}
-        objs = doc_klass.objects.filter(source=source)
+        objs = doc_klass.objects.filter(election_id = self.election_id)
         for obj in objs:
-            lkup[(self.election_id, obj.slug)] = obj
+            lkup[obj.key] = obj
         return lkup
 
     @property
@@ -71,11 +62,9 @@ class LoadResults(BaseLoader):
         year = int(re.search(r'\d{4}', self.election_id).group())
         elecs = self.datasource.elections(year)[year]
         # Get election metadata by matching on election slug
-        elec_meta = [e for e in elecs if e['slug'] == self.elec_type_id][0]
+        elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
         party = row['Party'].strip()
-        #TODO: need generic election id for gen and primaries by party
-        # but without district
-        slug = self._build_race_slug(row)
+        slug = self._build_contest_slug(row)
         key = (self.election_id, slug)
         try:
             contest = self.contest_lkup[key]
@@ -84,8 +73,6 @@ class LoadResults(BaseLoader):
                 'created':  self.timestamp,
                 'updated': self.timestamp,
                 'source': self.source,
-                #formerly 'election_id': election['slug'],
-                'elec_type_id': self.elec_type_id,
                 'election_id': self.election_id,
                 'slug': slug,
                 'state': self.state.upper(),
@@ -108,14 +95,12 @@ class LoadResults(BaseLoader):
     def _get_or_create_candidate(self, row, contest):
         raw_full_name = row['Candidate Name'].strip()
         slug = slugify(raw_full_name, substitute='-')
-        key = (self.election_id, slug)
+        key = (self.election_id, contest.slug, slug)
         try:
             candidate = self.cand_lkup[key]
         except KeyError:
             cand_kwargs = {
                 'source': self.source,
-                #formerly 'election_id': self.election_id,
-                'elec_type_id': self.elec_type_id,
                 'election_id': self.election_id,
                 'contest': contest,
                 'contest_slug': contest.slug,
@@ -126,16 +111,16 @@ class LoadResults(BaseLoader):
             candidate = Candidate.objects.create(**cand_kwargs)
             candidate.save()
             self.cand_lkup[key] = candidate
-        if 'anne' in self.source and 'primary' in self.source:
-            import ipdb; ipdb.set_trace()
         return candidate
 
-    def _build_race_slug(self, row):
+    def _build_contest_slug(self, row):
         office = row['Office Name'].strip()
         bits = [office]
         district = row['Office District'].strip()
-        if district and 'pres' not in office:
+        if district and 'pres' not in office.lower():
             bits.append(district)
+        if 'primary' in self.source:
+            bits.append(row['Party'].lower())
         return slugify(" ".join(bits), substitute='-')
 
     def load_non2002_file(self, mapping):
