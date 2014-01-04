@@ -1,20 +1,22 @@
 from openelex.models import Contest, Candidate, Result
 
-def validate_unique_contests():
-    """Count of contests should match unique set of election ids"""
-    elec_ids_count = len(Contest.objects.filter(state='MD').distinct('election_id'))
-    contest_count = Contest.objects.filter(state='MD').count()
+#TODO: Genericize this to check unique contests for all elections
+def validate_unique_prez_2012_general():
+    """Should only be a single contest for 2012 prez general"""
+    count = Contest.objects.filter(election_id='md-2012-11-06-general', slug='president-vice-pres').count()
+    expected = 1
     try:
-        assert elec_ids_count == contest_count
+        assert count == expected
+        print "PASS: %s general prez election found for 2012" % count
     except AssertionError:
-        raise AssertionError("MD - mismatch between contest count (%s) and election id count (%s)" % (contest_count, elec_ids_count))
+        raise AssertionError("Mismatch between 2012 general prez contest count (%s) and expected count (%s)" % (count, expected))
 
-def validate_unique_candidates():
+#def validate_unique_candidates():
     #for each election date
     #count of unique set of candidates should match Candidate.objects.count()
-    pass
+#    pass
 
-def validate_name_parsing():
+#def validate_name_parsing():
     #Check assortment of names
     #Check that Other was skipped
-    pass
+#    pass
