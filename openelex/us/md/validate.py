@@ -56,7 +56,7 @@ def validate_obama_primary_candidacy_2012():
     except Candidate.DoesNotExist:
         raise Candidate.DoesNotExist("zero obama primary candidacies found for 2012")
     except Candidate.MultipleObjectsReturned as e:
-        raise Candidate.DoesNotExist("multiple obama primary candidacies found for 2012: %s" %  e)
+        raise Candidate.MultipleObjectsReturned("multiple obama primary candidacies found for 2012: %s" %  e)
 
 #def validate_name_parsing():
     #Check assortment of names
