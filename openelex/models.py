@@ -147,10 +147,11 @@ class Result(DynamicDocument):
 
     def __unicode__(self):
         bits = (
+            self.election_id,
             self.contest_slug,
             self.candidate_slug,
             self.reporting_level,
             self.raw_jurisdiction,
             self.raw_total_votes,
         )
-        return u'%s-%s-%s-%s (%s)' % bits
+        return u'%s-%s-%s-%s-%s (%s)' % bits
