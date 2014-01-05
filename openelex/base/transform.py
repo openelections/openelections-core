@@ -2,9 +2,6 @@ import os
 import re
 import sys
 
-# Hack to avoid having our own us module shadown python-us module of same name
-sys.path.pop(0)
-import us
 
 
 class Registry(object):
