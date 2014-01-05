@@ -27,7 +27,7 @@ class BaseFetcher(StateBase):
         ARGS
 
             url - link to download
-            fname - file name for local storage in cache_dir
+            fname - file name for local storage in cache directory
             overwrite - if True, overwrite cached copy with fresh donwload
 
         """
@@ -47,7 +47,7 @@ class BaseFetcher(StateBase):
         # non-result pages/files use default urllib name conventions
         # result files need standardization logic (TBD)
         if fname:
-            filename = join(self.cache_dir, fname)
+            filename = join(self.cache.abspath, fname)
         else:
             filename = self._filename_from_url(url)
         return filename
@@ -58,7 +58,7 @@ class BaseFetcher(StateBase):
         # url to local filepath
         result = urlparse.urlsplit(url)
         bits = [
-            self.cache_dir,
+            self.cache.abspath,
             result.netloc + '_' +
             result.path.strip('/'),
         ]

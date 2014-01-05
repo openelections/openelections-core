@@ -16,6 +16,10 @@ File-name convention on MD site (2004-2012):
 
     Exceptions: 2000 + 2002
 
+To run mappings from invoke task:
+
+    invoke datasource.mappings -s md > us/md/mappings/filenames.json
+
 """
 import re
 
@@ -52,6 +56,8 @@ class Datasource(BaseDatasource):
             self._elections = {}
             for elec in elec_api.find(self.state):
                 yr = int(elec['start_date'][:4])
+                # Add elec slug
+                elec['slug'] = self._elec_slug(elec)
                 self._elections.setdefault(yr, []).append(elec)
         if year:
             year_int = int(year)
@@ -61,12 +67,20 @@ class Datasource(BaseDatasource):
     # PRIVATE METHODS
     def _races_by_type(self, elections):
         "Filter races by type and add election slug"
-        races = {} 
+        races = {}
         for elec in elections:
             rtype = elec['race_type'].lower()
-            elec['slug'] = "-".join((self.state, elec['start_date'], rtype))
+            elec['slug'] = self._elec_slug(elec)
             races[rtype] = elec
         return races['general'], races['primary']
+
+    def _elec_slug(self, election):
+        bits = [
+            self.state,
+            election['start_date'],
+            election['race_type'].lower()
+        ]
+        return "-".join(bits)
 
     def _build_metadata(self, year, elections):
         year_int = int(year)
