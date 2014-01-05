@@ -11,10 +11,11 @@ from mongoengine.fields import (
 )
 # Below import is necessary to instantiate connection object
 import settings
+from openelex.us import STATE_POSTALS
 
 
 class Office(EmbeddedDocument):
-    state = StringField()
+    state = StringField(choices=STATE_POSTALS)
     name = StringField()
     district = StringField()
 
@@ -25,7 +26,7 @@ class Contest(DynamicDocument):
     source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     slug = StringField(required=True, help_text="Slugified office name, plus district and party if relevant")
-    state = StringField(required=True)
+    state = StringField(required=True, choices=STATE_POSTALS)
     start_date = DateTimeField(required=True)
     end_date = DateTimeField(required=True)
     election_type = StringField(help_text="general, primary, etc. from OpenElex metadata")
@@ -68,8 +69,7 @@ class Candidate(DynamicDocument):
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     contest = ReferenceField(Contest, reverse_delete_rule=CASCADE, required=True)
     contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
-    # Keep state denormalized to ease querying?
-    state = StringField(max_length=2, required=True, help_text="Capitalized postal code")
+    state = StringField(required=True, choices=STATE_POSTALS)
     #TODO: Add validation to require raw_full_name or raw_family_name
     raw_full_name = StringField(max_length=300)
     slug = StringField(max_length=300, required=True, help_text="Slugified name for easier querying and obj repr")
@@ -125,7 +125,7 @@ class Result(DynamicDocument):
     )
     source = StringField(required=True, help_text="Name of data source for this file, preferably standardized filename from datasource.py")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
-    state = StringField(max_length=2, required=True, help_text="Capitalized postal code")
+    state = StringField(required=True, choices=STATE_POSTALS)
     reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
     contest = ReferenceField(Contest, reverse_delete_rule=CASCADE, required=True)
     contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
