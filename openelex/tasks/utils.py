@@ -22,4 +22,9 @@ def print_files(files):
         print f
     print "%s files found" % len(files)
 
+def split_args(raw_args, separator=','):
+    """Helper for parsing command-line options"""
+    return [func_name.strip() for func_name in raw_args.split(separator)]
+
+
 HELP_TEXT = help_text({})
