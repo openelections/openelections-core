@@ -34,7 +34,7 @@ def run(state, include=None, exclude=None):
     """
     Run data validations for state.
 
-    State is required. Optionally provide to limit validations that are performed.
+    State is required. Optionally filter validations using include/exclude flags.
     """
     if include and exclude:
         sys.exit("ERROR: You can not use both include and exclude flags!")
