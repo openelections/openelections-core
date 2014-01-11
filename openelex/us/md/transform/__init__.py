@@ -21,12 +21,12 @@ def parse_names_after_2002():
         cand.suffix = name.suffix
         cand.save()
 
-def standardize_office_and_district():
-    pass
+#def standardize_office_and_district():
+#    pass
 
 #def clean_vote_counts():
     #pass
 
 registry.register('md', parse_names_after_2002)
-registry.register('md', standardize_office_and_district)
+#registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)

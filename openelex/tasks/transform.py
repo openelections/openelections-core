@@ -3,7 +3,7 @@ import sys
 
 from invoke import task
 
-from .utils import load_module
+from .utils import load_module, split_args
 
 @task(help={
     'state':'(required) Two-letter state postal, e.g. NY',
@@ -18,7 +18,7 @@ def list(state):
     transforms = state_mod.transform.registry.all(state)
     print "\n%s transforms, in order of execution:\n" % state.upper()
     for key, func in transforms.items():
-        print '* %s:' % key
+        print '* %s' % key
     print
 
 
@@ -40,15 +40,14 @@ def run(state, include=None, exclude=None):
     state_mod = load_module(state, ['transform'])
     transforms = state_mod.transform.registry.all(state)
 
-    parse_arg_list = lambda arg_list: set([func_name.strip() for func_name in arg_list.split(',')])
-
+    # Filter transformations  based in include/exclude flags
     if include:
-        to_run = parse_arg_list(include)
+        to_run = split_args(include)
         for trx in transforms:
             if trx not in to_run:
                 transforms.pop(trx)
-    else:
-        to_skip = parse_arg_list(exclude)
+    if exclude:
+        to_skip = split_args(exclude)
         for trx in transforms:
             if trx in to_skip:
                 transforms.pop(trx)
