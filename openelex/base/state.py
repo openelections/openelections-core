@@ -7,8 +7,7 @@ from openelex import PROJECT_ROOT
 from openelex.settings import MONGO
 
 class StateBase(object):
-    """Base class with common functionality for working 
-    with state modules. 
+    """Base class with common functionality for working with state modules.
 
     Intended to be subclassed by other base modules or
     state specific modules
