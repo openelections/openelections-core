@@ -1,7 +1,7 @@
 from invoke import Collection
-from mongoengine import connect, ConnectionError
+from mongoengine import ConnectionError
 
-from openelex.settings import MONGO
+from openelex.settings import init_db
 from fetch import fetch
 import archive, cache, datasource, load, transform, validate
 
@@ -15,8 +15,8 @@ ns.add_collection(load)
 ns.add_collection(transform)
 ns.add_collection(validate)
 
-# Initialize Mongo connection
+# Initialize prod Mongo connection
 try:
-    connect('openelex', **MONGO['openelex'])
+    init_db()
 except ConnectionError:
     pass

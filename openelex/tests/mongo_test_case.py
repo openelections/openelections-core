@@ -1,16 +1,16 @@
 from unittest import TestCase
 
-from mongoengine import connect, ConnectionError
+from mongoengine import ConnectionError
 from nose.exc import SkipTest
 
-from openelex.settings import MONGO
+from openelex.settings import init_db
 
 
 class MongoTestCase(TestCase):
 
     def setUp(self):
         try:
-            self.db = connect('openelex_test', **MONGO['openelex_test'])['openelex_test']
+            self.db = init_db('openelex_test')
         except ConnectionError:
             raise SkipTest('Could not connect to Mongo on localhost')
 
