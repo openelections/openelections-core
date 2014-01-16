@@ -3,11 +3,12 @@ import re
 import sys
 from collections import OrderedDict
 
+from .state import StateBase
 
-class Registry(object):
 
-    def __init__(self):
-        self._registry = {}
+class Registry(StateBase):
+
+    _registry = {}
 
     def register(self, state, func):
         try:

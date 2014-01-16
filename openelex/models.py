@@ -9,8 +9,6 @@ from mongoengine.fields import (
     ListField,
     StringField,
 )
-# Below import is necessary to instantiate connection object
-import settings
 from openelex.us import STATE_POSTALS
 
 

@@ -1,7 +1,10 @@
 import os
 
+from mongoengine import connect, ConnectionError
 
 from .cache import StateCache
+from openelex import PROJECT_ROOT
+from openelex.settings import MONGO
 
 class StateBase(object):
     """Base class with common functionality for working 
@@ -26,3 +29,7 @@ class StateBase(object):
         # Create ocd mappings csv if it doesn't exist
         open(os.path.join(self.mappings_dir, self.state + '.csv'), 'a').close()
 
+        try:
+            connect('openelex', **MONGO['openelex'])
+        except ConnectionError:
+            pass
