@@ -18,7 +18,7 @@ class StateBase(object):
             self.state = state
         self.cache = StateCache(self.state)
         # Create mappings directory if it doesn't exist
-        self.mappings_dir = os.path.join('us', self.state, 'mappings')
+        self.mappings_dir = os.path.join(PROJECT_ROOT, 'us', self.state, 'mappings')
         try:
             os.makedirs(self.mappings_dir)
         except OSError:

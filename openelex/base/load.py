@@ -8,6 +8,7 @@ import unicodecsv
 
 from .state import StateBase
 
+
 class BaseLoader(StateBase):
     """
     Base class for loading results data into MongoDB

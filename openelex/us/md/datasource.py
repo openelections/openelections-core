@@ -26,6 +26,7 @@ import re
 from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
 
+
 class Datasource(BaseDatasource):
 
     base_url = "http://www.elections.state.md.us/elections/%(year)s/election_data/"
