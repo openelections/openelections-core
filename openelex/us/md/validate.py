@@ -38,7 +38,7 @@ def validate_obama_candidacies_2012():
     expected = 2
     try:
         assert count == expected
-        print "PASS: %s obama candidacies found for %s general" % (count, '2012')
+        print "PASS: %s obama candidacies found for %s" % (count, '2012')
     except AssertionError:
         raise AssertionError("expected obama 2012 candidacies (%s) did not match actual count(%s)" % (expected, count))
 
