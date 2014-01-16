@@ -61,7 +61,7 @@ def mappings(state, datefilter=''):
 @task(help=HELP)
 def elections(state, datefilter=''):
     """
-    List elections for a state.
+    List elections for a state. This data comes from the OpenElex Metadata API.
 
     State is required. Optionally provide 'datefilter' to limit  results.
     """

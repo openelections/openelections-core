@@ -1,31 +1,32 @@
 import os
 import re
 import sys
+from collections import OrderedDict
+
+from .state import StateBase
 
 
+class Registry(StateBase):
 
-class Registry(object):
+    _registry = {}
 
-    def __init__(self):
-        self._registry = {}
-
-    def register(self, state, func, group='all'):
+    def register(self, state, func):
         try:
             state_xforms = self._registry[state]
         except KeyError:
-            self._registry[state] = {}
+            self._registry[state] = OrderedDict()
             state_xforms = self._registry[state]
-        state_xforms.setdefault(group, []).append(func)
+        state_xforms[func.func_name] = func
 
-    def get(self, state, group='all'):
+    def get(self, state, func_name):
         try:
-            xforms = self._registry[state][group]
+            transform = self._registry[state][func_name]
         except KeyError:
-            err_msg = "No transforms registered for %s and %s group" % (state, group)
+            err_msg = "Transform (%s) not registered for %s" % (func_name, state)
             raise KeyError(err_msg)
-        return xforms
+        return transform
 
-    def available(self, state):
+    def all(self, state):
         return self._registry[state]
 
 # Global object for registering transform functions

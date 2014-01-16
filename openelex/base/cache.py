@@ -7,7 +7,7 @@ class StateCache(object):
 
     def __init__(self, state):
         self.state = state.lower()
-        self.path = os.path.join('us', self.state, 'cache')
+        self.path = os.path.join(PROJECT_ROOT, 'us', self.state, 'cache')
         try:
             os.makedirs(self.path)
         except OSError:

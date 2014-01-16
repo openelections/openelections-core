@@ -11,6 +11,7 @@ import unicodecsv
 from openelex import PROJECT_ROOT
 from .state import StateBase
 
+
 class BaseDatasource(StateBase):
     """
     Wrapper for interacting with source data.
