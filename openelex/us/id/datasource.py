@@ -15,14 +15,11 @@ although earlier files have a slightly different format:
 There are two files for each election; one covers federal and statewide offices, with the other covers the state legislature. We put these into a dict
 structured like so:
     
-    {'primary_2012_statewide':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_fed_prec.xls', 'primary_2012_state_legislature':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_leg_prec.xls'}
+    {'primary_statewide':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_fed_prec.xls', 'primary_state_legislature':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_leg_prec.xls'}
 
 """
 import os
 from os.path import join
-import re
-import json
-import unicodecsv
 import requests
 from bs4 import BeautifulSoup
 
@@ -65,43 +62,46 @@ class Datasource(BaseDatasource):
             return {year_int: self._elections[year_int]}
         return self._elections
     
-    def results_links(self):
-        url = "http://www.sos.idaho.gov/elect/results.htm"
-        r = requests.get(url)
-        soup = BeautifulSoup(r.text)
-        table = soup.find_all('table')[3]
-        precincts = [x for x in table.find_all('a') if 'prec' in x['href'] or 'pct' in x['href']]
-        self._results_links = [x for x in precincts if x.text == 'Statewide' or x.text == 'Legislature']
+    def results_links(self, year):
+        if not hasattr(self, '_results_links'):
+            url = "http://www.sos.idaho.gov/elect/results.htm"
+            r = requests.get(url)
+            soup = BeautifulSoup(r.text)
+            table = soup.find_all('table')[3]
+            precincts = [x for x in table.find_all('a') if str(year) in x['href']]
+            self._results_links = [x for x in precincts if x.text == 'Statewide' or 'Legislature' in x.text]
         return self._results_links
         
     # PRIVATE METHODS
     
     def __filter_results_links(self, year):
         links = {}
-        for link in [x for x in self._results_links if str(year) in x['href']]:
-            if 'primary' in link['href'] and link.text == 'Statewide':
-                slug = 'primary_%s_statewide' % str(year)
-                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
-            elif 'primary' in link['href']:
-                slug = 'primary_%s_state_legislature' % str(year)
-                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
-            elif 'general' in link['href'] and link.text == 'Statewide':
-                slug = 'general_%s_statewide' % str(year)
-                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
-            else:
-                slug = 'general_%s_state_legislature' % str(year)
-                links[slug] = 'http://www.sos.idaho.gov/elect/'+link['href']
-        return links
+        for link in [x for x in self.results_links(year)]:
+            if link.text == 'Statewide' and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'pri_lgpc' in link['href']):
+                links['primary_statewide'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif 'Legislature' in link.text and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'pri_lgpc' in link['href']):
+                links['primary_state_legislature'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif link.text == 'Statewide' and ('prec' in link['href'] or 'pct' in link['href'] or 'gen_fed' in link['href']):
+                links['general_statewide'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif 'Legislature' in link.text and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'gen_lgpc' in link['href']):
+                links['general_state_legislature'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+        try:
+            links['primary_state_legislature']
+        except:
+            print links
+        return [links['primary_statewide'], links['primary_state_legislature']], [links['general_statewide'], links['general_state_legislature']]
     
     def __build_absentee_metadata(self, year, election):
         # absentee files available from 2002-forward
         if election['race_type'] == 'general':
             slug = str(year)[2:4] + 'Gen'
+            title = 'general'
         else:
             slug = str(year)[2:4] + 'Pri'
+            title = 'primary'
         raw_url = "http://www.sos.idaho.gov/elect/absentee/%s_Absentee.xls" % slug
         return {
-                    "generated_filename": self._generate_filename(election, absentee=True),
+                    "generated_filename": self._generate_filename(election, absentee=True, title=title),
                     "raw_url": raw_url,
                     "ocd_id": 'ocd-division/country:us/state:id',
                     "name": 'Idaho',
@@ -110,31 +110,39 @@ class Datasource(BaseDatasource):
 
     def _build_metadata(self, year, elections):
         # TODO: need to handle multiple files per election
-        # ID has two files for each election
+        # ID has two files for each election, grab them from results_links using
+        # following conventions: [primary|general]_[year]_[statewide\state_legislature].xls
         meta = []
         year_int = int(year)
-        results_links = self.__filter_results_links(year)
+        primary, general = self.__filter_results_links(year)
         for election in elections:
+            if election['race_type'] == 'primary':
+                statewide, state_legislative = primary
+            else:
+                statewide, state_legislative = general
             if year > 2000:
                 meta.append(self.__build_absentee_metadata(year, election))
-            for link in results_links:
-                meta.append({
-                    "generated_filename": self._generate_filename(election),
-                    "raw_url": election['direct_link'],
-                    "ocd_id": 'ocd-division/country:us/state:id',
-                    "name": 'Idaho',
-                    "election": election['slug']
-                })
+            meta.append({
+                "generated_filename": self._generate_filename(election, absentee=False, title='statewide'),
+                "raw_url": statewide,
+                "ocd_id": 'ocd-division/country:us/state:id',
+                "name": 'Idaho',
+                "election": election['slug']
+            })
+            meta.append({
+                "generated_filename": self._generate_filename(election, absentee=False, title='state_legislative'),
+                "raw_url": state_legislative,
+                "ocd_id": 'ocd-division/country:us/state:id',
+                "name": 'Idaho',
+                "election": election['slug']
+            })
         return meta
     
-    def _generate_filename(self, election, absentee=False):
-        race_type = election['race_type']
-        if election['special'] == True:
-            race_type = race_type + '__special'
+    def _generate_filename(self, election, absentee=False, title=None):
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),
-            race_type
+            title
         ]
         if absentee:
             bits.append('absentee')
