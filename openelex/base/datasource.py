@@ -22,16 +22,16 @@ class BaseDatasource(StateBase):
     Intended to be subclassed in state-specific datasource.py modules.
 
     """
-    def elections(self):
+    def elections(self, year=None):
         raise NotImplementedError()
 
-    def mappings(self):
+    def mappings(self, year=None):
         raise NotImplementedError()
 
-    def target_urls(self):
+    def target_urls(self, year=None):
         raise NotImplementedError()
 
-    def filename_url_pairs(self):
+    def filename_url_pairs(self, year=None):
         "Returns array of tuples of standardized filename, source url pairs"
         raise NotImplementedError()
 
