@@ -1,63 +1,29 @@
+from bson import json_util
+from csv import DictWriter
 from datetime import datetime
+import json
 import os
 
 from openelex import COUNTRY_DIR
 from openelex.exceptions import UnsupportedFormatError
-from openelex.models import Result
+from openelex.models import Result, Contest, Candidate
 
-
-class Baker(object):
-    """Writes (filtered) election and candidate data to structured files"""
-
-    timestamp_format = "%Y%m%dT%H%M%S"
+class Roller(object):
     """
-    stftime() format string used to format timestamps. Mostly used for 
-    creating filenames.
-    
-    Defaults to a version of ISO-8601 without '-' or ':' characters.
+    # TODO: Less irreverant docstring
+    Because a baker uses a roller to flatten stuff. duh.
     """
-
-    def __init__(self, **kwargs):
-        """
-        Constructor.
-        """
-        self.kwargs = kwargs
-        # TODO: Decide if anything needs to happen here.
-        
-
-    def default_outputdir(self):
-        """
-        Returns the default path for storing output files.
-       
-        This will be used if a directory is not specifically passed to the
-        constructor.  It's implemented as a method in case subclasses
-        want to base the directory name on instance attributes.
-        """
-        return os.path.join(COUNTRY_DIR, 'bakery')
-
-    # Abstraction for underlying ORM (in this case MongoEngine).
-    # The architecture is lifted largely from Tastypie
-    # (https://github.com/toastdriven/django-tastypie/blob/master/tastypie/resources.py)
-    # These hooks might be overkill but they help make the code more
-    # ORM agnostic and easier to test.
-
-    def build_list(self, **kwargs):
-        limiting_kwargs = self.kwargs
-        limiting_kwargs.update(kwargs)
-        
-        filters = self.build_filters(**limiting_kwargs)
-        fields = self.build_fields(**limiting_kwargs)
-        self._objects = self.get_object_list()
-        self._objects = self.apply_filters(self._objects, filters)
-        self._objects = self.apply_field_limits(self._objects, fields)
-
-        return self 
+    def __init__(self):
+        self._results = Result.objects
+        self._candidates = Candidate.objects
+        self._contests = Contest.objects
 
     def build_date_filters(self, datestring):
         # QUESTION: Is it better to filter on one of the related fields
         # instead of the denormalized field 
         filters = {}
 
+        # TODO: Better interpretation of date string
         if len(datestring) == 4:
             filters['election_id__contains'] = datestring
         elif len(datestring) == 8:
@@ -77,8 +43,6 @@ class Baker(object):
         Arguments:
 
         * state: Required. Postal code for a state.  For example, "md".
-        * outputdir: Directory where output files will be written. Defaults to 
-          "openelections/us/bakery"
         * datefilter: Date specified in "YYYY" or "YYYY-MM-DD" used to filter
           elections before they are baked.
         * type: Election type. For example, general, primary, etc. 
@@ -92,9 +56,14 @@ class Baker(object):
 
         # TODO: Sensible defaults for filtering.  By default, should filter to all
         # state/contest-wide results for all races when no filters are specified.
-        filters = {
-            'state': kwargs.get('state').upper(),
-        }
+        filters = {}
+        
+        filters['state'] = kwargs.get('state').upper()
+
+        try:
+            filters['election_id__contains'] = kwargs.get('type')
+        except AttributeError:
+            pass
 
         try:
             filters.update(self.build_date_filters(kwargs.get('datefilter')))
@@ -108,33 +77,121 @@ class Baker(object):
         Returns a list of fields that will be included in the result or an
         empty list to include all fields.
         """
-        return [] 
+        return []
 
-    def apply_filters(self, objects, filters={}):
-        return objects.filter(**filters)
+    def apply_filters(self, filters={}):
+        # TODO: Separate filters for each collection
+        #self._results.filter(**filters)
+        #self._candidates.filter(**filters)
+        #self._contests.filter(**filters)
+        # Why is this faster than the above?
+        self._results = self._results.filter(**filters)
+        self._candidates = self._candidates.filter(**filters)
+        self._contests = self._contests.filter(**filters)
+
+    def apply_field_limits(self, fields=[]):
+        # TODO: Separate fields for each collection
+        self._results = self._results.only(*fields)
+        self._candidates = self._candidates.only(*fields)
+        self._contests = self._contests.only(*fields)
+
+    def flatten(self, result, contest, candidate):
+        del result['_id']
+        del result['candidate']
+        del result['contest']
+        contest.pop('_id', None)
+        candidate.pop('_id', None)
+
+        flat_contest = { 'contest.' + k: v for (k, v) in contest.items() }
+        flat_candidate = { 'candidate.' + k: v for (k, v) in contest.items() }
+        result.update(flat_contest)
+        result.update(flat_candidate)
+        return result 
+
+    def get_list(self, **kwargs):
+        filters = self.build_filters(**kwargs)
+        fields = self.build_fields(**kwargs)
+        self.apply_filters(filters)
+        self.apply_field_limits(fields)
+
+        candidate_map = { str(c['_id']):c for c in self._candidates.as_pymongo() }
+        contest_map = { str(c['_id']):c for c in self._contests.as_pymongo() }
+
+        self._items = []
+        self._fields = set()
+        for result in self._results.as_pymongo():
+            contest = contest_map[str(result['contest'])]
+            candidate = candidate_map[str(result['candidate'])]
+            flat = self.flatten(result, contest, candidate)
+            self._fields.update(set(flat.keys()))
+            self._items.append(flat)
+
+        return self._items
+
+    def get_fields(self):
+        return list(self._fields)
+
+
+class Baker(object):
+    """Writes (filtered) election and candidate data to structured files"""
+
+    timestamp_format = "%Y%m%dT%H%M%S"
+    """
+    stftime() format string used to format timestamps. Mostly used for 
+    creating filenames.
     
-    def apply_field_limits(self, objects, fields=[]):
-        return objects.only(*fields)
+    Defaults to a version of ISO-8601 without '-' or ':' characters.
+    """
 
-    def get_object_list(self):
-        # QUESTION: Is this right, or do we need to merge across datasets?
-        # ANSWER: Flatten related models.
-        return Result.objects
+    def __init__(self, **kwargs):
+        """
+        Constructor.
+        """
+        self.kwargs = kwargs
+        # TODO: Decide if anything needs to happen here.
 
-    def filename(self, **kwargs):
+    def default_outputdir(self):
+        """
+        Returns the default path for storing output files.
+       
+        This will be used if a directory is not specifically passed to the
+        constructor.  It's implemented as a method in case subclasses
+        want to base the directory name on instance attributes.
+        """
+        return os.path.join(COUNTRY_DIR, 'bakery')
+
+    def filename(self, fmt, **kwargs):
         timestamp = kwargs.get('timestamp', datetime.now())
-        fmt = kwargs.get('fmt', 'csv')
         state = self.kwargs.get('state')
-        return "%s_%s.%s" % (state,
+        return "%s_%s.%s" % (state.lower(),
             timestamp.strftime(self.timestamp_format), fmt) 
 
     def manifest_filename(self, **kwargs):
         timestamp = kwargs.get('timestamp', datetime.now())
         state = self.kwargs.get('state')
-        return "%s_%s_manifest.txt" % (state,
+        return "%s_%s_manifest.txt" % (state.lower(),
             timestamp.strftime(self.timestamp_format)) 
+
+    def collect_items(self):
+        roller = Roller()
+        self._items = roller.get_list(**self.kwargs)
+        self._fields = roller.get_fields()
+        return self
+
+    def get_items(self):
+        return self._items
            
     def write(self, fmt='csv', outputdir=None):
+        """
+        Writes data to file.
+        
+        Arguments:
+        
+        * fmt: Output format. Either 'csv' or 'json'. Default is 'csv'. 
+        * outputdir: Directory where output files will be written. Defaults to 
+          "openelections/us/bakery"
+          
+        """
         try:
             fmt_method = getattr(self, 'write_' + fmt) 
         except AttributeError:
@@ -143,16 +200,40 @@ class Baker(object):
         if outputdir is None:
             outputdir = self.default_outputdir()
 
-        fmt_method(outputdir)
+        return fmt_method(outputdir)
 
     def write_csv(self, outputdir):
-        raise NotImplementedError
+        if not os.path.exists(outputdir):
+            os.makedirs(outputdir)
+
+        path = os.path.join(outputdir, self.filename('csv', **self.kwargs))
+        with open(path, 'w') as csvfile:
+            writer = DictWriter(csvfile, self._fields)
+            writer.writeheader()
+            for row in self._items:
+                writer.writerow(row)
+
+        return self
 
     def write_json(self, outputdir):
-        raise NotImplementedError
+        if not os.path.exists(outputdir):
+            os.makedirs(outputdir)
 
-    def write_manifest(self, outputdir):
+        path = os.path.join(outputdir, self.filename('json', **self.kwargs))
+        with open(path, 'w') as f:
+            f.write(json.dumps(self._items, default=json_util.default))
+
+        return self
+
+    def write_manifest(self, outputdir=None):
         if outputdir is None:
             outputdir = self.default_outputdir()
 
-        raise NotImplementedError
+        if not os.path.exists(outputdir):
+            os.makedirs(outputdir)
+
+        path = os.path.join(outputdir, self.manifest_filename(**self.kwargs))
+        with open(path, 'w') as f:
+            f.write("TODO: Real manifest output\n")
+
+        return self

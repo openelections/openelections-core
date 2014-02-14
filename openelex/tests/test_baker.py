@@ -2,6 +2,8 @@ import os
 from datetime import datetime
 from unittest import TestCase
 
+from mongoengine.context_managers import query_counter
+
 from openelex.exceptions import UnsupportedFormatError
 
 try:
@@ -9,11 +11,20 @@ try:
 except ImportError:
     state_file = None
 
-from openelex.base.bake import Baker
+from openelex.base.bake import Roller, Baker
 
 class TestBakeStateFileTask(TestCase):
     def test_task_exists(self):
         self.assertIsNot(state_file, None, "Task bake.state_file does not exist.")
+
+class TestRoller(TestCase):
+    def test_get_list(self):
+        roller = Roller()
+        data = roller.get_list(state='md', datefilter='20120403',
+                type='general', level='state_legislative')
+        from pprint import pprint
+        pprint(data[0])
+        self.fail()
 
 class TestBaker(TestCase):
     def test_filename(self):
@@ -38,3 +49,11 @@ class TestBaker(TestCase):
         path = os.path.join(os.path.join('openelex', 'us', 'bakery'))
         outputdir = baker.default_outputdir()
         self.assertTrue(outputdir.endswith(path))
+
+    def test_collect_items(self):
+        baker = Baker(state='md', datefilter='20120403',
+                type='general', level='state_legislative')
+        data = baker.collect_items().get_items()
+        print data[0]
+            
+        self.fail()
