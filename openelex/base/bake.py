@@ -32,7 +32,7 @@ class Roller(object):
 
         return filters
  
-    def build_filters(self, **kwargs):
+    def build_filters(self, **filter_kwargs):
         """
         Returns a dictionary of filter arguments that will be used to limit
         the queryset.
@@ -58,21 +58,21 @@ class Roller(object):
         # state/contest-wide results for all races when no filters are specified.
         filters = {}
         
-        filters['state'] = kwargs.get('state').upper()
+        filters['state'] = filter_kwargs.get('state').upper()
 
         try:
-            filters['election_id__contains'] = kwargs.get('type')
+            filters['election_id__contains'] = filter_kwargs.get('type')
         except AttributeError:
             pass
 
         try:
-            filters.update(self.build_date_filters(kwargs.get('datefilter')))
+            filters.update(self.build_date_filters(filter_kwargs.get('datefilter')))
         except AttributeError:
             pass
 
         return filters
 
-    def build_fields(self, **kwargs):
+    def build_fields(self, **filter_kwargs):
         """
         Returns a list of fields that will be included in the result or an
         empty list to include all fields.
@@ -108,9 +108,9 @@ class Roller(object):
         result.update(flat_candidate)
         return result 
 
-    def get_list(self, **kwargs):
-        filters = self.build_filters(**kwargs)
-        fields = self.build_fields(**kwargs)
+    def get_list(self, **filter_kwargs):
+        filters = self.build_filters(**filter_kwargs)
+        fields = self.build_fields(**filter_kwargs)
         self.apply_filters(filters)
         self.apply_field_limits(fields)
 
@@ -143,12 +143,11 @@ class Baker(object):
     Defaults to a version of ISO-8601 without '-' or ':' characters.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **filter_kwargs):
         """
         Constructor.
         """
-        self.kwargs = kwargs
-        # TODO: Decide if anything needs to happen here.
+        self.filter_kwargs = filter_kwargs
 
     def default_outputdir(self):
         """
@@ -160,19 +159,19 @@ class Baker(object):
         """
         return os.path.join(COUNTRY_DIR, 'bakery')
 
-    def filename(self, fmt, timestamp, **kwargs):
-        state = self.kwargs.get('state')
+    def filename(self, fmt, timestamp, **filter_kwargs):
+        state = self.filter_kwargs.get('state')
         return "%s_%s.%s" % (state.lower(),
             timestamp.strftime(self.timestamp_format), fmt) 
 
-    def manifest_filename(self, timestamp, **kwargs):
-        state = self.kwargs.get('state')
+    def manifest_filename(self, timestamp, **filter_kwargs):
+        state = self.filter_kwargs.get('state')
         return "%s_%s_manifest.txt" % (state.lower(),
             timestamp.strftime(self.timestamp_format)) 
 
     def collect_items(self):
         roller = Roller()
-        self._items = roller.get_list(**self.kwargs)
+        self._items = roller.get_list(**self.filter_kwargs)
         self._fields = roller.get_fields()
         return self
 
@@ -207,7 +206,9 @@ class Baker(object):
         return fmt_method(outputdir, timestamp)
 
     def write_csv(self, outputdir, timestamp):
-        path = os.path.join(outputdir, self.filename('csv', timestamp, **self.kwargs))
+        path = os.path.join(outputdir,
+            self.filename('csv', timestamp, **self.filter_kwargs))
+            
         with open(path, 'w') as csvfile:
             writer = DictWriter(csvfile, self._fields)
             writer.writeheader()
@@ -217,7 +218,8 @@ class Baker(object):
         return self
 
     def write_json(self, outputdir, timestamp):
-        path = os.path.join(outputdir, self.filename('json', timestamp, **self.kwargs))
+        path = os.path.join(outputdir,
+            self.filename('json', timestamp, **self.filter_kwargs))
         with open(path, 'w') as f:
             f.write(json.dumps(self._items, default=json_util.default))
 
@@ -233,7 +235,9 @@ class Baker(object):
         if timestamp is None:
             timestamp = datetime.now()
 
-        path = os.path.join(outputdir, self.manifest_filename(timestamp, **self.kwargs))
+        path = os.path.join(outputdir,
+            self.manifest_filename(timestamp, **self.filter_kwargs))
+
         with open(path, 'w') as f:
             f.write("TODO: Real manifest output\n")
 
