@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from invoke import task
 
 from openelex.base.bake import Baker
@@ -32,6 +34,7 @@ def state_file(state, format='csv', outputdir=None, datefilter='', **kwargs):
     # TODO: Sensible defaults for filtering.  By default, should filter to all
     # state/contest-wide results for all races when no filters are specified.
 
+    timestamp = datetime.now()
     baker = Baker(state=state, datefilter=datefilter)
-    # TODO: Same timestamp for manifest and output data
-    baker.collect_items().write(format).write_manifest()
+    baker.collect_items().write(format,
+        timestamp=timestamp).write_manifest(timestamp=timestamp)

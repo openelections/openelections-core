@@ -160,14 +160,12 @@ class Baker(object):
         """
         return os.path.join(COUNTRY_DIR, 'bakery')
 
-    def filename(self, fmt, **kwargs):
-        timestamp = kwargs.get('timestamp', datetime.now())
+    def filename(self, fmt, timestamp, **kwargs):
         state = self.kwargs.get('state')
         return "%s_%s.%s" % (state.lower(),
             timestamp.strftime(self.timestamp_format), fmt) 
 
-    def manifest_filename(self, **kwargs):
-        timestamp = kwargs.get('timestamp', datetime.now())
+    def manifest_filename(self, timestamp, **kwargs):
         state = self.kwargs.get('state')
         return "%s_%s_manifest.txt" % (state.lower(),
             timestamp.strftime(self.timestamp_format)) 
@@ -181,7 +179,7 @@ class Baker(object):
     def get_items(self):
         return self._items
            
-    def write(self, fmt='csv', outputdir=None):
+    def write(self, fmt='csv', outputdir=None, timestamp=None):
         """
         Writes data to file.
         
@@ -200,13 +198,16 @@ class Baker(object):
         if outputdir is None:
             outputdir = self.default_outputdir()
 
-        return fmt_method(outputdir)
-
-    def write_csv(self, outputdir):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
 
-        path = os.path.join(outputdir, self.filename('csv', **self.kwargs))
+        if timestamp is None:
+            timestamp = datetime.now()
+
+        return fmt_method(outputdir, timestamp)
+
+    def write_csv(self, outputdir, timestamp):
+        path = os.path.join(outputdir, self.filename('csv', timestamp, **self.kwargs))
         with open(path, 'w') as csvfile:
             writer = DictWriter(csvfile, self._fields)
             writer.writeheader()
@@ -215,24 +216,24 @@ class Baker(object):
 
         return self
 
-    def write_json(self, outputdir):
-        if not os.path.exists(outputdir):
-            os.makedirs(outputdir)
-
-        path = os.path.join(outputdir, self.filename('json', **self.kwargs))
+    def write_json(self, outputdir, timestamp):
+        path = os.path.join(outputdir, self.filename('json', timestamp, **self.kwargs))
         with open(path, 'w') as f:
             f.write(json.dumps(self._items, default=json_util.default))
 
         return self
 
-    def write_manifest(self, outputdir=None):
+    def write_manifest(self, outputdir=None, timestamp=None):
         if outputdir is None:
             outputdir = self.default_outputdir()
 
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
 
-        path = os.path.join(outputdir, self.manifest_filename(**self.kwargs))
+        if timestamp is None:
+            timestamp = datetime.now()
+
+        path = os.path.join(outputdir, self.manifest_filename(timestamp, **self.kwargs))
         with open(path, 'w') as f:
             f.write("TODO: Real manifest output\n")
 
