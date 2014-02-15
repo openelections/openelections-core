@@ -238,7 +238,13 @@ class Baker(object):
         path = os.path.join(outputdir,
             self.manifest_filename(timestamp, **self.filter_kwargs))
 
+        # TODO: Decide on best format for manifest file. 
         with open(path, 'w') as f:
-            f.write("TODO: Real manifest output\n")
+            f.write("Generated on %s\n" %
+                timestamp.strftime(self.timestamp_format))
+            f.write("\n")
+            f.write("Filters:\n\n")
+            for k, v in self.filter_kwargs.items():
+                f.write("%s: %s\n" % (k, v))
 
         return self
