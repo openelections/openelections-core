@@ -36,5 +36,6 @@ def state_file(state, format='csv', outputdir=None, datefilter='', **kwargs):
 
     timestamp = datetime.now()
     baker = Baker(state=state, datefilter=datefilter)
-    baker.collect_items().write(format,
-        timestamp=timestamp).write_manifest(timestamp=timestamp)
+    baker.collect_items() \
+         .write(format, outputdir=outputdir, timestamp=timestamp) \
+         .write_manifest(outputdir=outputdir, timestamp=timestamp)
