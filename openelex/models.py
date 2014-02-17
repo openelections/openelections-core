@@ -1,5 +1,4 @@
-import datetime
-from mongoengine import *
+from mongoengine import EmbeddedDocument, DynamicDocument
 from mongoengine.fields import (
     BooleanField,
     DateTimeField,
@@ -8,7 +7,10 @@ from mongoengine.fields import (
     IntField,
     ListField,
     StringField,
+    ReferenceField,
 )
+from mongoengine.queryset import CASCADE
+
 from openelex.us import STATE_POSTALS
 
 
@@ -38,6 +40,10 @@ class Contest(DynamicDocument):
     office = EmbeddedDocumentField(Office)
     district = StringField()
     party = StringField(help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
+
+    meta = {
+        'indexes': ['election_id',],
+    }
 
     def __unicode__(self):
         return u'%s-%s' % self.key
@@ -86,6 +92,10 @@ class Candidate(DynamicDocument):
     other_names = ListField(StringField(), default=list)
     parties = ListField(StringField(), default=list) # normalized? abbreviations?
     identifiers = DictField()
+
+    meta = {
+        'indexes': ['election_id',],
+    }
 
     def __unicode__(self):
         name =  u'%s - %s' % (self.contest_slug, self.name)
@@ -142,6 +152,10 @@ class Result(DynamicDocument):
     winner = BooleanField(help_text="Winner as determined by OpenElex, if not provided natively in data")
     write_in = BooleanField()
     #vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
+
+    meta = {
+        'indexes': ['election_id',],
+    }
 
     def __unicode__(self):
         bits = (
