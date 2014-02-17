@@ -142,7 +142,7 @@ class Roller(object):
         # Prefix fields on related models for better readability in the final
         # output data.
         flat_contest = { 'contest.' + k: v for (k, v) in contest.items() }
-        flat_candidate = { 'candidate.' + k: v for (k, v) in contest.items() }
+        flat_candidate = { 'candidate.' + k: v for (k, v) in candidate.items() }
 
         # Merge in the related model. 
         result.update(flat_contest)
