@@ -25,10 +25,18 @@ class Roller(object):
     data field.
     """
 
+    collections = [
+        Result,
+        Candidate,
+        Contest
+    ]
+
     def __init__(self):
-        self._results = Result.objects
-        self._candidates = Candidate.objects
-        self._contests = Contest.objects
+        self._querysets = {}
+
+        for coll in self.collections:
+            name = coll._meta['collection']
+            self._querysets[name] = getattr(coll, 'objects')
 
     def build_date_filters(self, datefilter):
         """
@@ -104,28 +112,42 @@ class Roller(object):
 
     def build_fields(self, **filter_kwargs):
         """
-        Returns a list of fields that will be included in the result or an
+        Returns a dictionary where the keys are the collection name and the
+        values are lists of fields that will be included in the result or an
         empty list to include all fields.
         """
-        return []
+        return {
+            'result': [],
+            'candidate': [],
+            'contest': [],
+        }
+
+    def build_exclude_fields(self, **filter_kwargs):
+        return {
+            'result': ['candidate_slug', 'contest_slug',],
+            'candidate': ['contest', 'contest_slug', 'election_id',],
+            'contest': ['election_id',],
+        }
 
     def apply_filters(self, filters={}):
         """
         Filter querysets.
         """
         # Eventually, we might need separate filters for each collection.
-        self._results = self._results.filter(**filters)
-        self._candidates = self._candidates.filter(**filters)
-        self._contests = self._contests.filter(**filters)
+        for collection_name, qs in self._querysets.items():
+            self._querysets[collection_name] = qs.filter(**filters)
 
-    def apply_field_limits(self, fields=[]):
+    def apply_field_limits(self, fields={}, exclude_fields={}):
         """
         Limit the fields returned when evaluating the querysets.
         """
-        # Eventually, we might need separate field limits for each collection.
-        self._results = self._results.only(*fields)
-        self._candidates = self._candidates.only(*fields)
-        self._contests = self._contests.only(*fields)
+        for collection_name, flds in exclude_fields.items():
+            qs = self._querysets[collection_name].exclude(*flds)
+            self._querysets[collection_name] = qs
+
+        for collection_name, flds in fields.items():
+            qs = self._querysets[collection_name].only(*flds)
+            self._querysets[collection_name] = qs
 
     def flatten(self, result, contest, candidate):
         """
@@ -133,11 +155,11 @@ class Roller(object):
         merging the fields from multiple mapper models/documents.
         """
         # Remove id and reference id fields
-        del result['_id']
-        del result['candidate']
-        del result['contest']
+        result.pop('_id', None)
         contest.pop('_id', None)
         candidate.pop('_id', None)
+        result.pop('candidate', None)
+        result.pop('contest', None)
 
         # Prefix fields on related models for better readability in the final
         # output data.
@@ -156,8 +178,9 @@ class Roller(object):
         """
         filters = self.build_filters(**filter_kwargs)
         fields = self.build_fields(**filter_kwargs)
+        exclude_fields = self.build_exclude_fields(**filter_kwargs)
         self.apply_filters(filters)
-        self.apply_field_limits(fields)
+        self.apply_field_limits(fields, exclude_fields)
 
         # It's slow to follow the referenced fields at the MongoEngine level
         # so just build our own map of related items in memory.
@@ -166,14 +189,14 @@ class Roller(object):
         # to construct a bunch of model instances from the dictionary
         # representation returned by pymongo, only to convert them back to
         # dictionaries for serialization.
-        candidate_map = { str(c['_id']):c for c in self._candidates.as_pymongo() }
-        contest_map = { str(c['_id']):c for c in self._contests.as_pymongo() }
+        candidate_map = { str(c['_id']):c for c in self._querysets['candidate'].as_pymongo() }
+        contest_map = { str(c['_id']):c for c in self._querysets['contest'].as_pymongo() }
 
         # We'll save the flattened items as an attribute to support a 
         # chainable interface.
         self._items = []
         self._fields = set()
-        for result in self._results.as_pymongo():
+        for result in self._querysets['result'].as_pymongo():
             contest = contest_map[str(result['contest'])]
             candidate = candidate_map[str(result['candidate'])]
             flat = self.flatten(result, contest, candidate)
@@ -193,7 +216,7 @@ class Roller(object):
         This list is appropriate for writing a header row in a csv file
         using csv.DictWriter.
         """
-        return list(self._fields)
+        return sorted(list(self._fields))
 
 
 class Baker(object):
