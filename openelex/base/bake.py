@@ -10,26 +10,56 @@ from openelex.models import Result, Contest, Candidate
 
 class Roller(object):
     """
-    # TODO: Less irreverant docstring
-    Because a baker uses a roller to flatten stuff. duh.
+    Filters and collects related data from document fields into a 
+    serializeable format.
     """
+    
+    datefilter_formats = {
+        "%Y": "%Y",
+        "%Y%m": "%Y-%m",
+        "%Y%m%d": "%Y-%m-%d",
+    }
+    """
+    Map of filter formats as they're specified from calling code, likely
+    an invoke task, to how the date should be formatted within a searchable
+    data field.
+    """
+
     def __init__(self):
         self._results = Result.objects
         self._candidates = Candidate.objects
         self._contests = Contest.objects
 
-    def build_date_filters(self, datestring):
-        # QUESTION: Is it better to filter on one of the related fields
-        # instead of the denormalized field 
+    def build_date_filters(self, datefilter):
+        """
+        Returns dictionary of appropriate mapper filters based on a date
+        string.
+
+        Arguments:
+
+        datefilter: String representation of date.
+
+        """
         filters = {}
 
-        # TODO: Better interpretation of date string
-        if len(datestring) == 4:
-            filters['election_id__contains'] = datestring
-        elif len(datestring) == 8:
-            filters['election_id__contains'] = datetime.strptime(datestring,
-                "%Y%m%d").strftime("%Y-%m-%d")
+        if not datefilter:
+            return filters
 
+        # Iterate through the map of supported date formats, try parsing the
+        # date filter, and convert it to a mapper filter
+        for infmt, outfmt in self.datefilter_formats.items():
+            try:
+                # For now we filter on the date string in the election IDs
+                # under the assumption that this will be faster than filtering
+                # across a reference.
+                filters['election_id__contains'] = datetime.strptime(
+                    datefilter, infmt).strftime(outfmt)
+                break
+            except ValueError:
+                pass
+        else:
+            raise ValueError("Invalid date format '%s'" % datefilter)
+        
         return filters
  
     def build_filters(self, **filter_kwargs):

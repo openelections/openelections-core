@@ -5,7 +5,7 @@ from invoke import task
 from openelex.base.bake import Baker
 
 @task
-def state_file(state, format='csv', outputdir=None, datefilter='', **kwargs):
+def state_file(state, format='csv', outputdir=None, datefilter=None, **kwargs):
     """
     Writes election and candidate data, along with a manifest to structured
     files.
