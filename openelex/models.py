@@ -1,5 +1,4 @@
-import datetime
-from mongoengine import *
+from mongoengine import EmbeddedDocument, DynamicDocument
 from mongoengine.fields import (
     BooleanField,
     DateTimeField,
@@ -8,7 +7,10 @@ from mongoengine.fields import (
     IntField,
     ListField,
     StringField,
+    ReferenceField,
 )
+from mongoengine.queryset import CASCADE
+
 from openelex.us import STATE_POSTALS
 
 
