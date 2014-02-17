@@ -65,7 +65,7 @@ class Roller(object):
     def build_filters(self, **filter_kwargs):
         """
         Returns a dictionary of filter arguments that will be used to limit
-        the queryset.
+        the mapper queryset.
 
         This allows for translating arguments from upstream code to the
         filter format used by the underlying data store abstraction.
@@ -110,55 +110,89 @@ class Roller(object):
         return []
 
     def apply_filters(self, filters={}):
-        # TODO: Separate filters for each collection
-        #self._results.filter(**filters)
-        #self._candidates.filter(**filters)
-        #self._contests.filter(**filters)
-        # Why is this faster than the above?
+        """
+        Filter querysets.
+        """
+        # Eventually, we might need separate filters for each collection.
         self._results = self._results.filter(**filters)
         self._candidates = self._candidates.filter(**filters)
         self._contests = self._contests.filter(**filters)
 
     def apply_field_limits(self, fields=[]):
-        # TODO: Separate fields for each collection
+        """
+        Limit the fields returned when evaluating the querysets.
+        """
+        # Eventually, we might need separate field limits for each collection.
         self._results = self._results.only(*fields)
         self._candidates = self._candidates.only(*fields)
         self._contests = self._contests.only(*fields)
 
     def flatten(self, result, contest, candidate):
+        """
+        Returns a dictionary representing a single "row" of data, created by
+        merging the fields from multiple mapper models/documents.
+        """
+        # Remove id and reference id fields
         del result['_id']
         del result['candidate']
         del result['contest']
         contest.pop('_id', None)
         candidate.pop('_id', None)
 
+        # Prefix fields on related models for better readability in the final
+        # output data.
         flat_contest = { 'contest.' + k: v for (k, v) in contest.items() }
         flat_candidate = { 'candidate.' + k: v for (k, v) in contest.items() }
+
+        # Merge in the related model. 
         result.update(flat_contest)
         result.update(flat_candidate)
+
         return result 
 
     def get_list(self, **filter_kwargs):
+        """
+        Returns a list of filtered, limited and flattened election results.
+        """
         filters = self.build_filters(**filter_kwargs)
         fields = self.build_fields(**filter_kwargs)
         self.apply_filters(filters)
         self.apply_field_limits(fields)
 
+        # It's slow to follow the referenced fields at the MongoEngine level
+        # so just build our own map of related items in memory.
+        #
+        # We use as_pymongo() here, and belowi, because it's silly and expensive
+        # to construct a bunch of model instances from the dictionary
+        # representation returned by pymongo, only to convert them back to
+        # dictionaries for serialization.
         candidate_map = { str(c['_id']):c for c in self._candidates.as_pymongo() }
         contest_map = { str(c['_id']):c for c in self._contests.as_pymongo() }
 
+        # We'll save the flattened items as an attribute to support a 
+        # chainable interface.
         self._items = []
         self._fields = set()
         for result in self._results.as_pymongo():
             contest = contest_map[str(result['contest'])]
             candidate = candidate_map[str(result['candidate'])]
             flat = self.flatten(result, contest, candidate)
+            # Keep a running list of all the data fields.  We need to do
+            # this here because the documents can have dynamic, and therefore
+            # differing fields.
             self._fields.update(set(flat.keys()))
             self._items.append(flat)
 
         return self._items
 
     def get_fields(self):
+        """
+        Returns a list of all fields encountered when building the flattened
+        data with a call to get_list()
+
+        This list is appropriate for writing a header row in a csv file
+        using csv.DictWriter.
+        """
         return list(self._fields)
 
 
@@ -174,9 +208,6 @@ class Baker(object):
     """
 
     def __init__(self, **filter_kwargs):
-        """
-        Constructor.
-        """
         self.filter_kwargs = filter_kwargs
 
     def default_outputdir(self):
@@ -190,27 +221,40 @@ class Baker(object):
         return os.path.join(COUNTRY_DIR, 'bakery')
 
     def filename(self, fmt, timestamp, **filter_kwargs):
+        """
+        Returns the filename string for the data output file.
+        """
         state = self.filter_kwargs.get('state')
         return "%s_%s.%s" % (state.lower(),
             timestamp.strftime(self.timestamp_format), fmt) 
 
     def manifest_filename(self, timestamp, **filter_kwargs):
+        """
+        Returns the filename string for the manifest output file.
+        """
         state = self.filter_kwargs.get('state')
         return "%s_%s_manifest.txt" % (state.lower(),
             timestamp.strftime(self.timestamp_format)) 
 
     def collect_items(self):
+        """
+        Query the data store and store a flattened, filtered list of
+        election data.
+        """
         roller = Roller()
         self._items = roller.get_list(**self.filter_kwargs)
         self._fields = roller.get_fields()
         return self
 
     def get_items(self):
+        """
+        Returns the flattened, filtered list of election data.
+        """
         return self._items
            
     def write(self, fmt='csv', outputdir=None, timestamp=None):
         """
-        Writes data to file.
+        Writes collected data to a file.
         
         Arguments:
         
@@ -256,6 +300,9 @@ class Baker(object):
         return self
 
     def write_manifest(self, outputdir=None, timestamp=None):
+        """
+        Writes a manifest describing collected data to a file.
+        """
         if outputdir is None:
             outputdir = self.default_outputdir()
 
