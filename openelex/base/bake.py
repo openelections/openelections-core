@@ -4,6 +4,8 @@ from datetime import datetime
 import json
 import os
 
+from mongoengine.fields import ReferenceField
+
 from openelex import COUNTRY_DIR
 from openelex.exceptions import UnsupportedFormatError
 from openelex.models import Result, Contest, Candidate
@@ -30,13 +32,37 @@ class Roller(object):
         Candidate,
         Contest
     ]
+    """
+    List of mapper document/model classes that will be queried and flattened.
+    """
+
+    primary_collection = Result
+    """
+    Mapper document/model class that will "receive" data from other collections.
+    """
 
     def __init__(self):
         self._querysets = {}
+        self._relationships = {}
+
+        primary_collection_name = self.primary_collection._meta['collection']
 
         for coll in self.collections:
             name = coll._meta['collection']
             self._querysets[name] = getattr(coll, 'objects')
+            if name == primary_collection_name:
+                self._primary_queryset = self._querysets[name]
+
+        for field in self.primary_collection._fields.values():
+            if self._is_relationship_field(field):
+                self._relationships[field.db_field] = field.document_type._meta['collection']
+
+    def _is_relationship_field(self, field):
+        return isinstance(field, ReferenceField)
+
+    @property
+    def primary_collection_name(self):
+        return self.primary_collection._meta['collection']
 
     def build_date_filters(self, datefilter):
         """
@@ -149,28 +175,25 @@ class Roller(object):
             qs = self._querysets[collection_name].only(*flds)
             self._querysets[collection_name] = qs
 
-    def flatten(self, result, contest, candidate):
+    def flatten(self, primary, **related):
         """
         Returns a dictionary representing a single "row" of data, created by
         merging the fields from multiple mapper models/documents.
         """
         # Remove id and reference id fields
-        result.pop('_id', None)
-        contest.pop('_id', None)
-        candidate.pop('_id', None)
-        result.pop('candidate', None)
-        result.pop('contest', None)
+        primary.pop('_id', None)
+        for fname in self._relationships.keys():
+            primary.pop(fname, None)
 
-        # Prefix fields on related models for better readability in the final
-        # output data.
-        flat_contest = { 'contest.' + k: v for (k, v) in contest.items() }
-        flat_candidate = { 'candidate.' + k: v for (k, v) in candidate.items() }
+        # Merge in the related data
+        for name, data in related.items():
+            # Prefix fields on related models for better readability in the
+            # final output data.
+            data.pop('_id', None)
+            flat = { name + '.' + k: v for (k, v) in data.items() }
+            primary.update(flat)
 
-        # Merge in the related model. 
-        result.update(flat_contest)
-        result.update(flat_candidate)
-
-        return result 
+        return primary
 
     def get_list(self, **filter_kwargs):
         """
@@ -189,17 +212,24 @@ class Roller(object):
         # to construct a bunch of model instances from the dictionary
         # representation returned by pymongo, only to convert them back to
         # dictionaries for serialization.
-        candidate_map = { str(c['_id']):c for c in self._querysets['candidate'].as_pymongo() }
-        contest_map = { str(c['_id']):c for c in self._querysets['contest'].as_pymongo() }
+        related_map = {}
+        for related_field, related_collection in self._relationships.items():
+            related_map[related_field] = {
+                str(c['_id']):c for c 
+                in self._querysets[related_collection].as_pymongo()
+            }
 
         # We'll save the flattened items as an attribute to support a 
         # chainable interface.
         self._items = []
         self._fields = set()
-        for result in self._querysets['result'].as_pymongo():
-            contest = contest_map[str(result['contest'])]
-            candidate = candidate_map[str(result['candidate'])]
-            flat = self.flatten(result, contest, candidate)
+        primary_qs = self._querysets[self.primary_collection_name].as_pymongo()
+        for primary in primary_qs:
+            related = {}
+            for fname, coll in self._relationships.items():
+                related[fname] = related_map[coll][str(primary[fname])]
+                    
+            flat = self.flatten(primary, **related)
             # Keep a running list of all the data fields.  We need to do
             # this here because the documents can have dynamic, and therefore
             # differing fields.
