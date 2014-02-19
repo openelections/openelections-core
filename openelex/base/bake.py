@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 import os
 
+from mongoengine import Q
 from mongoengine.fields import ReferenceField
 
 from openelex import COUNTRY_DIR
@@ -66,8 +67,7 @@ class Roller(object):
 
     def build_date_filters(self, datefilter):
         """
-        Returns dictionary of appropriate mapper filters based on a date
-        string.
+        Returns a query object of filters based on a date string.
 
         Arguments:
 
@@ -94,12 +94,14 @@ class Roller(object):
         else:
             raise ValueError("Invalid date format '%s'" % datefilter)
         
-        return filters
+        # Return a Q object rather than just a dict because the non-date
+        # filters might also filter with a ``election_id__contains`` keyword
+        # argument, clobbering the date filter, or vice-versa
+        return Q(**filters)
  
     def build_filters(self, **filter_kwargs):
         """
-        Returns a dictionary of filter arguments that will be used to limit
-        the mapper queryset.
+        Returns a Q object that will be used to limit the mapper queryset.
 
         This allows for translating arguments from upstream code to the
         filter format used by the underlying data store abstraction.
@@ -122,19 +124,30 @@ class Roller(object):
         # state/contest-wide results for all races when no filters are specified.
         filters = {}
         
-        filters['state'] = filter_kwargs.get('state').upper()
+        filters['state'] = filter_kwargs['state'].upper()
 
         try:
-            filters['election_id__contains'] = filter_kwargs.get('type')
-        except AttributeError:
+            filters['election_id__contains'] = filter_kwargs['type']
+        except KeyError:
             pass
 
+        q = Q(**filters)
+
+        # Merge in the date filters
         try:
-            filters.update(self.build_date_filters(filter_kwargs.get('datefilter')))
-        except AttributeError:
+            q &= self.build_date_filters(filter_kwargs['datefilter'])
+        except KeyError:
             pass
 
-        return filters
+        return q
+
+    def apply_filters(self, q):
+        """
+        Filter querysets.
+        """
+        # Eventually, we might need separate filters for each collection.
+        for collection_name, qs in self._querysets.items():
+            self._querysets[collection_name] = qs(q)
 
     def build_fields(self, **filter_kwargs):
         """
@@ -154,14 +167,6 @@ class Roller(object):
             'candidate': ['contest', 'contest_slug', 'election_id',],
             'contest': ['election_id',],
         }
-
-    def apply_filters(self, filters={}):
-        """
-        Filter querysets.
-        """
-        # Eventually, we might need separate filters for each collection.
-        for collection_name, qs in self._querysets.items():
-            self._querysets[collection_name] = qs.filter(**filters)
 
     def apply_field_limits(self, fields={}, exclude_fields={}):
         """
@@ -199,10 +204,10 @@ class Roller(object):
         """
         Returns a list of filtered, limited and flattened election results.
         """
-        filters = self.build_filters(**filter_kwargs)
+        q = self.build_filters(**filter_kwargs)
         fields = self.build_fields(**filter_kwargs)
         exclude_fields = self.build_exclude_fields(**filter_kwargs)
-        self.apply_filters(filters)
+        self.apply_filters(q)
         self.apply_field_limits(fields, exclude_fields)
 
         # It's slow to follow the referenced fields at the MongoEngine level
