@@ -11,11 +11,58 @@ from openelex import COUNTRY_DIR
 from openelex.exceptions import UnsupportedFormatError
 from openelex.models import Result, Contest, Candidate
 
+
+class FieldNameTransform(object):
+    def __init__(self, doc, field_name): 
+        self.collection = doc._meta['collection']
+        self.db_field = getattr(doc, field_name).db_field
+        self.doc = doc
+    
+    def old_name(self, add_prefix=True):
+        if add_prefix:
+            return "%s.%s" % (self.collection, self.db_field)
+        else:
+            return self.db_field
+
+
+class CalculatedField(object):
+    def __init__(self, fn):
+        self.fn = fn
+
+    def apply(self, data):
+        return self.fn(data)
+
+
+class RollerMeta(type):
+    """
+    Metaclass for Roller that allows defining field name transformations
+    in a declarative style.
+    """
+    def __new__(cls, name, bases, attrs):
+        primary_collection = attrs['primary_collection']
+
+        field_name_transforms = {}
+        field_calculators = {}
+
+        for k, v in attrs.items():
+            if isinstance(v, FieldNameTransform):
+                old_field_name = v.old_name(v.doc != primary_collection) 
+                field_name_transforms[old_field_name] = 'id' if k == "_id" else k
+            elif isinstance(v, CalculatedField):
+                field_calculators[k] = v.apply
+
+        attrs['field_name_transforms'] = field_name_transforms
+        attrs['field_calculators'] = field_calculators
+
+        return super(RollerMeta, cls).__new__(cls, name, bases, attrs)
+
+
 class Roller(object):
     """
     Filters and collects related data from document fields into a 
     serializeable format.
     """
+    __metaclass__ = RollerMeta
     
     datefilter_formats = {
         "%Y": "%Y",
@@ -41,6 +88,31 @@ class Roller(object):
     """
     Mapper document/model class that will "receive" data from other collections.
     """
+
+    # Field name transformations so output fields match the specs at
+    # https://github.com/openelections/specs/wiki/Results-Data-Spec-Version-1
+    # and 
+    # https://github.com/openelections/specs/wiki/Elections-Data-Spec-Version-2 
+
+    # HACK: _id will get converted to 'id' in the final output.  Had to work around
+    # the fact that id is a builtin in Python < 3
+    _id = FieldNameTransform(Result, 'election_id')
+    first_name = FieldNameTransform(Candidate, 'given_name')
+    last_name = FieldNameTransform(Candidate, 'family_name')
+    middle_name = FieldNameTransform(Candidate, 'additional_name')
+    name_raw = FieldNameTransform(Candidate, 'raw_full_name')
+    votes = FieldNameTransform(Result, 'total_votes')
+    division = FieldNameTransform(Result, 'ocd_id')
+    # For the following items, note that the original field names and the final
+    # field names are the same.  What we're doing here is "promoting" the field
+    # from a "nested" name, e.g. "contest.start_date" to a top-level one,
+    # e.g. "start_date"
+    start_date = FieldNameTransform(Contest, 'start_date')
+    end_date = FieldNameTransform(Contest, 'end_date')
+
+    # Calculated fields to match specs.
+    # Ultimately it might be more efficient to just store this in the data store
+    year = CalculatedField(lambda d: d['start_date'].year)
 
     def __init__(self):
         self._querysets = {}
@@ -180,6 +252,24 @@ class Roller(object):
             qs = self._querysets[collection_name].only(*flds)
             self._querysets[collection_name] = qs
 
+    def transform_field_names(self, data):
+        """Convert field names on a flat row of data"""
+        for old_name, new_name in self.field_name_transforms.items():
+            try:
+                val = data[old_name]
+                data[new_name] = val
+                del data[old_name]
+            except KeyError:
+                pass
+
+        return data
+
+    def get_calculated_fields(self, data):
+        calculated_fields = {}
+        for name, fn in self.field_calculators.items():
+            calculated_fields[name] = fn(data)
+        return calculated_fields
+
     def flatten(self, primary, **related):
         """
         Returns a dictionary representing a single "row" of data, created by
@@ -193,10 +283,16 @@ class Roller(object):
         # Merge in the related data
         for name, data in related.items():
             # Prefix fields on related models for better readability in the
-            # final output data.
+            # final output data, to prevent clobbering any duplicate keys
+            # and to make the fields more accessible to our transformers
+            # and calculators.
             data.pop('_id', None)
             flat = { name + '.' + k: v for (k, v) in data.items() }
             primary.update(flat)
+
+        primary = self.transform_field_names(primary)
+
+        primary.update(self.get_calculated_fields(primary))
 
         return primary
 
