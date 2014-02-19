@@ -2,22 +2,27 @@ import os
 from datetime import datetime
 from unittest import TestCase
 
-from mongoengine.context_managers import query_counter
+#from mongoengine.context_managers import query_counter
 
 from openelex.exceptions import UnsupportedFormatError
+from openelex.tests.mongo_test_case import MongoTestCase
+from openelex.tests.factories import (ContestFactory, CandidateFactory,
+    ResultFactory)
 
-try:
-    from openelex.tasks.bake import state_file
-except ImportError:
-    state_file = None
-
+from openelex.models import Contest, Candidate
 from openelex.base.bake import Roller, Baker
 
-class TestBakeStateFileTask(TestCase):
-    def test_task_exists(self):
-        self.assertIsNot(state_file, None, "Task bake.state_file does not exist.")
 
-class TestRoller(TestCase):
+class TestRoller(MongoTestCase):
+    def setUp(self):
+        # Call super to select the test database
+        super(TestRoller, self).setUp()
+
+        # Create some test models 
+        contest = ContestFactory()
+        candidate = CandidateFactory(contest=contest)
+        result = ResultFactory(candidate=candidate, contest=contest)
+
     def test_get_list(self):
         roller = Roller()
         data = roller.get_list(state='md', datefilter='20120403',
