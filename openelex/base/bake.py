@@ -107,6 +107,7 @@ class Roller(object):
     # field names are the same.  What we're doing here is "promoting" the field
     # from a "nested" name, e.g. "contest.start_date" to a top-level one,
     # e.g. "start_date"
+    updated = FieldNameTransform(Contest, 'updated')
     start_date = FieldNameTransform(Contest, 'start_date')
     end_date = FieldNameTransform(Contest, 'end_date')
 
