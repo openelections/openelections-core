@@ -13,6 +13,7 @@ class ContestFactory(MongoEngineFactory):
 
     state = "MD"
     start_date = date.today()
+    updated = date.today()
     election_type = "general"
     result_type = "certified"
     raw_office = "President - Vice Pres"
@@ -60,6 +61,8 @@ class CandidateFactory(MongoEngineFactory):
     raw_given_name = FuzzyChoice(GIVEN_NAME_CHOICES)
     raw_family_name = FuzzyChoice(FAMILY_NAME_CHOICES)
     contest = factory.SubFactory(ContestFactory)
+    additional_name = ""
+    raw_suffix = ""
 
     @factory.lazy_attribute
     def election_id(self):
@@ -89,6 +92,10 @@ class CandidateFactory(MongoEngineFactory):
     def slug(self):
         return slugify(self.raw_full_name, '-')
 
+    @factory.lazy_attribute
+    def suffix(self):
+        return self.raw_suffix
+
 class ResultFactory(MongoEngineFactory):
     FACTORY_FOR = Result
 
@@ -97,6 +104,11 @@ class ResultFactory(MongoEngineFactory):
     candidate = factory.SubFactory(CandidateFactory)
     contest = factory.SubFactory(ContestFactory)
     raw_total_votes = FuzzyInteger(2000) 
+    ocd_id = "ocd-division/country:us/state:md"
+    # TODO: This just randomly assigns a value and doesn't reflect
+    # the real world where there's only one winner per election
+    winner = FuzzyChoice([True, False])
+    write_in = False
 
     @factory.lazy_attribute
     def contest_slug(self):
@@ -113,3 +125,7 @@ class ResultFactory(MongoEngineFactory):
     @factory.lazy_attribute
     def source(self):
         return self.contest.source
+
+    @factory.lazy_attribute
+    def total_votes(self):
+        return self.raw_total_votes

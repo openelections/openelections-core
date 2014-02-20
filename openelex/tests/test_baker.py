@@ -18,10 +18,56 @@ class TestRoller(MongoTestCase):
     """
     Data-bound tests for the Roller class.
     """
+    
+    OUTPUT_FIELDS = [
+        # From Election spec
+        'id',
+        'year',
+        'start_date',
+        'end_date',
+        'division',
+        'result_type',
+        'election_type',
+        'special',
+        'updated_at',
+
+        # These are flattened since the rows in the output
+        # are result-level
+        #'offices',
+        #'reporting_levels',
+
+        # These don't have corresponding data in the models.
+        # See https://github.com/openelections/core/issues/45 
+        #'absentee_provisional',
+        #'notes',
+        #'source_url',
+
+        # From Result spec
+        'first_name',
+        'middle_name',
+        'last_name',
+        'suffix',
+        'name_raw',
+        # TODO: Figure out how this should be flattened
+        #'party',
+        'winner',
+        'votes',
+        'write_in',
+
+        # These don't have corresponding data in the models.
+        # See https://github.com/openelections/core/issues/45 
+        #'pct',
+        #'precincts',
+        
+    ]
+    """
+    Expected output fields, taken from specs at
+    https://github.com/openelections/specs/  
+    """
 
     def _create_models(self, start_date, state="MD", election_type="general"):
         """Create some election models for a given date"""
-        contest = ContestFactory(start_data=start_date,
+        contest = ContestFactory(start_date=start_date,
             election_type=election_type)
         candidate = CandidateFactory(contest=contest)
         result = ResultFactory(candidate=candidate, contest=contest)
@@ -62,9 +108,21 @@ class TestRoller(MongoTestCase):
         # Test that a ValueError is raised for an unsupported date format
         self.assertRaises(ValueError, self.roller.build_date_filters, "201200")
 
+    def test_get_list_no_results(self):
+        data = self.roller.get_list(state='tx')
+        self.assertEqual(len(data), 0)
+
+    def test_get_list_has_fields(self):
+        data = self.roller.get_list(state='md', datefilter='20121106',
+            type='general')
+        row = data[0]
+        for field in self.OUTPUT_FIELDS:
+            self.assertIn(field, row)
+
     def test_get_list(self):
         data = self.roller.get_list(state='md', datefilter='20121106',
             type='general')
+        self.assertNotEqual(len(data), 0)
         self.assertEqual(len(data),
             Result.objects(election_id__contains='md-2012-11-06-general').count())
         # TODO: Test this further
