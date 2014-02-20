@@ -105,11 +105,6 @@ class Roller(object):
     name_raw = FieldNameTransform(Candidate, 'raw_full_name')
     votes = FieldNameTransform(Result, 'total_votes')
     division = FieldNameTransform(Result, 'ocd_id')
-    # TODO: Figure out how to flatten this field (it's an array)
-    # and make sure we should grab this from Candidate rather than
-    # contest.
-    # See https://github.com/openelections/core/issues/46 
-    #party = FieldNameTransform(Candidate, 'parties')
     updated_at = FieldNameTransform(Contest, 'updated')
     # For the following items, note that the original field names and the final
     # field names are the same.  What we're doing here is "promoting" the field

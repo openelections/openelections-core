@@ -109,6 +109,7 @@ class ResultFactory(MongoEngineFactory):
     # the real world where there's only one winner per election
     winner = FuzzyChoice([True, False])
     write_in = False
+    party = FuzzyChoice(["DEM", "REP",])
 
     @factory.lazy_attribute
     def contest_slug(self):

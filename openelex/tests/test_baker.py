@@ -48,8 +48,7 @@ class TestRoller(MongoTestCase):
         'last_name',
         'suffix',
         'name_raw',
-        # TODO: Figure out how this should be flattened
-        #'party',
+        'party',
         'winner',
         'votes',
         'write_in',
