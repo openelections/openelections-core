@@ -13,10 +13,11 @@ from openelex.models import Result, Contest, Candidate
 
 
 class FieldNameTransform(object):
-    def __init__(self, doc, field_name): 
+    def __init__(self, doc, field_name, output_name=None): 
         self.collection = doc._meta['collection']
         self.db_field = getattr(doc, field_name).db_field
         self.doc = doc
+        self.output_name = output_name
     
     def old_name(self, add_prefix=True):
         if add_prefix:
@@ -47,7 +48,8 @@ class RollerMeta(type):
         for k, v in attrs.items():
             if isinstance(v, FieldNameTransform):
                 old_field_name = v.old_name(v.doc != primary_collection) 
-                field_name_transforms[old_field_name] = 'id' if k == "_id" else k
+                field_name_transforms[old_field_name] = v.output_name if v.output_name else k
+                
             elif isinstance(v, CalculatedField):
                 field_calculators[k] = v.apply
 
@@ -94,9 +96,9 @@ class Roller(object):
     # and 
     # https://github.com/openelections/specs/wiki/Elections-Data-Spec-Version-2 
 
-    # HACK: _id will get converted to 'id' in the final output.  Had to work around
+    # HACK: election_id will get converted to 'id' in the final output.  Had to work around
     # the fact that id is a builtin in Python < 3
-    _id = FieldNameTransform(Result, 'election_id')
+    election_id = FieldNameTransform(Result, 'election_id', output_name='id')
     first_name = FieldNameTransform(Candidate, 'given_name')
     last_name = FieldNameTransform(Candidate, 'family_name')
     middle_name = FieldNameTransform(Candidate, 'additional_name')
