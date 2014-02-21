@@ -229,7 +229,7 @@ class Roller(object):
     def build_exclude_fields(self, **filter_kwargs):
         return {
             'result': ['candidate_slug', 'contest_slug',],
-            'candidate': ['contest', 'contest_slug', 'election_id',],
+            'candidate': ['contest', 'contest_slug', 'election_id', 'parties'],
             'contest': ['election_id',],
         }
 

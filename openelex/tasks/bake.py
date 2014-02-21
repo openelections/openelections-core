@@ -31,8 +31,7 @@ def state_file(state, format='csv', outputdir=None, datefilter=None, **kwargs):
     # TODO: Implement filtering by office, district and party after the 
     # the data is standardized
 
-    # TODO: Sensible defaults for filtering.  By default, should filter to all
-    # state/contest-wide results for all races when no filters are specified.
+    # TODO: Filtering by election type and level
 
     timestamp = datetime.now()
     baker = Baker(state=state, datefilter=datefilter)
