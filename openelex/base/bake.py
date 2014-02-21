@@ -252,8 +252,15 @@ class Roller(object):
     def build_exclude_fields(self, **filter_kwargs):
         return {
             'result': ['candidate_slug', 'contest_slug',],
-            'candidate': ['contest', 'contest_slug', 'election_id', 'parties'],
-            'contest': ['election_id',],
+            'candidate': [
+                'contest',
+                'contest_slug',
+                'election_id',
+                'parties',
+                'source',
+                'slug',
+            ],
+            'contest': ['election_id', 'party', 'raw_party', 'source', 'slug',],
         }
 
     def apply_field_limits(self, fields={}, exclude_fields={}):
