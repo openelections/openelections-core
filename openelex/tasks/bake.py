@@ -5,7 +5,8 @@ from invoke import task
 from openelex.base.bake import Baker
 
 @task
-def state_file(state, format='csv', outputdir=None, datefilter=None, **kwargs):
+def state_file(state, format='csv', outputdir=None, datefilter=None,
+    election_type=None, level=None):
     """
     Writes election and candidate data, along with a manifest to structured
     files.
@@ -19,7 +20,7 @@ def state_file(state, format='csv', outputdir=None, datefilter=None, **kwargs):
       "openelections/us/bakery"
     * datefilter: Date specified in "YYYY" or "YYYY-MM-DD" used to filter
       elections before they are baked.
-    * type: Election type. For example, general, primary, etc. 
+    * election_type: Election type. For example, general, primary, etc. 
     * level: Reporting level of the election results.  For example, "state",
       "county", "precinct", etc. Value must be one of the options specified in
       openelex.models.Result.REPORTING_LEVEL_CHOICES.
@@ -34,7 +35,15 @@ def state_file(state, format='csv', outputdir=None, datefilter=None, **kwargs):
     # TODO: Filtering by election type and level
 
     timestamp = datetime.now()
-    baker = Baker(state=state, datefilter=datefilter)
+
+    filter_kwargs = {}
+    if election_type:
+        filter_kwargs['election_type'] = election_type
+
+    if level:
+        filter_kwargs['reporting_level'] = level
+
+    baker = Baker(state=state, datefilter=datefilter, **filter_kwargs)
     baker.collect_items() \
          .write(format, outputdir=outputdir, timestamp=timestamp) \
          .write_manifest(outputdir=outputdir, timestamp=timestamp)

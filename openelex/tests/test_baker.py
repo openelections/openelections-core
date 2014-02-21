@@ -126,6 +126,21 @@ class TestRoller(MongoTestCase):
             Result.objects(election_id__contains='md-2012-11-06-general').count())
         # TODO: Test this further
 
+    def test_get_list_filter_by_level(self):
+        level = 'precinct'
+
+        # Make sure there's at least one result at this level
+        if Result.objects(reporting_level=level).count() == 0:
+            candidate = Candidate.objects()[0]
+            contest = candidate.contest
+            ResultFactory(candidate=candidate, contest=contest,
+                reporting_level=level)
+
+        data = self.roller.get_list(state="MD", reporting_level=level)
+        self.assertEqual(len(data),
+            Result.objects(state="MD", reporting_level=level).count())
+
+
 class TestBaker(TestCase):
     def test_filename(self):
         baker = Baker(state='md')

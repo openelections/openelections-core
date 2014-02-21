@@ -181,8 +181,8 @@ class Roller(object):
         * state: Required. Postal code for a state.  For example, "md".
         * datefilter: Date specified in "YYYY" or "YYYY-MM-DD" used to filter
           elections before they are baked.
-        * type: Election type. For example, general, primary, etc. 
-        * level: Reporting level of the election results.  For example, "state",
+        * election_type: Election type. For example, general, primary, etc. 
+        * reporting_level: Reporting level of the election results.  For example, "state",
           "county", "precinct", etc. Value must be one of the options specified
           in openelex.models.Result.REPORTING_LEVEL_CHOICES.
           
@@ -198,7 +198,7 @@ class Roller(object):
         q_kwargs['state'] = filter_kwargs['state'].upper()
 
         try:
-            q_kwargs['election_id__contains'] = filter_kwargs['type']
+            q_kwargs['election_id__contains'] = filter_kwargs['election_type']
         except KeyError:
             pass
 
@@ -221,6 +221,12 @@ class Roller(object):
                 pass
 
         return filters
+
+    def build_filters_result(self, **filter_kwargs):
+        try:
+            return Q(reporting_level=filter_kwargs['reporting_level'])
+        except KeyError:
+            return None
         
     def apply_filters(self, **queries):
         """
