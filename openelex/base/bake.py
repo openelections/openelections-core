@@ -18,12 +18,6 @@ class FieldNameTransform(object):
         self.db_field = getattr(doc, field_name).db_field
         self.doc = doc
         self.output_name = output_name
-    
-    def old_name(self, add_prefix=True):
-        if add_prefix:
-            return "%s.%s" % (self.collection, self.db_field)
-        else:
-            return self.db_field
 
 
 class CalculatedField(object):
@@ -40,15 +34,13 @@ class RollerMeta(type):
     in a declarative style.
     """
     def __new__(cls, name, bases, attrs):
-        primary_collection = attrs['primary_collection']
-
         field_name_transforms = {}
         field_calculators = {}
 
         for k, v in attrs.items():
             if isinstance(v, FieldNameTransform):
-                old_field_name = v.old_name(v.doc != primary_collection) 
-                field_name_transforms[old_field_name] = v.output_name if v.output_name else k
+                transforms = field_name_transforms.setdefault(v.collection, {})
+                transforms[v.db_field] = v.output_name if v.output_name else k
                 
             elif isinstance(v, CalculatedField):
                 field_calculators[k] = v.apply
@@ -106,19 +98,13 @@ class Roller(object):
     votes = FieldNameTransform(Result, 'total_votes')
     division = FieldNameTransform(Result, 'ocd_id')
     updated_at = FieldNameTransform(Contest, 'updated')
-    # For the following items, note that the original field names and the final
-    # field names are the same.  What we're doing here is "promoting" the field
-    # from a "nested" name, e.g. "contest.start_date" to a top-level one,
-    # e.g. "start_date"
-    start_date = FieldNameTransform(Contest, 'start_date')
-    end_date = FieldNameTransform(Contest, 'end_date')
-    result_type = FieldNameTransform(Contest, 'result_type')
-    election_type = FieldNameTransform(Contest, 'election_type')
-    special = FieldNameTransform(Contest, 'special')
-    suffix = FieldNameTransform(Candidate, 'suffix')
 
     # Calculated fields to match specs.
-    # Ultimately it might be more efficient to just store this in the data store
+    #
+    # These are run after any of the field name transformations and
+    # after data has been merged into a single dictionary from any related
+    # documents. So the lambda functions should reference the new name in the
+    # dictionary.
     year = CalculatedField(lambda d: d['start_date'].year)
 
     def __init__(self):
@@ -199,8 +185,8 @@ class Roller(object):
         # TODO: Implement filtering by office, district and party after the 
         # the data is standardized
 
-        # TODO: Sensible defaults for filtering.  By default, should filter to all
-        # state/contest-wide results for all races when no filters are specified.
+        # By default, should filter to all state/contest-wide results for all 
+        # races when no filters are specified.
         filters = {}
         
         filters['state'] = filter_kwargs['state'].upper()
@@ -259,9 +245,9 @@ class Roller(object):
             qs = self._querysets[collection_name].only(*flds)
             self._querysets[collection_name] = qs
 
-    def transform_field_names(self, data):
+    def transform_field_names(self, data, transforms):
         """Convert field names on a flat row of data"""
-        for old_name, new_name in self.field_name_transforms.items():
+        for old_name, new_name in transforms.items():
             try:
                 val = data[old_name]
                 data[new_name] = val
@@ -286,6 +272,10 @@ class Roller(object):
         primary.pop('_id', None)
         for fname in self._relationships.keys():
             primary.pop(fname, None)
+            
+        transforms = self.field_name_transforms.get(self.primary_collection_name)
+        if transforms:
+            primary = self.transform_field_names(primary, transforms)
 
         # Merge in the related data
         for name, data in related.items():
@@ -294,10 +284,10 @@ class Roller(object):
             # and to make the fields more accessible to our transformers
             # and calculators.
             data.pop('_id', None)
-            flat = { name + '.' + k: v for (k, v) in data.items() }
-            primary.update(flat)
-
-        primary = self.transform_field_names(primary)
+            transforms = self.field_name_transforms.get(name)
+            if transforms:
+                data = self.transform_field_names(data, transforms)
+            primary.update(data)
 
         primary.update(self.get_calculated_fields(primary))
 
