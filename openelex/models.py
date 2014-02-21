@@ -1,5 +1,4 @@
-import datetime
-from mongoengine import *
+from mongoengine import EmbeddedDocument, DynamicDocument
 from mongoengine.fields import (
     BooleanField,
     DateTimeField,
@@ -8,7 +7,10 @@ from mongoengine.fields import (
     IntField,
     ListField,
     StringField,
+    ReferenceField,
 )
+from mongoengine.queryset import CASCADE
+ 
 from openelex.us import STATE_POSTALS
 
 
@@ -38,6 +40,10 @@ class Contest(DynamicDocument):
     office = EmbeddedDocumentField(Office)
     district = StringField()
     party = StringField(help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
+
+    meta = {
+        'indexes': ['election_id',],
+    }
 
     def __unicode__(self):
         return u'%s-%s' % self.key
@@ -75,7 +81,6 @@ class Candidate(DynamicDocument):
     raw_family_name = StringField(max_length=200)
     raw_suffix = StringField(max_length=200)
     raw_additional_name = StringField(max_length=200, help_text="For middle names, nicknames, etc")
-    raw_parties = ListField(StringField(), default=list)
 
     # FIELDS FOR TRANSFORMED/CLEANED DATA or LINKS TO OTHER DATA SETS
     #name = StringField(max_length=300, required=True)
@@ -84,16 +89,14 @@ class Candidate(DynamicDocument):
     suffix = StringField(max_length=200)
     additional_name = StringField(max_length=200, help_text="For middle names, nicknames, etc")
     other_names = ListField(StringField(), default=list)
-    parties = ListField(StringField(), default=list) # normalized? abbreviations?
     identifiers = DictField()
+
+    meta = {
+        'indexes': ['election_id',],
+    }
 
     def __unicode__(self):
         name =  u'%s - %s' % (self.contest_slug, self.name)
-        parties = ""
-        if self.raw_parties:
-            parties = ", ".join([party for party in self.raw_parties])
-            if parties:
-                name += " (%s)" % parties
         return name
 
     @property
@@ -136,12 +139,23 @@ class Result(DynamicDocument):
     raw_winner = StringField()
     raw_write_in = StringField()
     raw_vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
+    # See https://github.com/openelections/core/issues/46
+    raw_party = StringField(help_text="Party name for the candidate's results. "
+        "This is needed because in some states (NY, CT, SC ...) candidates "
+        "can run as the nominee for multiple parties and results will be "
+        "per-party.")
 
     jurisdiction = StringField(help_text="Derived/standardized political geography, typically when not found in raw results.")
     total_votes = IntField()
     winner = BooleanField(help_text="Winner as determined by OpenElex, if not provided natively in data")
     write_in = BooleanField()
+    party = StringField(help_text="Standardized party name for this candidate's "
+        "results.  Based on raw_party.")
     #vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")
+
+    meta = {
+        'indexes': ['election_id',],
+    }
 
     def __unicode__(self):
         bits = (
