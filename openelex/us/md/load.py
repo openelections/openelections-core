@@ -174,7 +174,6 @@ class LoadResults(BaseLoader):
             kwargs['raw_write_in'] = row['Write-In?'].strip(), # at the contest-level
         except KeyError as e:
             pass
-        self._update_non2002_candidate_parties(row, kwargs['candidate'])
         results = []
         for field, val in row.items():
             # Legislative fields prefixed with LEGS
@@ -208,6 +207,12 @@ class LoadResults(BaseLoader):
             'ocd_id': mapping['ocd_id'],
             'reporting_level': 'county',
             'jurisdiction': mapping['name'],
+            'raw_party': row['Party'].strip(),
+            # TODO: For now raw_party and party are set to the same value, just
+            # so party is available to the first version of the baker.
+            # However, eventually raw results should be moved to a
+            # separate document and the party name should be standardized
+            # in a transform step.
             'party': row['Party'].strip(),
             'raw_total_votes': self._non2002_total_votes(row['Total Votes']),
             'raw_winner': self._non2002_winner(row),
@@ -232,6 +237,12 @@ class LoadResults(BaseLoader):
             'reporting_level': 'precinct',
             'raw_jurisdiction':raw_precinct,
             'jurisdiction': mapping['name'] + ' ' + raw_district  + "-" + raw_precinct,
+            'raw_party': row['Party'].strip(),
+            # TODO: For now raw_party and party are set to the same value, just
+            # so party is available to the first version of the baker.
+            # However, eventually raw results should be moved to a
+            # separate document and the party name should be standardized
+            # in a transform step.
             'party': row['Party'].strip(),
             'raw_total_votes': int(float(row['Election Night Votes'])),
             'raw_winner': self._non2002_winner(row),
@@ -243,12 +254,6 @@ class LoadResults(BaseLoader):
             #'write_in': self._non2002_writein(row),
         })
         return Result(**kwargs)
-
-    def _update_non2002_candidate_parties(self, row, candidate):
-        raw_party = row['Party'].strip()
-        if raw_party not in candidate.raw_parties:
-            candidate.raw_parties.append(raw_party)
-        candidate.save()
 
     def _non2002_total_votes(self, val):
         if val.strip() == '':
@@ -351,7 +356,6 @@ class LoadResults(BaseLoader):
                     'raw_given_name': row['first'].strip(),
                     'raw_additional_name': row['middle'].strip(),
                 }
-                 #TODO: add raw_party to candidate.raw_parties
 
                 result_kwargs = {
                     #'election':
@@ -364,6 +368,13 @@ class LoadResults(BaseLoader):
                     'raw_district': row['district'].strip(),
                     'reporting_level': 'county',
                     'raw_party': row['party'], # needs to be a member of a list
+                    # TODO: For now raw_party and party are set to the same 
+                    # value, just so party is available to the first version of
+                    # the baker.
+                    # However, eventually raw results should be moved to a
+                    # separate document and the party name should be
+                    # standardized in a transform step.
+                    'party': row['party'], # needs to be a member of a list
                     'write_in': write_in,
                     'raw_total_votes': row['votes'],
                 }
@@ -387,23 +398,29 @@ class LoadResults(BaseLoader):
                     if cols[0][1:29] == 'President and Vice President':
                         office_name = 'President - Vice Pres'
                         if 'Democratic' in cols[0]:
+                            raw_party = "Democratic"
                             party = 'DEM'
                         else:
+                            raw_party = "Republican"
                             party = 'REP'
                         continue
                     elif cols[0][1:13] == 'U.S. Senator':
                         office_name = 'U.S. Senator'
                         if 'Democratic' in cols[0]:
+                            raw_party = "Democratic"
                             party = 'DEM'
                         else:
+                            raw_party = "Republican"
                             party = 'REP'
                         continue
                     elif cols[0][1:27] == 'Representative in Congress':
                         district = int(cols[0][71:73])
                         office_name = 'U.S. Congress ' + str(district)
                         if 'Democratic' in cols[0]:
+                            raw_party = "Democratic"
                             party = 'DEM'
                         else:
+                            raw_party = "Republican"
                             party = 'REP'
                         continue
                     # skip offices we don't want
@@ -450,6 +467,7 @@ class LoadResults(BaseLoader):
                                 'slug': 'TODO',
                                 #'raw_office': office_name,
                                 'reporting_level': 'county',
+                                'raw_party': raw_party,
                                 'party': party,
                                 'write_in': False,
                                 'total_votes': int(votes),
