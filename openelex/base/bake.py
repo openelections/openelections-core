@@ -163,13 +163,18 @@ class Roller(object):
         # filters might also filter with a ``election_id__contains`` keyword
         # argument, clobbering the date filter, or vice-versa
         return Q(**filters)
- 
+    
     def build_filters(self, **filter_kwargs):
         """
-        Returns a Q object that will be used to limit the mapper queryset.
+        Returns a dictionary of Q objects that will be used to limit the 
+        mapper querysets.
 
         This allows for translating arguments from upstream code to the
         filter format used by the underlying data store abstraction.
+
+        This will build a set of filters common to all querysets and will call
+        any build_filters_COLLECTION_NAME methods that have been implemented
+        on this class.
 
         Arguments:
 
@@ -187,32 +192,44 @@ class Roller(object):
 
         # By default, should filter to all state/contest-wide results for all 
         # races when no filters are specified.
-        filters = {}
+        filters= {}
+        q_kwargs = {}
         
-        filters['state'] = filter_kwargs['state'].upper()
+        q_kwargs['state'] = filter_kwargs['state'].upper()
 
         try:
-            filters['election_id__contains'] = filter_kwargs['type']
+            q_kwargs['election_id__contains'] = filter_kwargs['type']
         except KeyError:
             pass
 
-        q = Q(**filters)
+        common_q = Q(**q_kwargs)
 
         # Merge in the date filters
         try:
-            q &= self.build_date_filters(filter_kwargs['datefilter'])
+            common_q &= self.build_date_filters(filter_kwargs['datefilter'])
         except KeyError:
             pass
 
-        return q
+        for collection_name in self._querysets.keys():
+            filters[collection_name] = common_q
+            try:
+                fn = getattr(self, 'build_filters_' + collection_name)
+                collection_q = fn(**filter_kwargs) 
+                if collection_q:
+                    filters[collection_name] &= collection_q 
+            except AttributeError:
+                pass
 
-    def apply_filters(self, q):
+        return filters
+        
+    def apply_filters(self, **queries):
         """
         Filter querysets.
         """
-        # Eventually, we might need separate filters for each collection.
         for collection_name, qs in self._querysets.items():
-            self._querysets[collection_name] = qs(q)
+            q = queries.get(collection_name) 
+            if q:
+                self._querysets[collection_name] = qs(q)
 
     def build_fields(self, **filter_kwargs):
         """
@@ -297,10 +314,10 @@ class Roller(object):
         """
         Returns a list of filtered, limited and flattened election results.
         """
-        q = self.build_filters(**filter_kwargs)
+        filters = self.build_filters(**filter_kwargs)
         fields = self.build_fields(**filter_kwargs)
         exclude_fields = self.build_exclude_fields(**filter_kwargs)
-        self.apply_filters(q)
+        self.apply_filters(**filters)
         self.apply_field_limits(fields, exclude_fields)
 
         # It's slow to follow the referenced fields at the MongoEngine level
