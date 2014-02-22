@@ -10,9 +10,20 @@ from mongoengine.fields import (
     ReferenceField,
 )
 from mongoengine.queryset import CASCADE
+
+from openelex.exceptions import ValidationError
 from openelex.us import STATE_POSTALS
 
 # CHOICE TUPLES
+PRIMARY_TYPE_CHOICES = (
+    'blanket',
+    'closed',
+    'open',
+    'semi-open',
+    'semi-closed',
+    'other',
+)
+
 REPORTING_LEVEL_CHOICES = (
     'state',
     'congressional_district',
@@ -47,7 +58,7 @@ class Party(EmbeddedDocument):
     def __unicode__(self):
         return u'%s (%s)' % (self.name, self.abbrev)
 
-#TODO: QUESTION: Should we remove identifiers from Candidate and only have them on Person?
+
 class Person(DynamicDocument):
     """Unique person records
 
@@ -101,6 +112,9 @@ class Contest(DynamicDocument):
     start_date = DateTimeField(required=True)
     end_date = DateTimeField(required=True, help_text="Most often will match start date, except for multi-day primaries")
     election_type = StringField(help_text="general, primary, etc. from OpenElex metadata")
+    primary_type = StringField(choices=PRIMARY_TYPE_CHOICES, help_text="blanket, closed, open, etc. from OpenElex metadata")
+    #TODO: Validation that requires primary_type to be "closed"
+    primary_party = StringField(help_text="Only assign for closed primaries, where voters must be registered in party to vote in the contest")
     result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
     special = BooleanField(default=False, help_text="From OpenElex metadata")
     #TODO: QUESTION: Office and Party as Embedded docs?
@@ -205,12 +219,15 @@ class Result(DynamicDocument):
 
     ### Result fields ###
     reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
+    #TODO: Add validation: If aggregated_from_level is filled in raw_result must be blank.
+    raw_result = ReferenceField(RawResult, help_text="Reference this raw result only if it is NOT aggregate of lower-level results")
+    aggregated_from_level = StringField(choices=REPORTING_LEVEL_CHOICES, help_text="If this is aggregate result, such as "
+        "racewide from county, designate the reporting_level it was aggregated up from.")
     # See https://github.com/openelections/core/issues/46
     party = StringField(help_text="Standaridzed party ID/abbrev. "
         "This is on result (rather than Candidate) because in some states "
         "(NY, CT, SC ...) candidates can run as the nominee for multiple parties "
         "and results will be per-party.")
-
     ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
     #NOTE: Made jurisdiction required
     jurisdiction = StringField(required=True, help_text="Derived/standardized political geography (state, county, district, etc.).")
@@ -250,38 +267,35 @@ class RawResult(DynamicDocument):
     start_date = DateTimeField(required=True)
     end_date = DateTimeField(required=True, help_text="Most often will match start date, except for multi-day primaries")
     election_type = StringField(help_text="general, primary, etc. from OpenElex metadata")
+    primary_type = StringField(choices=PRIMARY_TYPE_CHOICES, help_text="blanket, closed, open, etc. from OpenElex metadata")
+    #TODO: Validation that requires primary_type to be "closed"
+    primary_party = StringField(help_text="Only assign for closed primaries, where voters must be registered in party to vote in the contest")
     result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
     special = BooleanField(default=False, help_text="From OpenElex metadata")
     office = StringField(required=True)
     district = StringField()
-    #TODO: QUESTION: Delete contest-level party (for closed primaries) here since it should be represented downstream on Contest, right?
-    #party = StringField(help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
-    #TODO: QUESTION: Do we want non-required Contest Reference here?
-    #contest = ReferenceField(Contest, reverse_delete_rule=CASCADE, required=True)
-    #TODO: QUESTION: contest_slug = office/district and party (if it's primary)
+    #TODO: QUESTION: contest_slug = office and district, as well as party (if it's closed primary)
     # Do we want this here? If so, should we:
     # * include party in contest_slug but not in candidate_slug if it's a closed primary
     # * include party in candidate_slug but not in contest_slug if it's a general or other race type?
     contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
 
     ### Candidate fields ###
-    #TODO: QUESTION: Do we want non-required Candidate Reference here?
-    #candidate = ReferenceField(Candidate, reverse_delete_rule=CASCADE, required=True)
     candidate_slug = StringField(required=True, help_text="Denormalized candidate slug for easier querying and obj repr")
     #TODO: Add validation to require full_name or family_name
     full_name = StringField(max_length=300, help_text="Only if present in raw results.")
     family_name = StringField(max_length=200, help_text="Only if present in raw results.")
     given_name = StringField(max_length=200, help_text="Only if present in raw results.")
     suffix = StringField(max_length=200, help_text="Only if present in raw results.")
-    #TODO: Does raw data ever have multiple name representations or is this more appropriately
-    # a downstream transform? If latter, only put additional_name on Candidate?
+    #TODO: QUESTION: Does raw data ever have multiple name representations or is this more appropriately
+    # a downstream transform? If latter, only put additional_name on Person, right?
     #raw_additional_name = StringField(max_length=200, help_text="For middle names, nicknames, etc")
     #other_names = ListField(StringField(), default=list)
-    #TODO: QUESTION: identifiers are only applied during transform steps, so only on Candidate model, right?
+    #TODO: QUESTION: identifiers are only applied during transform steps, so only on Person model, right?
     #identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number")
 
 
-    ### RESULT fields ###
+    ### Result fields ###
     reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
     # See https://github.com/openelections/core/issues/46
     party = StringField(help_text="Party name as it appears in the raw data "
@@ -294,11 +308,11 @@ class RawResult(DynamicDocument):
     jurisdiction = StringField(help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number.")
     # See https://github.com/openelections/core/issues/46
     votes = IntField(required=True, help_text="Raw vote count for this jurisdiction")
+    #NOTE: Making total votes non-required here, since it won't always be provided in raw results
     total_votes = IntField(help_text="Total candidate votes contest-wide, if provided in raw results.")
-    #TODO: QUESTION: Are vote_brkdowns standard enough that we should 
+    #TODO: QUESTION: Are vote_brkdowns standard enough that we should
     # make them model fields, which in most cases will be empty?
     vote_breakdowns = DictField(help_text="Vote totals for election day (absentee, provisional, etc.), if provided in raw results")
-    #NOTE: Making total votes non-required here, since it won't always be provided in raw results
     winner = StringField(help_text="Winner flag, if provided in raw results.")
     write_in = StringField(help_text="Write-in flag, if provided in raw results.")
 
@@ -308,7 +322,7 @@ class RawResult(DynamicDocument):
 
     def __unicode__(self):
         #TODO: QUESTION: Replace contest/candidate slugs?
-        #..need differeent values if we remove these slugs from this model...
+        #..need different values if we remove these slugs from this model...
         bits = (
             self.election_id,
             self.contest_slug,
