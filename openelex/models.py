@@ -35,6 +35,89 @@ REPORTING_LEVEL_CHOICES = (
 
 
 # Models
+class RawResult(DynamicDocument):
+    """Flat representation of raw data. Intended for use in data loaders."""
+    ### META fields ###
+    created = DateTimeField()
+    updated = DateTimeField()
+    source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
+    election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
+    state = StringField(required=True, choices=STATE_POSTALS)
+
+    ### Contest fields ####
+    start_date = DateTimeField(required=True)
+    end_date = DateTimeField(required=True, help_text="Most often will match start date, except for multi-day primaries")
+    election_type = StringField(help_text="general, primary, etc. from OpenElex metadata")
+    primary_type = StringField(choices=PRIMARY_TYPE_CHOICES, help_text="blanket, closed, open, etc. from OpenElex metadata")
+    #TODO: Validation that requires primary_type to be "closed"
+    primary_party = StringField(help_text="Only assign for closed primaries, where voters must be registered in party to vote in the contest")
+    result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
+    special = BooleanField(default=False, help_text="From OpenElex metadata")
+    office = StringField(required=True)
+    district = StringField()
+
+    ### Candidate fields ###
+    #TODO: Add validation to require full_name or family_name
+    full_name = StringField(max_length=300, help_text="Only if present in raw results.")
+    family_name = StringField(max_length=200, help_text="Only if present in raw results.")
+    given_name = StringField(max_length=200, help_text="Only if present in raw results.")
+    suffix = StringField(max_length=200, help_text="Only if present in raw results.")
+
+    ### Result fields ###
+    reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
+    # See https://github.com/openelections/core/issues/46
+    party = StringField(help_text="Party name as it appears in the raw data "
+        "This is on result (rather than Candidate) because in some states "
+        "(NY, CT, SC ...) candidates can run as the nominee for multiple parties "
+        "and results will be per-party.")
+    jurisdiction = StringField(required=True, help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number."
+            "Or default to state + office/district, if not present in data.")
+    # See https://github.com/openelections/core/issues/46
+    votes = IntField(required=True, help_text="Raw vote count for this jurisdiction")
+    total_votes = IntField(help_text="Total candidate votes contest-wide, if provided in raw results.")
+    vote_breakdowns = DictField(help_text="Vote totals for election day (absentee, provisional, etc.), if provided in raw results")
+    winner = StringField(help_text="Winner flag, if provided in raw results.")
+    write_in = StringField(help_text="Write-in flag, if provided in raw results.")
+
+    meta = {
+        'indexes': ['election_id',],
+    }
+
+    def __unicode__(self):
+        bits = (
+            self.election_id,
+            self.contest_slug,
+            self.candidate_slug,
+            self.reporting_level,
+            self.jurisdiction,
+            self.votes,
+        )
+        return u'%s-%s-%s-%s-%s (%s)' % bits
+
+    @property
+    def contest_slug(self):
+        slug = "%s" % self.office.lower().replace(' ', '-')
+        if self.district:
+            slug += "%s" % self.district.lower().replace(' ', '-')
+        if self.primary_party:
+            slug += "%s" % self.primary_party.replace(' ', '-')
+        return slug
+
+    @property
+    def candidate_slug(self):
+        if self.full_name:
+            name = self.full_name
+        else:
+            name = self.family_name
+            if self.given_name:
+                name += " %s" % self.given_name
+            if self.additional_name:
+                name += " %s" % self.additional_name
+            if self.suffix:
+                name +=  " %s" % self.suffix
+        return name.replace(' ', '-')
+
+
 class Office(EmbeddedDocument):
     state = StringField(choices=STATE_POSTALS, required=True)
     name = StringField(required=True)
@@ -244,86 +327,3 @@ class Result(DynamicDocument):
             self.votes,
         )
         return u'%s-%s-%s-%s-%s (%s)' % bits
-
-
-class RawResult(DynamicDocument):
-    ### META fields ###
-    created = DateTimeField()
-    updated = DateTimeField()
-    source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
-    election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
-    state = StringField(required=True, choices=STATE_POSTALS)
-
-    ### Contest fields ####
-    start_date = DateTimeField(required=True)
-    end_date = DateTimeField(required=True, help_text="Most often will match start date, except for multi-day primaries")
-    election_type = StringField(help_text="general, primary, etc. from OpenElex metadata")
-    primary_type = StringField(choices=PRIMARY_TYPE_CHOICES, help_text="blanket, closed, open, etc. from OpenElex metadata")
-    #TODO: Validation that requires primary_type to be "closed"
-    primary_party = StringField(help_text="Only assign for closed primaries, where voters must be registered in party to vote in the contest")
-    result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
-    special = BooleanField(default=False, help_text="From OpenElex metadata")
-    office = StringField(required=True)
-    district = StringField()
-
-    ### Candidate fields ###
-    #TODO: Add validation to require full_name or family_name
-    full_name = StringField(max_length=300, help_text="Only if present in raw results.")
-    family_name = StringField(max_length=200, help_text="Only if present in raw results.")
-    given_name = StringField(max_length=200, help_text="Only if present in raw results.")
-    suffix = StringField(max_length=200, help_text="Only if present in raw results.")
-
-    ### Result fields ###
-    reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
-    # See https://github.com/openelections/core/issues/46
-    party = StringField(help_text="Party name as it appears in the raw data "
-        "This is on result (rather than Candidate) because in some states "
-        "(NY, CT, SC ...) candidates can run as the nominee for multiple parties "
-        "and results will be per-party.")
-    jurisdiction = StringField(required=True, help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number."
-            "Or default to state + office/district, if not present in data.")
-    # See https://github.com/openelections/core/issues/46
-    votes = IntField(required=True, help_text="Raw vote count for this jurisdiction")
-    total_votes = IntField(help_text="Total candidate votes contest-wide, if provided in raw results.")
-    vote_breakdowns = DictField(help_text="Vote totals for election day (absentee, provisional, etc.), if provided in raw results")
-    winner = StringField(help_text="Winner flag, if provided in raw results.")
-    write_in = StringField(help_text="Write-in flag, if provided in raw results.")
-
-    meta = {
-        'indexes': ['election_id',],
-    }
-
-    def __unicode__(self):
-        bits = (
-            self.election_id,
-            self.contest_slug,
-            self.candidate_slug,
-            self.reporting_level,
-            self.jurisdiction,
-            self.votes,
-        )
-        return u'%s-%s-%s-%s-%s (%s)' % bits
-
-    @property
-    def contest_slug(self):
-        slug = "%s" % self.office.lower().replace(' ', '-')
-        if self.district:
-            slug += "%s" % self.district.lower().replace(' ', '-')
-        if self.primary_party:
-            slug += "%s" % self.primary_party.replace(' ', '-')
-        return slug
-
-    @property
-    def candidate_slug(self):
-        if self.full_name:
-            name = self.full_name
-        else:
-            name = self.family_name
-            if self.given_name:
-                name += " %s" % self.given_name
-            if self.additional_name:
-                name += " %s" % self.additional_name
-            if self.suffix:
-                name +=  " %s" % self.suffix
-        return name.replace(' ', '-')
-
