@@ -79,11 +79,9 @@ class Person(DynamicDocument):
     family_name = StringField(max_length=200, required=True)
     suffix = StringField(max_length=200)
     additional_name = StringField(max_length=200, help_text="For middle names, nicknames, etc")
-    #TODO: QUESTION: is it OpenStates or somesuch that includes alternative name representations?
-    other_names = ListField(StringField(), default=list, help_text="Other name representations")
     slug = StringField(max_length=300, required=True, help_text="Slugified name for easier querying and obj repr")
-    #TODO: QUESTION: identifiers are only applied during transform step and are never in raw results, so only on Person, right?
-    identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number")
+    identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number."
+            "This stores full history of all unique IDs, such as all FEC Cand numbers over time.")
 
     def __unicode__(self):
         return "%s" % self.full_name
@@ -117,8 +115,6 @@ class Contest(DynamicDocument):
     primary_party = StringField(help_text="Only assign for closed primaries, where voters must be registered in party to vote in the contest")
     result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
     special = BooleanField(default=False, help_text="From OpenElex metadata")
-    #TODO: QUESTION: Office and Party as Embedded docs?
-    # formerly both were StringFields, plus a district StringField
     office = EmbeddedDocumentField(Office, required=True, help_text="Standardized office")
     party = EmbeddedDocumentField(Party, help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
     slug = StringField(required=True, help_text="Slugified office name, plus district and party if relevant")
@@ -149,27 +145,25 @@ class Candidate(DynamicDocument):
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     state = StringField(required=True, choices=STATE_POSTALS)
 
+    person = ReferenceField(Person, help_text="Reference to unique Person record to link candidacies over time and/or across states for presidential cands.")
+
     ### Contest fields ####
     contest = ReferenceField(Contest, reverse_delete_rule=CASCADE, required=True)
     contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
 
     ### Candidate fields ###
-    #TODO: QUESTION: Do we want option for full name or require fully parsed name? 
-    # If we require name parsing, could be blocker for generating unique Candidate records...
     #TODO: Add validation to require full_name or famly_name, assuming we allow full_name (see question above)
-    full_name = StringField(max_length=500)
-    family_name = StringField(max_length=200)
-    given_name = StringField(max_length=200)
-    suffix = StringField(max_length=200)
-    additional_name = StringField(max_length=200, help_text="Middle name, nickname, etc., if provided in raw results.")
-    #TODO: QUESTION: other_names only on Person?
-    #other_names = ListField(StringField(), default=list)
+    full_name = StringField(max_length=200)
+    family_name = StringField(max_length=75)
+    given_name = StringField(max_length=50)
+    suffix = StringField(max_length=20)
+    additional_name = StringField(max_length=75, help_text="Middle name, nickname, etc., if provided in raw results.")
     #TODO: Add validation to require full_name or family_name
     #TODO: Add example to help_text for slugified name
-    #TODO: Should slug be slugified name property sted of field?
     slug = StringField(max_length=300, required=True, help_text="Slugified name for easier querying and obj repr")
-    #TODO: QUESTION: move identifiers to Person right?
-    #identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number")
+    identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number. "
+            "This should store IDs relevant to just this candidacy, such as FEC Cand number(s) for a particular election "
+            "cycle. The Person model will store the full history of all FEC Cand Numbers")
 
     meta = {
         'indexes': ['election_id',],
@@ -183,8 +177,6 @@ class Candidate(DynamicDocument):
     def name(self):
         if self.full_name:
             name = self.full_name
-        #NOTE: Updated logic here to test that name bits are available
-        # Otherwise it's potential blocker for creating unique candidacies
         else:
             name = self.family_name
             if self.given_name:
@@ -229,7 +221,6 @@ class Result(DynamicDocument):
         "(NY, CT, SC ...) candidates can run as the nominee for multiple parties "
         "and results will be per-party.")
     ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
-    #NOTE: Made jurisdiction required
     jurisdiction = StringField(required=True, help_text="Derived/standardized political geography (state, county, district, etc.).")
     votes = IntField(required=True, help_text="Vote count for this jurisdiction")
     total_votes = IntField(help_text="Total candidate votes contest-wide, either from raw results or calculated by OpenElex."
@@ -274,26 +265,13 @@ class RawResult(DynamicDocument):
     special = BooleanField(default=False, help_text="From OpenElex metadata")
     office = StringField(required=True)
     district = StringField()
-    #TODO: QUESTION: contest_slug = office and district, as well as party (if it's closed primary)
-    # Do we want this here? If so, should we:
-    # * include party in contest_slug but not in candidate_slug if it's a closed primary
-    # * include party in candidate_slug but not in contest_slug if it's a general or other race type?
-    contest_slug = StringField(required=True, help_text="Denormalized contest slug for easier querying and obj repr")
 
     ### Candidate fields ###
-    candidate_slug = StringField(required=True, help_text="Denormalized candidate slug for easier querying and obj repr")
     #TODO: Add validation to require full_name or family_name
     full_name = StringField(max_length=300, help_text="Only if present in raw results.")
     family_name = StringField(max_length=200, help_text="Only if present in raw results.")
     given_name = StringField(max_length=200, help_text="Only if present in raw results.")
     suffix = StringField(max_length=200, help_text="Only if present in raw results.")
-    #TODO: QUESTION: Does raw data ever have multiple name representations or is this more appropriately
-    # a downstream transform? If latter, only put additional_name on Person, right?
-    #raw_additional_name = StringField(max_length=200, help_text="For middle names, nicknames, etc")
-    #other_names = ListField(StringField(), default=list)
-    #TODO: QUESTION: identifiers are only applied during transform steps, so only on Person model, right?
-    #identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number")
-
 
     ### Result fields ###
     reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
@@ -302,16 +280,11 @@ class RawResult(DynamicDocument):
         "This is on result (rather than Candidate) because in some states "
         "(NY, CT, SC ...) candidates can run as the nominee for multiple parties "
         "and results will be per-party.")
-    #TODO: QUESTION: only have ocd_id on Result model following transform step?
-    #ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
-    #TODO: QUESTION: jurisdiction should be required?
-    jurisdiction = StringField(help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number.")
+    jurisdiction = StringField(required=True, help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number."
+            "Or default to state + office/district, if not present in data.")
     # See https://github.com/openelections/core/issues/46
     votes = IntField(required=True, help_text="Raw vote count for this jurisdiction")
-    #NOTE: Making total votes non-required here, since it won't always be provided in raw results
     total_votes = IntField(help_text="Total candidate votes contest-wide, if provided in raw results.")
-    #TODO: QUESTION: Are vote_brkdowns standard enough that we should
-    # make them model fields, which in most cases will be empty?
     vote_breakdowns = DictField(help_text="Vote totals for election day (absentee, provisional, etc.), if provided in raw results")
     winner = StringField(help_text="Winner flag, if provided in raw results.")
     write_in = StringField(help_text="Write-in flag, if provided in raw results.")
@@ -321,8 +294,6 @@ class RawResult(DynamicDocument):
     }
 
     def __unicode__(self):
-        #TODO: QUESTION: Replace contest/candidate slugs?
-        #..need different values if we remove these slugs from this model...
         bits = (
             self.election_id,
             self.contest_slug,
@@ -332,3 +303,27 @@ class RawResult(DynamicDocument):
             self.votes,
         )
         return u'%s-%s-%s-%s-%s (%s)' % bits
+
+    @property
+    def contest_slug(self):
+        slug = "%s" % self.office.lower().replace(' ', '-')
+        if self.district:
+            slug += "%s" % self.district.lower().replace(' ', '-')
+        if self.primary_party:
+            slug += "%s" % self.primary_party.replace(' ', '-')
+        return slug
+
+    @property
+    def candidate_slug(self):
+        if self.full_name:
+            name = self.full_name
+        else:
+            name = self.family_name
+            if self.given_name:
+                name += " %s" % self.given_name
+            if self.additional_name:
+                name += " %s" % self.additional_name
+            if self.suffix:
+                name +=  " %s" % self.suffix
+        return name.replace(' ', '-')
+
