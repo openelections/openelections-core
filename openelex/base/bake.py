@@ -4,6 +4,8 @@ from datetime import datetime
 import json
 import os
 
+from ordered_set import OrderedSet
+
 from mongoengine import Q
 from mongoengine.fields import ReferenceField
 
@@ -36,17 +38,24 @@ class RollerMeta(type):
     def __new__(cls, name, bases, attrs):
         field_name_transforms = {}
         field_calculators = {}
+        transformed_fields_ordered = []
+        calculated_fields_ordered = []
 
         for k, v in attrs.items():
             if isinstance(v, FieldNameTransform):
                 transforms = field_name_transforms.setdefault(v.collection, {})
-                transforms[v.db_field] = v.output_name if v.output_name else k
+                output_name = v.output_name if v.output_name else k
+                transforms[v.db_field] = output_name
+                transformed_fields_ordered.append(output_name)
                 
             elif isinstance(v, CalculatedField):
                 field_calculators[k] = v.apply
+                calculated_fields_ordered.append(k)
 
         attrs['field_name_transforms'] = field_name_transforms
         attrs['field_calculators'] = field_calculators
+        attrs['transformed_fields_ordered'] = transformed_fields_ordered
+        attrs['calculated_fields_ordered'] = calculated_fields_ordered
 
         return super(RollerMeta, cls).__new__(cls, name, bases, attrs)
 
@@ -70,9 +79,9 @@ class Roller(object):
     """
 
     collections = [
-        Result,
+        Contest,
         Candidate,
-        Contest
+        Result,
     ]
     """
     List of mapper document/model classes that will be queried and flattened.
@@ -107,24 +116,72 @@ class Roller(object):
     # dictionary.
     year = CalculatedField(lambda d: d['start_date'].year)
 
+    excluded_fields = {
+        'result': ['candidate_slug', 'contest_slug',],
+        'candidate': [
+            'contest',
+            'contest_slug',
+            'election_id',
+            'parties',
+            'source',
+            'slug',
+        ],
+        'contest': ['election_id', 'party', 'raw_party', 'source', 'slug',],
+    }
+    """
+    Mongodb fields that should be excluded from output data. 
+    
+    The excluded fields can be altered dynamically by overriding the 
+    ``build_excluded_fields()`` method.
+    """
+
     def __init__(self):
         self._querysets = {}
         self._relationships = {}
-
-        primary_collection_name = self.primary_collection._meta['collection']
+        self._output_fields = []
 
         for coll in self.collections:
             name = coll._meta['collection']
             self._querysets[name] = getattr(coll, 'objects')
-            if name == primary_collection_name:
+            if coll  == self.primary_collection:
                 self._primary_queryset = self._querysets[name]
 
-        for field in self.primary_collection._fields.values():
-            if self._is_relationship_field(field):
-                self._relationships[field.db_field] = field.document_type._meta['collection']
+            self._contribute_fields(coll)
+
+        self._output_fields.extend(self.calculated_fields_ordered)
 
     def _is_relationship_field(self, field):
         return isinstance(field, ReferenceField)
+
+    def _contribute_fields(self, collection):
+        is_primary = collection == self.primary_collection
+        coll_name = collection._meta['collection']
+
+        try:
+            excluded_fields = list(self.excluded_fields[coll_name])
+        except KeyError:
+            excluded_fields = []
+        excluded_fields.append('_id')
+        excluded_field_set = set(excluded_fields)
+
+        for field_name in collection._fields_ordered:
+            field = collection._fields[field_name]
+            db_field_name = field.db_field
+            if db_field_name in excluded_field_set:
+                continue
+
+            if is_primary and self._is_relationship_field(field):
+                # Track relationship fields but don't add them to the set of
+                # output fields
+                self._relationships[field.db_field] = field.document_type._meta['collection']
+            else:
+                self._output_fields.append(self._transform_field_name(coll_name, db_field_name))
+
+    def _transform_field_name(self, collection_name, field_name):
+        try:
+            return self.field_name_transforms[collection_name][field_name]
+        except KeyError:
+            return field_name
 
     @property
     def primary_collection_name(self):
@@ -250,18 +307,7 @@ class Roller(object):
         }
 
     def build_exclude_fields(self, **filter_kwargs):
-        return {
-            'result': ['candidate_slug', 'contest_slug',],
-            'candidate': [
-                'contest',
-                'contest_slug',
-                'election_id',
-                'parties',
-                'source',
-                'slug',
-            ],
-            'contest': ['election_id', 'party', 'raw_party', 'source', 'slug',],
-        }
+        return self.excluded_fields 
 
     def apply_field_limits(self, fields={}, exclude_fields={}):
         """
@@ -285,7 +331,7 @@ class Roller(object):
             except KeyError:
                 pass
 
-        return data
+        return data 
 
     def get_calculated_fields(self, data):
         calculated_fields = {}
@@ -298,6 +344,7 @@ class Roller(object):
         Returns a dictionary representing a single "row" of data, created by
         merging the fields from multiple mapper models/documents.
         """
+        flat = {}
         # Remove id and reference id fields
         primary.pop('_id', None)
         for fname in self._relationships.keys():
@@ -317,11 +364,12 @@ class Roller(object):
             transforms = self.field_name_transforms.get(name)
             if transforms:
                 data = self.transform_field_names(data, transforms)
-            primary.update(data)
+            flat.update(data)
 
-        primary.update(self.get_calculated_fields(primary))
+        flat.update(primary)
+        flat.update(self.get_calculated_fields(flat))
 
-        return primary
+        return flat 
 
     def get_list(self, **filter_kwargs):
         """
@@ -332,6 +380,9 @@ class Roller(object):
         exclude_fields = self.build_exclude_fields(**filter_kwargs)
         self.apply_filters(**filters)
         self.apply_field_limits(fields, exclude_fields)
+        # A list of encountered fields to accomodate dynamic document fields.
+        # Start off with the list of known fields built in the constructor.
+        self._fields = OrderedSet(self._output_fields)
 
         # It's slow to follow the referenced fields at the MongoEngine level
         # so just build our own map of related items in memory.
@@ -350,7 +401,6 @@ class Roller(object):
         # We'll save the flattened items as an attribute to support a 
         # chainable interface.
         self._items = []
-        self._fields = set()
         primary_qs = self._querysets[self.primary_collection_name].as_pymongo()
         for primary in primary_qs:
             related = {}
@@ -358,10 +408,7 @@ class Roller(object):
                 related[fname] = related_map[coll][str(primary[fname])]
                     
             flat = self.flatten(primary, **related)
-            # Keep a running list of all the data fields.  We need to do
-            # this here because the documents can have dynamic, and therefore
-            # differing fields.
-            self._fields.update(set(flat.keys()))
+            self._fields |= flat.keys()
             self._items.append(flat)
 
         return self._items
@@ -374,7 +421,10 @@ class Roller(object):
         This list is appropriate for writing a header row in a csv file
         using csv.DictWriter.
         """
-        return sorted(list(self._fields))
+        try:
+            return list(self._fields)
+        except AttributeError:
+            return self._output_fields
 
 
 class Baker(object):

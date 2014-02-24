@@ -140,6 +140,12 @@ class TestRoller(MongoTestCase):
         self.assertEqual(len(data),
             Result.objects(state="MD", reporting_level=level).count())
 
+    def test_get_fields_no_data(self):
+        """Test the list of output fields when no data has been fetched"""
+        fields = set(self.roller.get_fields())
+        for field in self.OUTPUT_FIELDS:
+            self.assertIn(field, fields)
+
 
 class TestBaker(TestCase):
     def test_filename(self):
