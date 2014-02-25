@@ -1,94 +1,132 @@
+"""
+This is a copy of Loader from dev branch. Most of this 
+functionality needs to be turned into transform steps
+"""
 from os.path import exists, join
 import datetime
 import re
 import unicodecsv
 
 from openelex.base.load import BaseLoader
-from openelex.models import RawResult
+from openelex.models import Candidate, Result, Contest
 from openelex.lib.text import slugify
+
 from .datasource import Datasource
 
-class LoadResults(object):
-    """Entry point for data loading.
 
-    Determines appropriate loader for file and triggers load process.
-
-    """
+class LoadResults(MDBaseLoader, BaseLoader):
 
     def run(self, mapping):
-        election_id = mapping['election']
-        if '2002' in election_id:
-            loader = MDLoader2002()
-        elif '2000' in election_id and 'primary' in election_id:
-            loader = MDLoader2000Primary()
-        else:
-            loader = MDLoaderAfter2002()
-        loader.run(mapping)
-
-
-class MDBaseLoader(BaseLoader):
-
-    #TODO: QUESTION: Move to BaseLoader?
-    def run(self, mapping):
-        self.mapping = mapping
         self.source = mapping['generated_filename']
         self.timestamp = datetime.datetime.now()
         self.datasource = Datasource()
         self.election_id = mapping['election']
+        # Unlike Results, Contest and Candidate metadata is not deleted and reloaded each
+        # time, since this metadata is required for multiple file types.
+        # We build lookups for this data to optimize Results data loading.
+        self.contest_lkup = self._build_lkup(Contest)
+        self.cand_lkup = self._build_lkup(Candidate)
 
-        self.delete_previously_loaded()
-        self.load()
-
-    #TODO: QUESTION: Move to BaseLoader?
-    def delete_previously_loaded(self):
         print("LOAD: %s" % self.source)
-        # Reload raw results fresh every time
-        result_count = RawResult.objects.filter(source=self.source).count()
+        # Reload results fresh every time
+        result_count = Result.objects.filter(source=self.source).count()
         if result_count > 0:
-            print("\tDeleting %s previously loaded raw results" % result_count)
-            RawResult.objects.filter(source=self.source).delete()
+            print("\tDeleting %s previously loaded results" % result_count)
+            Result.objects.filter(source=self.source).delete()
+
+        # Load results based on file type
+        if '2002' in self.election_id:
+            self.load_2002_file(mapping)
+        # special case for 2000 primary
+        elif '2000' in self.election_id and 'primary' in self.election_id:
+            self.load_2000_primary_file(mapping)
+        else:
+            self.load_non2002_file(mapping)
 
     # Private methods
-    #TODO: QUESTION: Move to BaseLoader?
+    def _build_lkup(self, doc_klass):
+        """Build lkup for Contests/Candiates
+
+        self_build_lkup(Candidate, mapping['generated_filename'])
+
+        """
+        # Fetch all contests or candidates for given election
+        lkup = {}
+        objs = doc_klass.objects.filter(election_id = self.election_id)
+        for obj in objs:
+            lkup[obj.key] = obj
+        return lkup
+
     @property
     def _file_handle(self):
         return open(join(self.cache.abspath, self.source), 'rU')
 
-    #TODO: QUESTION: Move to BaseLoader? Should be able to provide
-    # the meta fields for free on all states.
-    def _build_meta_fields(self, row):
-        """These fields are derived from OpenElex API and common to all RawResults"""
+    def _get_or_create_contest(self, row, mapping):
         year = int(re.search(r'\d{4}', self.election_id).group())
         elecs = self.datasource.elections(year)[year]
         # Get election metadata by matching on election slug
         elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
         party = row['Party'].strip()
-        kwargs = {
-            'created':  self.timestamp,
-            'updated': self.timestamp,
-            'source': self.source,
-            'election_id': self.election_id,
-            'state': self.state.upper(),
-            'start_date': datetime.datetime.strptime(elec_meta['start_date'], "%Y-%m-%d"),
-            'end_date': datetime.datetime.strptime(elec_meta['end_date'], "%Y-%m-%d"),
-            'election_type': elec_meta['race_type'],
-            'primary_type': elec_meta['primary_type'],
-            'result_type': elec_meta['result_type'],
-            'special': elec_meta['special'],
-        }
-        # Add party if it's a primary
-        #TODO: Update logic to check primary_type == closed
-        #TODO: QUESTION: Should semi-closed also have party?
-        if 'primary' in self.election_id:
-            kwargs['primary_party'] = party
-        else:
-            kwargs['primary_party'] = ''
-        return kwargs
+        slug = self._build_contest_slug(row)
+        key = (self.election_id, slug)
+        try:
+            contest = self.contest_lkup[key]
+        except KeyError:
+            kwargs = {
+                'created':  self.timestamp,
+                'updated': self.timestamp,
+                'source': self.source,
+                'election_id': self.election_id,
+                'slug': slug,
+                'state': self.state.upper(),
+                'start_date': datetime.datetime.strptime(elec_meta['start_date'], "%Y-%m-%d"),
+                'end_date': datetime.datetime.strptime(elec_meta['end_date'], "%Y-%m-%d"),
+                'election_type': elec_meta['race_type'],
+                'result_type': elec_meta['result_type'],
+                'special': elec_meta['special'],
+                'raw_office': row['Office Name'].strip(),
+                'raw_district': row['Office District'].strip(),
+            }
+            contest = Contest(**kwargs)
+            # Add party if it's a primary
+            if 'primary' in self.election_id:
+                kwargs['raw_party'] = party
+            contest.save()
+            self.contest_lkup[key] = contest
+        return contest
 
+    def _get_or_create_candidate(self, row, contest):
+        raw_full_name = row['Candidate Name'].strip()
+        slug = slugify(raw_full_name, substitute='-')
+        key = (self.election_id, contest.slug, slug)
+        try:
+            candidate = self.cand_lkup[key]
+        except KeyError:
+            cand_kwargs = {
+                'source': self.source,
+                'election_id': self.election_id,
+                'contest': contest,
+                'contest_slug': contest.slug,
+                'state': self.state.upper(),
+                'raw_full_name': raw_full_name,
+                'slug': slug,
+            }
+            candidate = Candidate.objects.create(**cand_kwargs)
+            candidate.save()
+            self.cand_lkup[key] = candidate
+        return candidate
 
-class MDLoaderAfter2002(MDBaseLoader):
+    def _build_contest_slug(self, row):
+        office = row['Office Name'].strip()
+        bits = [office]
+        district = row['Office District'].strip()
+        if district and 'pres' not in office.lower():
+            bits.append(district)
+        if 'primary' in self.source:
+            bits.append(row['Party'].lower())
+        return slugify(" ".join(bits), substitute='-')
 
-    def load(self):
+    def load_non2002_file(self, mapping):
         with self._file_handle as csvfile:
             results = []
             target_offices = set([
@@ -107,52 +145,39 @@ class MDLoaderAfter2002(MDBaseLoader):
                 if not row['Office Name'].strip() in target_offices:
                     continue
                 elif 'state_legislative' in self.source:
-                    results.extend(self._prep_state_leg_results(row))
+                    results.extend(self._prep_non2002_state_leg_results(row, mapping))
                 elif 'precinct' in self.source:
-                    results.append(self._prep_precinct_result(row))
+                    results.append(self._prep_non2002_precinct_result(row, mapping))
                 else:
-                    results.append(self._prep_county_result(row))
-            RawResult.objects.insert(results)
+                    results.append(self._prep_non2002_county_result(row, mapping))
+            Result.objects.insert(results)
 
-    def _build_contest_kwargs(self, row):
+    def _result_kwargs_non2002(self, row, mapping):
+        contest = self._get_or_create_contest(row, mapping)
+        candidate = self._get_or_create_candidate(row, contest)
         kwargs = {
-            'office': row['Office Name'].strip(),
-            'district': row['Office District'].strip(),
+            'source': self.source,
+            'election_id': self.election_id,
+            'state': self.state.upper(),
+            'contest': contest,
+            'contest_slug': contest.slug,
+            'candidate': candidate,
+            'candidate_slug': candidate.slug,
         }
         return kwargs
 
-    def _build_candidate_kwargs(self, row):
-        full_name = row['Candidate Name'].strip()
-        slug = slugify(full_name, substitute='-')
-        kwargs = {
-            'full_name': full_name,
-            #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
-            'name_slug': slug,
-        }
-        return kwargs
-
-    def _base_kwargs(self, row):
-        "Build base set of kwargs for RawResult"
-        meta_kwargs = self._build_meta_fields(row)
-        contest_kwargs = self._build_contest_kwargs(row)
-        candidate_kwargs = self._build_candidate_kwargs(row)
-        #TODO: Merge kwags
-        meta_kwargs.update(contest_kwargs)
-        meta_kwargs.update(candidate_kwargs)
-        return meta_kwargs
-
-    def _prep_state_leg_results(self, row):
-        kwargs = self._base_kwargs(row)
+    def _prep_non2002_state_leg_results(self, row, mapping):
+        kwargs = self._result_kwargs_non2002(row, mapping)
         kwargs.update({
             'reporting_level': 'state_legislative',
-            'winner': row['Winner'].strip(),
-            'write_in': self._writein(row),
-            'party': row['Party'].strip(),
+            'raw_winner': self._non2002_winner(row), # at the contest-level
+            'write_in': self._non2002_writein(row),
         })
         try:
-            kwargs['write_in'] = row['Write-In?'].strip() # at the contest-level
+            kwargs['raw_write_in'] = row['Write-In?'].strip(), # at the contest-level
         except KeyError as e:
             pass
+        self._update_non2002_candidate_parties(row, kwargs['candidate'])
         results = []
         for field, val in row.items():
             # Legislative fields prefixed with LEGS
@@ -160,73 +185,120 @@ class MDLoaderAfter2002(MDBaseLoader):
                 continue
             district = field.split()[1].strip()
             kwargs.update({
-                'jurisdiction': field,
-                'district': district,
-                'votes': self._votes(val),
+                'ocd_id': "ocd-division/country:us/state:md/sldl:%s" % district,
+                'jurisdiction': district,
+                'raw_jurisdiction': field,
+                'raw_total_votes': self._non2002_total_votes(val),
             })
-            results.append(RawResult(**kwargs))
+            results.append(Result(**kwargs))
         return results
 
-    def _prep_county_result(self, row):
-        kwargs = self._base_kwargs(row)
-        vote_brkdown_fields = [
+    def _prep_non2002_county_result(self, row, mapping):
+        kwargs = self._result_kwargs_non2002(row, mapping)
+        vote_brkdwon_fields = [
            ('election_night_total', 'Election Night Votes'),
            ('absentee_total', 'Absentees Votes'),
            ('provisional_total', 'Provisional Votes'),
            ('second_absentee_total', '2nd Absentees Votes'),
         ]
         vote_breakdowns = {}
-        for field, key in vote_brkdown_fields:
+        for field, key in vote_brkdwon_fields:
             try:
                 vote_breakdowns[field] = row[key].strip()
             except KeyError:
                 pass
         kwargs.update({
+            'ocd_id': mapping['ocd_id'],
             'reporting_level': 'county',
-            'jurisdiction': self.mapping['name'],
+            'jurisdiction': mapping['name'],
             'party': row['Party'].strip(),
-            'votes': self._votes(row['Total Votes']),
+            'raw_total_votes': self._non2002_total_votes(row['Total Votes']),
+            'raw_winner': self._non2002_winner(row),
+            'raw_write_in': self._non2002_writein(row),
+            'raw_vote_breakdowns': vote_breakdowns,
+            #TODO: Move to transforms step?
+            #'total_votes': self._non2002_total_votes(row['Total Votes']),
+            #'winner': self._non2002_winner(row),
+            #'write_in': self._non2002_writein(row),
         })
-        return RawResult(**kwargs)
+        return Result(**kwargs)
 
-    def _prep_precinct_result(self, row):
-        kwargs = self._base_kwargs(row)
+    def _prep_non2002_precinct_result(self, row, mapping):
+        kwargs = self._result_kwargs_non2002(row, mapping)
         vote_breakdowns = {
             'election_night_total': int(float(row['Election Night Votes']))
         }
-        district = str(row['Election District'])
-        precinct = str(row['Election Precinct'])
+        raw_district = str(row['Election District'])
+        raw_precinct = str(row['Election Precinct'])
         kwargs.update({
+            #'ocd_id': mapping['ocd_id'],
             'reporting_level': 'precinct',
-            'jurisdiction':precinct,
-            'jurisdiction': self.mapping['name'] + ' ' + district  + "-" + precinct,
+            'raw_jurisdiction':raw_precinct,
+            'jurisdiction': mapping['name'] + ' ' + raw_district  + "-" + raw_precinct,
             'party': row['Party'].strip(),
-            'votes': self._votes(row['Election Night Votes']),
-            'winner': row['Winner'],
-            'write_in': self._writein(row),
-            'vote_breakdowns': vote_breakdowns,
+            'raw_total_votes': int(float(row['Election Night Votes'])),
+            'raw_winner': self._non2002_winner(row),
+            'raw_write_in': self._non2002_writein(row),
+            'raw_vote_breakdowns': vote_breakdowns,
+            #TODO: Move total votes to transform step?
+            #'total_votes': int(float(row['Election Night Votes'])),
+            #'winner': self._non2002_winner(row),
+            #'write_in': self._non2002_writein(row),
         })
-        return RawResult(**kwargs)
+        return Result(**kwargs)
 
-    def _votes(self, val):
+    def _update_non2002_candidate_parties(self, row, candidate):
+        raw_party = row['Party'].strip()
+        if raw_party not in candidate.raw_parties:
+            candidate.raw_parties.append(raw_party)
+        candidate.save()
+
+    def _non2002_total_votes(self, val):
         if val.strip() == '':
             total_votes = 0
         else:
             total_votes = int(float(val))
         return total_votes
 
-    def _writein(self, row):
+    def _non2002_winner(self, row):
+        if row['Winner'] == 'Y':
+            winner = True
+        else:
+            winner = False
+        return winner
+
+    def _non2002_writein(self, row):
         # sometimes write-in field not present
         try:
-            write_in = row['Write-In?'].strip()
+            if row['Write-In?'] == 'Y':
+                write_in = True
+            else:
+                write_in = False
         except KeyError:
             write_in = None
         return write_in
 
+    def load_county_2002(self, row):
+        total_votes = int(float(row['votes']))
+        #TODO: replace above 2 lines with below
+        reporting_level = 'precinct'
+        ocd_id = mapping['ocd_id']
+        total_votes = int(float(row['votes']))
+        kwargs = {
+            #TODO: generate ocd_id
+            #'ocd_id': ocd_id,
+            #'jurisdiction': jurisdiction,
+            'reporting_level': reporting_level,
+            'raw_office': row['office'].strip(),
+            'candidate': candidate,
+            'party': row['party'].strip(),
+            'write_in': write_in,
+            'raw_total_votes': total_votes,
+            'vote_breakdowns': {}
+        }
+        return Result(**kwargs)
 
-class MDLoader2002(MDBaseLoader):
-
-    def load(self):
+    def load_2002_file(self, mapping):
         headers = [
             'office',
             'district',
@@ -255,7 +327,9 @@ class MDLoader2002(MDBaseLoader):
                     geo_obj = [x for x in geographies if x['name']+" County" == row['jurisdiction'].strip()][0]
 
                 # Winner
-                winner = row['winner']
+                #TODO: make this raw_winner
+                #TODO: push this to transform step
+                raw_winner = row['winner']
                 #if row['winner'] == '1':
                 #    raw_winner = True
                 #else:
@@ -296,33 +370,10 @@ class MDLoader2002(MDBaseLoader):
                     'write_in': write_in,
                     'raw_total_votes': row['votes'],
                 }
-                result = RawResult(**result_kwargs)
-        RawResult.objects.insert(results)
+                result = Result(**result_kwargs)
+        Result.objects.insert(results)
 
-    def load_county_2002(self, row):
-        total_votes = int(float(row['votes']))
-        #TODO: replace above 2 lines with below
-        reporting_level = 'precinct'
-        ocd_id = mapping['ocd_id']
-        total_votes = int(float(row['votes']))
-        kwargs = {
-            #TODO: generate ocd_id
-            #'ocd_id': ocd_id,
-            #'jurisdiction': jurisdiction,
-            'reporting_level': reporting_level,
-            'raw_office': row['office'].strip(),
-            'candidate': candidate,
-            'party': row['party'].strip(),
-            'write_in': write_in,
-            'raw_total_votes': total_votes,
-            'vote_breakdowns': {}
-        }
-        return RawResult(**kwargs)
-
-
-class MDLoader2000Primary(MDBaseLoader):
-
-    def load(self):
+    def load_2000_primary_file(self, mapping):
         candidates = {}
         results = []
         with self._file_handle as csvfile:
@@ -407,5 +458,5 @@ class MDLoader2000Primary(MDBaseLoader):
                                 'total_votes': int(votes),
                                 'vote_breakdowns': {}
                             }
-                            result = RawResult(**result_kwargs)
+                            result = Result(**result_kwargs)
                             results.append(result)

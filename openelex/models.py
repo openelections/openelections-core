@@ -54,7 +54,8 @@ class RawResult(DynamicDocument):
     result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
     special = BooleanField(default=False, help_text="From OpenElex metadata")
     office = StringField(required=True)
-    district = StringField()
+    district = StringField(help_text="Only populate this if district is a distinct field in raw data already."
+            "If it requires parsing, perform this as a transform step")
 
     ### Candidate fields ###
     #TODO: Add validation to require full_name or family_name
@@ -80,7 +81,7 @@ class RawResult(DynamicDocument):
     write_in = StringField(help_text="Write-in flag, if provided in raw results.")
 
     meta = {
-        'indexes': ['election_id',],
+        'indexes': ['election_id', 'end_date', 'primary_type', 'primary_party', 'reporting_level', 'full_name', 'family_name'],
     }
 
     def __unicode__(self):
