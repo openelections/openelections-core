@@ -8,8 +8,8 @@ The state offers CSV files containing county-level results by election date from
 
 These are represented in the dashboard API as the `direct_link` attribute on elections.
 
-Results files for elections prior to 2008 are consistently (and readably) named, but they come in multiple files for each election, one per office contested. 
-In the dashboard API the `direct_link` and `portal_link` are identical, so we use a url_paths.csv file similar to Ohio.
+Results files for elections prior to 2008 are consistently (and readably) named, but they come in multiple files for each election, one per office contested,
+and are PDF files. Converted CSV versions of them are in the local cache directory for now.
 """
 import os
 from os.path import join
@@ -137,7 +137,7 @@ class Datasource(BaseDatasource):
             office
         ]
         path = urlparse.urlparse(url).path
-        name = "__".join(bits) + '.pdf'
+        name = "__".join(bits) + '.csv'
         return name
     
     def _find_csv_links(self, url):
