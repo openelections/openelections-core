@@ -1,0 +1,11 @@
+### West Virginia Datasource Process
+
+For elections from 2008-onward, West Virginia provides statewide county-level and county-specific precinct-level CSV files for statewide, congressional and state legislative contests. These are loaded directly by datasource.py. For elections prior to 2007, the state provides PDF files containing county-level results, not precinct-level, for each office and election. These are converted into CSV files using the following headers:
+
+	year, election, office, party, county, candidate, votes, winner
+
+This results in a single row per election result, with the winner column representing a boolean on the "Totals" row. Datasource.py creates the mappings for these PDF and CSV files using the url_paths.csv file in /mappings.
+
+#### Issues
+
+* The 2006 House of Delegates primary results PDF is missing from the WV site; I have emailed to ask them to post it.
