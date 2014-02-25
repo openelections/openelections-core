@@ -60,15 +60,20 @@ def run(state, include=None, exclude=None):
                 validations.pop(val)
 
     # Run remaining validations
+    run_validation(state, validations.values()) 
+
+
+def run_validation(state, validators):
     passed = []
     failed = []
     print
-    for val, func in validations.items():
+    for validator in validators:
         try:
-            func()
-            passed.append(name)
+            validator()
+            passed.append(validator.__name__)
         except Exception as e:
-            failed.append("Error: %s - %s - %s" % (state.upper(), name, e))
+            failed.append("Error: %s - %s - %s" %
+                          (state.upper(), validator.__name__, e))
 
     print "\n\nVALIDATION RESULTS"
     print "Passed: %s" % len(passed)
@@ -76,4 +81,3 @@ def run(state, include=None, exclude=None):
     for fail in failed:
         print "\t%s" % fail
     print
-

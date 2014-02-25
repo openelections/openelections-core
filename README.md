@@ -64,3 +64,12 @@ $ vim openelex/settings.py
 
 (Optional) [Install mongo](http://docs.mongodb.org/manual/installation/)
 You only need to install mongo if you plan to write data loaders.
+
+(Optional) Load party and office metadata into mongo.
+You only need to do this if you plan to write data loaders or transforms.
+
+```bash
+$ cd openelex
+$ invoke load_metadata.run --collection=office
+$ invoke load_metadata.run --collection=party
+```
