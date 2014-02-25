@@ -22,7 +22,7 @@ class BaseLoader(StateBase):
         #TODO: use datasource.mappings instead
         #self.filenames = json.loads(open(join(self.mappings_dir,'filenames.json'), 'r').read())
 
-    def run(self):
+    def run(self, mapping):
         raise NotImplementedError()
 
     def jurisdiction_mappings(self, headers):
