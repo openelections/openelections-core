@@ -1,17 +1,14 @@
-from mongoengine import EmbeddedDocument, DynamicDocument
+from mongoengine import DynamicDocument
 from mongoengine.fields import (
     BooleanField,
     DateTimeField,
     DictField,
-    EmbeddedDocumentField,
     IntField,
-    ListField,
     StringField,
     ReferenceField,
 )
 from mongoengine.queryset import CASCADE
 
-from openelex.exceptions import ValidationError
 from openelex.us import STATE_POSTALS
 
 # CHOICE TUPLES
@@ -119,7 +116,7 @@ class RawResult(DynamicDocument):
         return name.replace(' ', '-')
 
 
-class Office(EmbeddedDocument):
+class Office(DynamicDocument):
     state = StringField(choices=STATE_POSTALS, required=True)
     name = StringField(required=True)
     district = StringField()
@@ -135,7 +132,7 @@ class Office(EmbeddedDocument):
         return key
 
 
-class Party(EmbeddedDocument):
+class Party(DynamicDocument):
     name = StringField(required=True)
     abbrev = StringField(required=True)
 
@@ -199,8 +196,8 @@ class Contest(DynamicDocument):
     primary_party = StringField(help_text="Only assign for closed primaries, where voters must be registered in party to vote in the contest")
     result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
     special = BooleanField(default=False, help_text="From OpenElex metadata")
-    office = EmbeddedDocumentField(Office, required=True, help_text="Standardized office")
-    party = EmbeddedDocumentField(Party, help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
+    office = ReferenceField(Office, required=True, help_text="Standardized office")
+    party = ReferenceField(Party, help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
     slug = StringField(required=True, help_text="Slugified office name, plus district and party if relevant")
 
     meta = {
