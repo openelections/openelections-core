@@ -1,4 +1,4 @@
-from mongoengine import DynamicDocument
+from mongoengine import Document, DynamicDocument
 from mongoengine.fields import (
     BooleanField,
     DateTimeField,
@@ -116,7 +116,7 @@ class RawResult(DynamicDocument):
         return name.replace(' ', '-')
 
 
-class Office(DynamicDocument):
+class Office(Document):
     state = StringField(choices=STATE_POSTALS, required=True)
     name = StringField(required=True)
     district = StringField()
@@ -132,7 +132,7 @@ class Office(DynamicDocument):
         return key
 
 
-class Party(DynamicDocument):
+class Party(Document):
     name = StringField(required=True)
     abbrev = StringField(required=True)
 
