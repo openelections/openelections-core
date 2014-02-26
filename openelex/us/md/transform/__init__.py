@@ -1,10 +1,22 @@
 from datetime import datetime
+from pprint import pprint
+
 from mongoengine import Q
 from nameparser import HumanName
 
 from openelex.base.transform import registry
-from openelex.models import Candidate, Contest, RawResult, Result
+from openelex.models import Candidate, Contest, Office, Party, RawResult, Result
 
+
+def _translate_office_name(office):
+    if "president" in office.lower():
+        return "President" 
+    elif "u.s. senat" in office.lower():
+        return "U.S. Senate"
+    elif "congress" in office.lower():
+        return "U.S. House of Representatives"
+
+    return office
 
 def create_unique_contests_after_2002():
     timestamp = datetime.now()
@@ -17,6 +29,27 @@ def create_unique_contests_after_2002():
     contests = []
     #import ipdb;ipdb.set_trace()
     for rr in raw_results:
+        office_query = {
+            'state': 'MD',
+            'name': _translate_office_name(rr.office),
+        }
+
+        # Handle president, where state = "US" 
+        if office_query['name'] == "President":
+            office_query['state'] = "US"
+
+        # TODO: Figure out how to filter offices by district. It looks like
+        # the district fields in RawResult are reflecting reporting level
+        # rather than the candidate's district.
+        if office_query['name'] in ('U.S. House of Representatives',):
+            office_query['district'] = rr.district
+
+        try:
+            office = Office.objects.get(**office_query)
+        except Exception:
+            pprint(rr._data)
+            print office_query 
+            raise
         kwargs = rr._data.copy()
         kwargs.pop('id')
         kwargs.pop('created')
