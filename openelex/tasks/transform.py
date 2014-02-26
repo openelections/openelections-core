@@ -45,20 +45,21 @@ def run(state, include=None, exclude=None):
     # Iniitialize transforms for the state in global registry
     state_mod = load_module(state, ['transform'])
     transforms = state_mod.transform.registry.all(state)
+    run_transforms = []
 
     # Filter transformations  based in include/exclude flags
     if include:
         to_run = split_args(include)
         for trx in transforms:
-            if trx not in to_run:
-                transforms.pop(trx)
+            if trx.name in to_run:
+                run_transforms.append(trx)
     if exclude:
         to_skip = split_args(exclude)
         for trx in transforms:
-            if trx in to_skip:
-                transforms.pop(trx)
+            if trx.name not in to_skip:
+                run_transforms.append(trx)
 
-    for transform in transforms:
+    for transform in run_transforms:
         print 'Executing %s' % transform 
         transform()
 
