@@ -128,20 +128,33 @@ class Office(Document):
     def __unicode__(self):
         return u'%s' % self.key
 
+    @classmethod
+    def make_key(cls, state, name, district=None):
+        key = "%s %s" % (state, name)
+        if district:
+            key += " (%s)" % district
+        return key
+
     @property
     def key(self):
-        key = "%s %s" % (self.state, self.name)
-        if self.district:
-            key += " (%s)" % self.district
-        return key
+        return self.make_key(self.state, self.name, self.district)
 
 
 class Party(Document):
     name = StringField(required=True)
     abbrev = StringField(required=True)
+    description = StringField()
 
     def __unicode__(self):
         return u'%s (%s)' % (self.name, self.abbrev)
+
+    @classmethod
+    def make_key(cls, abbrev):
+        return abbrev
+
+    @property
+    def key(self):
+        return self.make_key(self.abbrev)
 
 
 class Person(DynamicDocument):
