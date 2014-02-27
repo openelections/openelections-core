@@ -158,10 +158,8 @@ class MDLoaderAfter2002(MDBaseLoader):
             # Legislative fields prefixed with LEGS
             if not field.startswith('LEGS'):
                 continue
-            district = field.split()[1].strip()
             kwargs.update({
                 'jurisdiction': field,
-                'district': district,
                 'votes': self._votes(val),
             })
             results.append(RawResult(**kwargs))
