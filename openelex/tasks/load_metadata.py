@@ -1,8 +1,9 @@
 import os
+from csv import DictReader
 
-import invoke
 from invoke import task
 
+from openelex import models
 from openelex import COUNTRY_DIR
 
 FIXTURE_DIR = os.path.join(COUNTRY_DIR, 'fixtures')
@@ -12,31 +13,20 @@ UPSERT_FIELDS = {
     'office': ('state', 'name', 'district',),
 }
 
+def _get_document_class(collection):
+    return getattr(models, collection.capitalize())
+
 def _get_fixture_filename(collection, fmt='csv'):
     return os.path.join(FIXTURE_DIR, "%s.%s" % (collection, fmt))
-
-def _mongoimport_cmd(db, collection, filename=None, fmt='csv'):
-    if filename is None:
-        filename = _get_fixture_filename(collection)
-
-    upsert_fields = ",".join(UPSERT_FIELDS[collection])
-
-    cmd = ("mongoimport --db %s --collection %s --upsert --upsertFields=%s "
-           "--type %s --file %s" %
-           (db, collection, upsert_fields, fmt, filename))
-
-    if fmt == 'csv':
-        cmd += ' --headerline'
-    return cmd
-           
 
 @task(help={
     'collection': 'Collection where metadata will be loaded. E.g. "office"',
     'filename': ("Filename of fixture file. Optional. If omitted the default "
                  "filename will be calculated based on the collection name."),
     'database': "Database where data will be loaded. Optional. Default is openelex",
+    'clear': "Delete all records in collection before loading.",
 })
-def run(collection, filename=None, database='openelex'):
+def run(collection, filename=None, database='openelex', clear=False):
     """
     Populate metadata in MongoDB from fixture files.
 
@@ -45,5 +35,32 @@ def run(collection, filename=None, database='openelex'):
         raise ValueError("Unknown collection '%s'." % (collection))
 
     fmt = 'csv'
-    cmd = _mongoimport_cmd(database, collection, filename, fmt)
-    invoke.run(cmd, echo=True)
+    if filename is None:
+        filename = _get_fixture_filename(collection, fmt)
+    num_created = 0
+    count = 0
+
+    doc_cls = _get_document_class(collection)
+
+    with open(filename, 'r') as f:
+        # Only delete old data if we ask for it and if we can open the new
+        # file. 
+        if clear: 
+            print "Clearing all existing records.\n"
+            doc_cls.objects.delete()
+
+        reader = DictReader(f)
+        for row in reader:
+            # This might not be the most efficient way to do an upsert based
+            # on natural keys, but its the clearest and probably fast enough.
+            o, created = doc_cls.objects.get_or_create(**row)
+            
+            count += 1
+            if created:
+                num_created += 1
+
+    msg = "Imported %d records.\n" % (num_created)
+    if (num_created < count):
+        msg = msg + "%d records already in database.\n" % (count - num_created)
+
+    print msg
