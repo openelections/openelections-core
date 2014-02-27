@@ -117,9 +117,13 @@ class RawResult(DynamicDocument):
 
 
 class Office(Document):
-    state = StringField(choices=STATE_POSTALS, required=True)
+    # We use 'US' as a fake state for offices like president
+    OFFICE_STATES = STATE_POSTALS + ['US',]
+
+    state = StringField(choices=OFFICE_STATES, required=True)
     name = StringField(required=True)
     district = StringField()
+    chamber = StringField()
 
     def __unicode__(self):
         return u'%s' % self.key
