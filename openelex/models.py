@@ -210,11 +210,10 @@ class Contest(DynamicDocument):
     election_type = StringField(help_text="general, primary, etc. from OpenElex metadata")
     primary_type = StringField(choices=PRIMARY_TYPE_CHOICES, help_text="blanket, closed, open, etc. from OpenElex metadata")
     #TODO: Validation that requires primary_type to be "closed"
-    primary_party = StringField(help_text="Only assign for closed primaries, where voters must be registered in party to vote in the contest")
     result_type = StringField(required=True, help_text="certified/unofficial, from Openelex metadata")
     special = BooleanField(default=False, help_text="From OpenElex metadata")
     office = ReferenceField(Office, required=True, help_text="Standardized office")
-    party = ReferenceField(Party, help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
+    primary_party = ReferenceField(Party, help_text="This should only be assigned for closed primaries, where voters must be registered in party to vote in the contest")
     slug = StringField(required=True, help_text="Slugified office name, plus district and party if relevant")
 
     meta = {
