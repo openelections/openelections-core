@@ -12,3 +12,5 @@ District only appears in legislative contests. This results in a single row per 
 * The 2004 State Senate primary results PDF appears to be missing results for district 8 and district 17; Email sent asking state to post results.
 * The 2004 House of Delegates Democratic and Republican primary results for District 1 appears to be incorrect; email sent to confirm.
 * The 2004 House of Delegates Democratic primary results for District 5 appear to be incorrect.
+* The 2004 House of Delegates Republican primary results for District 42 appear to be incorrect.
+* The 2004 House of Delegates Democratic primary results for District 43 appear to include Republican candidates.
