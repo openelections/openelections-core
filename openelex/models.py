@@ -363,7 +363,16 @@ class Candidate(TimestampMixin, DynamicDocument):
     def key(self):
         return (self.election_id, self.contest_slug, self.slug)
 
+    @classmethod
+    def pre_save(cls, sender, document, **kwargs):
+        if not document.contest_slug:
+            document.contest_slug = document.contest.slug
+
+        if not document.slug:
+            document.slug = slugify(document.full_name, '-')
+
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Candidate)
+signals.pre_save.connect(Candidate.pre_save, sender=Candidate)
 
 
 class Result(TimestampMixin, DynamicDocument):
@@ -416,4 +425,13 @@ class Result(TimestampMixin, DynamicDocument):
         )
         return u'%s-%s-%s-%s-%s (%s)' % bits
 
+    @classmethod
+    def pre_save(cls, sender, document, **kwargs):
+        if not document.contest_slug:
+            document.contest_slug = document.contest.slug
+
+        if not document.candidate_slug:
+            document.candidate_slug = document.candidate.slug
+
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Result)
+signals.pre_save.connect(Result.pre_save, sender=Result)
