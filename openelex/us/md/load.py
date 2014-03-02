@@ -278,7 +278,6 @@ class MDLoader2002(MDBaseLoader):
                     'raw_given_name': row['first'].strip(),
                     'raw_additional_name': row['middle'].strip(),
                 }
-                 #TODO: add raw_party to candidate.raw_parties
 
                 result_kwargs = {
                     #'election':
@@ -291,6 +290,13 @@ class MDLoader2002(MDBaseLoader):
                     'raw_district': row['district'].strip(),
                     'reporting_level': 'county',
                     'raw_party': row['party'], # needs to be a member of a list
+                    # TODO: For now raw_party and party are set to the same 
+                    # value, just so party is available to the first version of
+                    # the baker.
+                    # However, eventually raw results should be moved to a
+                    # separate document and the party name should be
+                    # standardized in a transform step.
+                    'party': row['party'], # needs to be a member of a list
                     'write_in': write_in,
                     'raw_total_votes': row['votes'],
                 }
@@ -337,23 +343,29 @@ class MDLoader2000Primary(MDBaseLoader):
                     if cols[0][1:29] == 'President and Vice President':
                         office_name = 'President - Vice Pres'
                         if 'Democratic' in cols[0]:
+                            raw_party = "Democratic"
                             party = 'DEM'
                         else:
+                            raw_party = "Republican"
                             party = 'REP'
                         continue
                     elif cols[0][1:13] == 'U.S. Senator':
                         office_name = 'U.S. Senator'
                         if 'Democratic' in cols[0]:
+                            raw_party = "Democratic"
                             party = 'DEM'
                         else:
+                            raw_party = "Republican"
                             party = 'REP'
                         continue
                     elif cols[0][1:27] == 'Representative in Congress':
                         district = int(cols[0][71:73])
                         office_name = 'U.S. Congress ' + str(district)
                         if 'Democratic' in cols[0]:
+                            raw_party = "Democratic"
                             party = 'DEM'
                         else:
+                            raw_party = "Republican"
                             party = 'REP'
                         continue
                     # skip offices we don't want
@@ -400,6 +412,7 @@ class MDLoader2000Primary(MDBaseLoader):
                                 'slug': 'TODO',
                                 #'raw_office': office_name,
                                 'reporting_level': 'county',
+                                'raw_party': raw_party,
                                 'party': party,
                                 'write_in': False,
                                 'total_votes': int(votes),

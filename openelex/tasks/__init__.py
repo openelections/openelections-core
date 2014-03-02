@@ -3,7 +3,9 @@ from mongoengine import ConnectionError
 
 from openelex.settings import init_db
 from fetch import fetch
-import archive, cache, datasource, load, load_metadata, transform, validate
+
+import archive, cache, datasource, load, load_metadata, transform, validate, bake
+
 
 # Build tasks namespace
 ns = Collection()
@@ -15,6 +17,7 @@ ns.add_collection(load)
 ns.add_collection(load_metadata)
 ns.add_collection(transform)
 ns.add_collection(validate)
+ns.add_collection(bake)
 
 # Initialize prod Mongo connection
 try:
