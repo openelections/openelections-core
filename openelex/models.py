@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from mongoengine import Document, DynamicDocument
 from mongoengine.fields import (
     BooleanField,
@@ -8,7 +10,9 @@ from mongoengine.fields import (
     ReferenceField,
 )
 from mongoengine.queryset import CASCADE
+from mongoengine import signals
 
+from openelex.lib.text import slugify
 from openelex.us import STATE_POSTALS
 
 # CHOICE TUPLES
@@ -30,13 +34,37 @@ REPORTING_LEVEL_CHOICES = (
     'parish',
 )
 
+# Model mixins
+
+class TimestampMixin(object):
+    """
+    A DynamicDocument with created and last-updated timestamps.
+
+    This is a mixin rather than a base class because subclasses get
+    shoved in the base classes collection in mongo.
+    """
+    created = DateTimeField(default=datetime.now)
+    updated = DateTimeField(default=datetime.now)
+
+    @classmethod
+    def update_timestamp(cls, sender, document, **kwargs):
+        """
+        Set the last-updated timestamp to the current date/time.
+
+        This is meant to be wired up as a signal handler.
+        """
+        # It won't work with update().
+        #
+        # See http://stackoverflow.com/a/12248318/386210 and
+        # https://github.com/MongoEngine/mongoengine/issues/21  
+        document.updated = datetime.now()
+
 
 # Models
-class RawResult(DynamicDocument):
+
+class RawResult(TimestampMixin, DynamicDocument):
     """Flat representation of raw data. Intended for use in data loaders."""
     ### META fields ###
-    created = DateTimeField()
-    updated = DateTimeField()
     source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     state = StringField(required=True, choices=STATE_POSTALS)
@@ -94,6 +122,11 @@ class RawResult(DynamicDocument):
 
     @property
     def contest_slug(self):
+        """
+        A slugified version of the raw contest information.
+
+        This will not neccesarily match the slug on canonical Contest records.
+        """
         slug = "%s" % self.office.lower().replace(' ', '-')
         if self.district:
             slug += "%s" % self.district.lower().replace(' ', '-')
@@ -103,6 +136,11 @@ class RawResult(DynamicDocument):
 
     @property
     def candidate_slug(self):
+        """
+        A slugified version of the raw candidate information.
+
+        This will not neccesarily match the slug on canonical Candidate records.
+        """
         if self.full_name:
             name = self.full_name
         else:
@@ -114,6 +152,8 @@ class RawResult(DynamicDocument):
             if self.suffix:
                 name +=  " %s" % self.suffix
         return name.replace(' ', '-')
+    
+signals.pre_save.connect(TimestampMixin.update_timestamp, sender=RawResult)
 
 
 class Office(Document):
@@ -139,6 +179,22 @@ class Office(Document):
     def key(self):
         return self.make_key(self.state, self.name, self.district)
 
+    @property
+    def slug(self):
+        """
+        Returns slugified office in format "name-district".
+
+        Example: 
+
+        >>> office = Office(state="MD", name="House of Delegates", district="35B", chamber="lower")
+        >>> office.slug
+        u'house-of-delegates-35b'
+        """
+        slug = slugify(self.name, '-')
+        if self.district:
+            slug += "-%s" % slugify(self.district, '-') 
+        return slug
+
 
 class Party(Document):
     name = StringField(required=True)
@@ -156,8 +212,12 @@ class Party(Document):
     def key(self):
         return self.make_key(self.abbrev)
 
+    @property
+    def slug(self):
+        return slugify(self.abbrev)
 
-class Person(DynamicDocument):
+
+class Person(TimestampMixin, DynamicDocument):
     """Unique person records
 
     identifiers = {
@@ -168,10 +228,6 @@ class Person(DynamicDocument):
     }
 
     """
-    ### Meta fields ###
-    created = DateTimeField()
-    updated = DateTimeField()
-
     ### Person fields ###
     given_name = StringField(max_length=200, required=True)
     family_name = StringField(max_length=200, required=True)
@@ -195,11 +251,11 @@ class Person(DynamicDocument):
         name = " ".join(bits)
         return name
 
+signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Person)
 
-class Contest(DynamicDocument):
+
+class Contest(TimestampMixin, DynamicDocument):
     ### Meta fields ###
-    created = DateTimeField()
-    updated = DateTimeField()
     source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     state = StringField(required=True, choices=STATE_POSTALS)
@@ -227,8 +283,28 @@ class Contest(DynamicDocument):
     def key(self):
         return (self.election_id, self.slug)
 
+    def _make_slug(self):
+        """
+        Returns a slug suitable for setting self.slug
+        """
+        # TODO: Confirm that it's ok that we'll possible have dupes here
+        # across elections since this is only based on office and primary
+        # party. This is the way it's done traditionally at least
+        slug = self.office.slug
+        if self.primary_party:
+            slug += "-%s" % self.primary_party.slug 
+        return slug
 
-class Candidate(DynamicDocument):
+    @classmethod
+    def post_init(cls, sender, document, **kwargs):
+        if not document.slug:
+            document.slug = document._make_slug()
+
+signals.post_init.connect(Contest.post_init, sender=Contest)
+signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Contest)
+
+
+class Candidate(TimestampMixin, DynamicDocument):
     """
     State is included because in nearly all cases, a candidate 
     is unique to a state (presidential races involve state-level 
@@ -236,8 +312,6 @@ class Candidate(DynamicDocument):
 
     """
     ### Meta fields ###
-    created = DateTimeField()
-    updated = DateTimeField()
     source = StringField(required=True, help_text="Name of data source (preferably from datasource.py). NOTE: this could be a single file among many for a given state, if results are split into different files by reporting level")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     state = StringField(required=True, choices=STATE_POSTALS)
@@ -289,11 +363,11 @@ class Candidate(DynamicDocument):
     def key(self):
         return (self.election_id, self.contest_slug, self.slug)
 
+signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Candidate)
 
-class Result(DynamicDocument):
+
+class Result(TimestampMixin, DynamicDocument):
     ### Meta fields ###
-    created = DateTimeField()
-    updated = DateTimeField()
     source = StringField(required=True, help_text="Name of data source for this file, preferably standardized filename from datasource.py")
     election_id = StringField(required=True, help_text="election id, e.g. md-2012-11-06-general")
     state = StringField(required=True, choices=STATE_POSTALS)
@@ -341,3 +415,5 @@ class Result(DynamicDocument):
             self.votes,
         )
         return u'%s-%s-%s-%s-%s (%s)' % bits
+
+signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Result)
