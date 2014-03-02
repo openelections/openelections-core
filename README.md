@@ -55,17 +55,63 @@ $ pip install -r requirements.txt
 $ pip install -r requirements-dev.txt
 ```
 
-Add the `openelex` directory to your `$PYTHONPATH`, so that `invoke` can see our tasks:
-
-```bash
-$ export PYTHONPATH=$PYTHONPATH:`pwd`/openelex
-```
-
 Create `settings.py` from the template
 
 ```bash
 $ cp settings.py.tmplt openelex/settings.py
 ```
+
+#### Setting up 'invoke'
+
+OpenElections uses [invoke](http://docs.pyinvoke.org/en/latest/) to run tasks (similar to Ruby's `rake`).
+
+First, make sure you're in the **root of the repository** you've cloned.
+
+Add the `openelex` directory to your `$PYTHONPATH`, so that `invoke` can see our tasks. This will append to your shell's login script (replace `.bashrc` with whatever your shell uses, if needed).
+
+```bash
+echo "export PYTHONPATH=$PYTHONPATH:`pwd`/openelex" >> ~/.bashrc
+```
+
+That will run automatically for future terminal sessions. To activate it for the current session:
+
+```bash
+source ~/.bashrc
+```
+
+All `invoke` commands must be run **from the project root**.
+
+Test it out by running `invoke --list`, you should see something like:
+
+```bash
+$ invoke --list
+Available tasks:
+
+    fetch
+    archive.delete
+    archive.save
+    cache.clear
+    cache.files
+    datasource.elections
+    datasource.filename_url_pairs
+    datasource.mappings
+    datasource.target_urls
+    load.run
+    transform.list
+    transform.run
+    validate.list
+    validate.run
+```
+
+Running commands looks something like this:
+
+```bash
+$ invoke cache.clear --state=NY
+0 files deleted
+0 files still in cache
+```
+
+You can also get help on particular commands, e.g. `invoke --help cache.clear`.
 
 #### Configuring services (optional)
 
@@ -78,4 +124,4 @@ AWS_ACCESS_KEY_ID = ''
 AWS_SECRET_ACCESS_KEY =''
 ```
 
-To store your data in MongoDB, you need only [install mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
+To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
