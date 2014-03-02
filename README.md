@@ -55,10 +55,10 @@ $ pip install -r requirements.txt
 $ pip install -r requirements-dev.txt
 ```
 
-Add the `openelex` directory to your `$PYTHONPATH`, so that `invoke` can see our tasks:
+Add the `openelex` directory to your `$PYTHONPATH`, so that `invoke` can see our tasks. Paste the following line into `.bashrc` or `.bash_profile` or whatever your shell loads on login:
 
 ```bash
-$ export PYTHONPATH=$PYTHONPATH:`pwd`/openelex
+export PYTHONPATH=$PYTHONPATH:`pwd`/openelex
 ```
 
 Create `settings.py` from the template
@@ -78,4 +78,4 @@ AWS_ACCESS_KEY_ID = ''
 AWS_SECRET_ACCESS_KEY =''
 ```
 
-To store your data in MongoDB, you need only [install mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
+To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
