@@ -6,7 +6,7 @@ setup(
     name='Distutils',
     version='0.1.0',
     author='OpenElections',
-    author_email='openelectons@gmail.com',
+    author_email='openelections@gmail.com',
     url='http://openelections.net',
     packages=['distutils', 'distutils.command'],
     scripts=['scripts/manage.py'],
