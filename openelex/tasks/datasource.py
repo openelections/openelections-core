@@ -54,7 +54,6 @@ def mappings(state, datefilter=''):
     State is required. Optionally provide 'datefilter' to limit  results.
     """
     func_name = inspect.stack()[0][3]
-    handle_task(func_name, state, datefilter)
     results = handle_task(func_name, state, datefilter)
     pprint_results(func_name, results)
 
