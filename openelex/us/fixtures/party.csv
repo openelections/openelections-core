@@ -1,0 +1,9 @@
+"name","abbrev","description"
+"Democrat","DEM",
+"Republican","REP",
+"Constitution","CON",
+"Green","GRN",
+"Libertarian","LIB",
+"Independent","IND","Candidate explicitly declared themselves as a member of no party."
+"Other","OTH","Catch-all for parties that a candidate has declared, but are not officially recognized by the state."
+"Unaffiliated","UNF",

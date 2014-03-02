@@ -1,9 +1,9 @@
-import os
 import sys
 
 from invoke import task
 
 from .utils import load_module, split_args
+from validate import run_validation
 
 @task(help={
     'state':'(required) Two-letter state postal, e.g. NY',
@@ -17,9 +17,15 @@ def list(state):
     state_mod = load_module(state, ['transform'])
     transforms = state_mod.transform.registry.all(state)
     print "\n%s transforms, in order of execution:\n" % state.upper()
-    for key, func in transforms.items():
-        print '* %s' % key
-    print
+    for transform in transforms:
+        print "* %s" % transform
+        validators = transform.validators
+
+        if validators:
+            print
+            print " Validators:"
+            for name in validators.keys():
+                print "    * %s" % name
 
 
 @task(help={
@@ -39,19 +45,25 @@ def run(state, include=None, exclude=None):
     # Iniitialize transforms for the state in global registry
     state_mod = load_module(state, ['transform'])
     transforms = state_mod.transform.registry.all(state)
+    run_transforms = []
 
     # Filter transformations  based in include/exclude flags
     if include:
         to_run = split_args(include)
         for trx in transforms:
-            if trx not in to_run:
-                transforms.pop(trx)
+            if trx.name in to_run:
+                run_transforms.append(trx)
     if exclude:
         to_skip = split_args(exclude)
         for trx in transforms:
-            if trx in to_skip:
-                transforms.pop(trx)
+            if trx.name not in to_skip:
+                run_transforms.append(trx)
 
-    for name, func in transforms.items():
-        print 'Executing %s' % name
-        func()
+    for transform in run_transforms:
+        print 'Executing %s' % transform 
+        transform()
+
+        validators = transform.validators
+        if validators:
+            print "Executing validation"
+            run_validation(validators)
