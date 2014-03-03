@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from mongoengine import Q
 from nameparser import HumanName
@@ -102,11 +103,13 @@ def _get_party(raw_result, attr='party'):
         party_cache[clean_abbrev] = party
         return party
 
-# TODO: What should we do with existing records?
-
 def get_raw_results_after_2002():
     # Filter raw results for everything newer than 2002
     return RawResult.objects.filter(state='MD', end_date__gte=datetime(2003, 1, 1))
+
+def get_results_after_2002():
+    election_ids = get_raw_results_after_2002().distinct('election_id')
+    return Result.objects.filter(election_id__in=election_ids)
 
 def get_contest_fields(raw_result):
     # Resolve Office and Party related objects
@@ -148,11 +151,8 @@ def cached_get_contest(raw_result, cache):
         return cache[key]
     except KeyError:
         fields = get_contest_fields(raw_result)
-        try:
-            contest = Contest.objects.get(**fields)
-        except Contest.MultipleObjectsReturned:
-            print fields
-            raise
+        fields.pop('source')
+        contest = Contest.objects.get(**fields)
         cache[key] = contest
         return contest
 
@@ -171,14 +171,19 @@ def create_unique_candidates_after_2002():
     seen = set()
 
     for rr in get_raw_results_after_2002():
-        # TODO: Is this the right way to handle "Other Write-Ins"
-        if "other" in rr.full_name.lower():
-            continue
-      
         key = (rr.election_id, rr.candidate_slug)
         if key not in seen:
             fields = get_candidate_fields(rr)
             fields['contest'] = cached_get_contest(rr, contest_cache) 
+            if "other" in rr.full_name.lower():
+                if rr.full_name == "Other Write-Ins":
+                    fields['flags'] = ['aggregate',]
+                else:
+                    # As far as I can tell the value should always be 
+                    # "Other Write-Ins", but output a warning to let us know
+                    # about some cases we may be missing.
+                    logging.warn("'other' found in candidate name field value: "
+                            "'%s'" % rr.full_name)
             candidate = Candidate(**fields)
             candidates.append(candidate)
             seen.add(key)
@@ -227,23 +232,41 @@ def cached_get_candidate(raw_result, cache):
 def create_unique_results_after_2002():
     candidate_cache = {}
     results = []
+    num_created = 0
+    # Number of records to insert at once.  We need to do this because
+    # the number of records we create will exceed with what Mongo can
+    # do in a single call to QuerySet.insert().  
+    #
+    # 1000 is a totally arbitrary size 
+    bufsiz = 1000
+
+    # Delete existing results
+    old_results = get_results_after_2002()
+    print "\tDeleting %d previously loaded results" % old_results.count() 
+    old_results.delete()
 
     for rr in get_raw_results_after_2002():
         fields = _get_fields(rr, result_fields)
         fields['candidate'] = cached_get_candidate(rr, candidate_cache)
         fields['contest'] = fields['candidate'].contest 
         fields['raw_result'] = rr
-        fields['party'] = _get_party(rr)
+        fields['party'] = _get_party(rr).abbrev
         fields['winner'] = _parse_winner(rr)
         fields['write_in'] = _parse_write_in(rr)
         fields['jurisdiction'] = _strip_leading_zeros(rr.jurisdiction)
         fields['ocd_id'] = _get_ocd_id(rr)
         result = Result(**fields)
         results.append(result)
+        if len(results) >= bufsiz:
+            Result.objects.insert(results, load_bulk=False)
+            num_created += len(results)
+            results = []
 
-    Result.objects.insert(results, load_bulk=False)
+    if len(results):
+        Result.objects.insert(results, load_bulk=False)
+        num_created += len(results)
 
-    print "Created %d results." % len(results)
+    print "Created %d results." % num_created 
         
 
 # TODO: When should we create a Person
