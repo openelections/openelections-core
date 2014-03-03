@@ -6,6 +6,7 @@ from mongoengine.fields import (
     DateTimeField,
     DictField,
     IntField,
+    ListField,
     StringField,
     ReferenceField,
 )
@@ -33,6 +34,25 @@ REPORTING_LEVEL_CHOICES = (
     'precinct',
     'parish',
 )
+
+CANDIDATE_FLAG_CHOICES = (
+    'aggregate',
+    'none_of_above',
+)
+"""
+Flags to unambiguously identify candidate records that represent special
+cases of candidates.  In most cases these are used to identify a candidate
+that is not a human but represents a consistent candidate-like entity that
+is used in results.
+
+* aggregate - Results for this Candidate record represents aggregate vote 
+              totals for multiple people, such as "Other Write-Ins" in
+              Maryland.
+* none_of_above - Results for this Candidate record represents aggregate
+                  vote totals for an explicit vote for no person.
+
+
+"""
 
 # Model mixins
 
@@ -340,6 +360,9 @@ class Candidate(TimestampMixin, DynamicDocument):
     identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number. "
             "This should store IDs relevant to just this candidacy, such as FEC Cand number(s) for a particular election "
             "cycle. The Person model will store the full history of all FEC Cand Numbers")
+    flags = ListField(StringField(choices=CANDIDATE_FLAG_CHOICES,
+                      help_text="Flags to unambiguously identify candidate "
+                          "records that represent special non-person candidates."))
 
     meta = {
         'indexes': ['election_id',],
