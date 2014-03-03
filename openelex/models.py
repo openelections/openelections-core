@@ -127,11 +127,11 @@ class RawResult(TimestampMixin, DynamicDocument):
 
         This will not neccesarily match the slug on canonical Contest records.
         """
-        slug = "%s" % self.office.lower().replace(' ', '-')
+        slug = "%s" % slugify(self.office)
         if self.district:
-            slug += "%s" % self.district.lower().replace(' ', '-')
+            slug += "-%s" % slugify(self.district)
         if self.primary_party:
-            slug += "%s" % self.primary_party.replace(' ', '-')
+            slug += "-%s" % slugify(self.primary_party)
         return slug
 
     @property
@@ -151,7 +151,7 @@ class RawResult(TimestampMixin, DynamicDocument):
                 name += " %s" % self.additional_name
             if self.suffix:
                 name +=  " %s" % self.suffix
-        return name.replace(' ', '-')
+        return slugify(name)
     
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=RawResult)
 
@@ -283,22 +283,27 @@ class Contest(TimestampMixin, DynamicDocument):
     def key(self):
         return (self.election_id, self.slug)
 
-    def _make_slug(self):
+    @classmethod
+    def make_slug(cls, **kwargs):
         """
         Returns a slug suitable for setting self.slug
         """
         # TODO: Confirm that it's ok that we'll possible have dupes here
         # across elections since this is only based on office and primary
-        # party. This is the way it's done traditionally at least
-        slug = self.office.slug
-        if self.primary_party:
-            slug += "-%s" % self.primary_party.slug 
+        # party. This is the way it was done in older code.
+        slug = kwargs.get('office').slug
+        primary_party = kwargs.get('primary_party')
+        if primary_party: 
+            slug += "-%s" % primary_party.slug 
         return slug
 
     @classmethod
     def post_init(cls, sender, document, **kwargs):
         if not document.slug:
-            document.slug = document._make_slug()
+            document.slug = document.make_slug(
+                office=document.office,
+                primary_party=document.primary_party
+            )
 
 signals.post_init.connect(Contest.post_init, sender=Contest)
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Contest)

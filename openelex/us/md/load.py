@@ -192,12 +192,17 @@ class MDLoaderAfter2002(MDBaseLoader):
         vote_breakdowns = {
             'election_night_total': int(float(row['Election Night Votes']))
         }
-        district = str(row['Election District'])
         precinct = str(row['Election Precinct'])
         kwargs.update({
             'reporting_level': 'precinct',
-            'jurisdiction':precinct,
-            'jurisdiction': self.mapping['name'] + ' ' + district  + "-" + precinct,
+            'jurisdiction': precinct,
+            # In Maryland, precincts are nested below counties.
+            #
+            # The mapping ocd_id will be for the precinct's county.
+            # We'll save it as an expando property of the raw result because
+            # we won't have an easy way of looking up the county in the 
+            # transforms.
+            'county_ocd_id': self.mapping['ocd_id'],
             'party': row['Party'].strip(),
             'votes': self._votes(row['Election Night Votes']),
             'winner': row['Winner'],
