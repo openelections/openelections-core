@@ -56,7 +56,7 @@ class MDBaseLoader(BaseLoader):
 
     #TODO: QUESTION: Move to BaseLoader? Should be able to provide
     # the meta fields for free on all states.
-    def _build_meta_fields(self):
+    def _build_common_election_kwargs(self):
         """These fields are derived from OpenElex API and common to all RawResults"""
         year = int(re.search(r'\d{4}', self.election_id).group())
         elecs = self.datasource.elections(year)[year]
@@ -129,7 +129,8 @@ class MDLoaderAfter2002(MDBaseLoader):
 
     def _base_kwargs(self, row):
         "Build base set of kwargs for RawResult"
-        kwargs = self._build_meta_fields()
+        # TODO: Can this just be called once?
+        kwargs = self._build_common_election_kwargs()
         contest_kwargs = self._build_contest_kwargs(row, kwargs['primary_type'])
         candidate_kwargs = self._build_candidate_kwargs(row)
         kwargs.update(contest_kwargs)
@@ -266,6 +267,7 @@ class MDLoader2002(MDBaseLoader):
             'votes',
             'fill2'
         ]
+        self._common_kwargs = self._build_common_election_kwargs()
         # Store result instances for bulk loading
         results = []
         with self._file_handle as csvfile:
@@ -328,28 +330,8 @@ class MDLoader2002(MDBaseLoader):
                     'write_in': write_in,
                     'raw_total_votes': row['votes'],
                 }
-                result = RawResult(**result_kwargs)
+                results.append(RawResult(**result_kwargs))
         RawResult.objects.insert(results)
-
-    def load_county_2002(self, row):
-        total_votes = int(float(row['votes']))
-        #TODO: replace above 2 lines with below
-        reporting_level = 'precinct'
-        ocd_id = mapping['ocd_id']
-        total_votes = int(float(row['votes']))
-        kwargs = {
-            #TODO: generate ocd_id
-            #'ocd_id': ocd_id,
-            #'jurisdiction': jurisdiction,
-            'reporting_level': reporting_level,
-            'raw_office': row['office'].strip(),
-            'candidate': candidate,
-            'party': row['party'].strip(),
-            'write_in': write_in,
-            'raw_total_votes': total_votes,
-            'vote_breakdowns': {}
-        }
-        return RawResult(**kwargs)
 
 
 class MDLoader2000Primary(MDBaseLoader):
