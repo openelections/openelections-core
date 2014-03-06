@@ -56,13 +56,12 @@ class MDBaseLoader(BaseLoader):
 
     #TODO: QUESTION: Move to BaseLoader? Should be able to provide
     # the meta fields for free on all states.
-    def _build_meta_fields(self, row):
+    def _build_meta_fields(self):
         """These fields are derived from OpenElex API and common to all RawResults"""
         year = int(re.search(r'\d{4}', self.election_id).group())
         elecs = self.datasource.elections(year)[year]
         # Get election metadata by matching on election slug
         elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
-        party = row['Party'].strip()
         kwargs = {
             'created':  self.timestamp,
             'updated': self.timestamp,
@@ -76,13 +75,6 @@ class MDBaseLoader(BaseLoader):
             'result_type': elec_meta['result_type'],
             'special': elec_meta['special'],
         }
-        # Add party if it's a primary
-        #TODO: Update logic to check primary_type == closed
-        #TODO: QUESTION: Should semi-closed also have party?
-        if 'primary' in self.election_id:
-            kwargs['primary_party'] = party
-        else:
-            kwargs['primary_party'] = ''
         return kwargs
 
 
@@ -114,11 +106,15 @@ class MDLoaderAfter2002(MDBaseLoader):
                     results.append(self._prep_county_result(row))
             RawResult.objects.insert(results)
 
-    def _build_contest_kwargs(self, row):
+    def _build_contest_kwargs(self, row, primary_type):
         kwargs = {
             'office': row['Office Name'].strip(),
             'district': row['Office District'].strip(),
         }
+        # Add party if it's a primary
+        #TODO: QUESTION: Should semi-closed also have party?
+        if primary_type == 'closed':
+            kwargs['primary_party'] = row['Party'].strip()
         return kwargs
 
     def _build_candidate_kwargs(self, row):
@@ -133,12 +129,12 @@ class MDLoaderAfter2002(MDBaseLoader):
 
     def _base_kwargs(self, row):
         "Build base set of kwargs for RawResult"
-        meta_kwargs = self._build_meta_fields(row)
-        contest_kwargs = self._build_contest_kwargs(row)
+        kwargs = self._build_meta_fields()
+        contest_kwargs = self._build_contest_kwargs(row, kwargs['primary_type'])
         candidate_kwargs = self._build_candidate_kwargs(row)
-        meta_kwargs.update(contest_kwargs)
-        meta_kwargs.update(candidate_kwargs)
-        return meta_kwargs
+        kwargs.update(contest_kwargs)
+        kwargs.update(candidate_kwargs)
+        return kwargs
 
     def _prep_state_leg_results(self, row):
         kwargs = self._base_kwargs(row)
