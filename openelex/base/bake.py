@@ -116,7 +116,7 @@ class Roller(object):
     year = CalculatedField(lambda d: d['start_date'].year)
 
     excluded_fields = {
-        'result': ['candidate_slug', 'contest_slug',],
+        'result': ['candidate_slug', 'contest_slug', 'raw_result',],
         'candidate': [
             'contest',
             'contest_slug',
