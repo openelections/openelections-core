@@ -108,6 +108,8 @@ class RawResult(TimestampMixin, DynamicDocument):
     family_name = StringField(max_length=200, help_text="Only if present in raw results.")
     given_name = StringField(max_length=200, help_text="Only if present in raw results.")
     suffix = StringField(max_length=200, help_text="Only if present in raw results.")
+    additional_name = StringField(max_length=200, help_text="Middle name, "
+        "nickname, etc.  Only if provided in raw results.")
 
     ### Result fields ###
     reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
