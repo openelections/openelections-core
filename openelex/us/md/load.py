@@ -1,4 +1,4 @@
-from os.path import exists, join
+from os.path import join
 import datetime
 import re
 import unicodecsv
@@ -136,7 +136,6 @@ class MDLoaderAfter2002(MDBaseLoader):
         meta_kwargs = self._build_meta_fields(row)
         contest_kwargs = self._build_contest_kwargs(row)
         candidate_kwargs = self._build_candidate_kwargs(row)
-        #TODO: Merge kwags
         meta_kwargs.update(contest_kwargs)
         meta_kwargs.update(candidate_kwargs)
         return meta_kwargs
@@ -228,15 +227,43 @@ class MDLoaderAfter2002(MDBaseLoader):
 
 
 class MDLoader2002(MDBaseLoader):
+    """
+    Loads Maryland results for 2002.
+
+    Format:
+
+    Maryland results for 2002 are in a delimited text file where the delimiter
+    is '|'.
+
+    Fields:
+
+     0: Office
+     1: Office District - '-' is used to denote null values 
+     2: County
+     3: Last Name
+     4: Middle Name - "\N" is used to denote null values
+     5: First Name
+     6: Party
+     7: Winner - Value is 0 or 1
+     8: UNKNOWN - Values are "(Vote for One)", "(Vote for No More Than Three)", etc.
+     9: Votes 
+    10: UNKNOWN - Values are "\N" for every row
+    
+    Sample row:
+
+    House of Delegates                                                  |32 |Anne Arundel County                               |Burton                                                      |W.              |Robert                                                      |Republican                                        |              0|(Vote for No More Than Three)                     |           1494|\N
+
+
+    """
 
     def load(self):
         headers = [
             'office',
             'district',
             'jurisdiction',
-            'last',
-            'middle',
-            'first',
+            'family_name',
+            'additional_name',
+            'given_name',
             'party',
             'winner',
             'vote_type',
