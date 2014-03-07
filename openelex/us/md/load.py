@@ -27,6 +27,26 @@ class LoadResults(object):
 
 
 class MDBaseLoader(BaseLoader):
+    target_offices = set([
+        'President - Vice Pres',
+        'U.S. Senator',
+        'U.S. Congress',
+        'Representative in Congress',
+        'Governor / Lt. Governor',
+        'Comptroller',
+        'Attorney General',
+        'State Senator',
+        'House of Delegates',
+    ])
+
+    def _skip_row(self, row):
+        """
+        Should this row be skipped?
+
+        This should be implemented in subclasses.
+        """
+        return False
+
 
     #TODO: QUESTION: Move to BaseLoader?
     def run(self, mapping):
@@ -83,20 +103,10 @@ class MDLoaderAfter2002(MDBaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            target_offices = set([
-                'President - Vice Pres',
-                'U.S. Senator',
-                'U.S. Congress',
-                'Governor / Lt. Governor',
-                'Comptroller',
-                'Attorney General',
-                'State Senator',
-                'House of Delegates'
-            ])
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if not row['Office Name'].strip() in target_offices:
+                if self._skip_row(row): 
                     continue
                 elif 'state_legislative' in self.source:
                     results.extend(self._prep_state_leg_results(row))
@@ -105,6 +115,9 @@ class MDLoaderAfter2002(MDBaseLoader):
                 else:
                     results.append(self._prep_county_result(row))
             RawResult.objects.insert(results)
+
+    def _skip_row(self, row):
+        return row['Office Name'].strip() not in self.target_offices
 
     def _build_contest_kwargs(self, row, primary_type):
         kwargs = {
@@ -237,9 +250,9 @@ class MDLoader2002(MDBaseLoader):
      0: Office
      1: Office District - '-' is used to denote null values 
      2: County
-     3: Last Name
+     3: Last Name - "zz998" is used for write-in candidates
      4: Middle Name - "\N" is used to denote null values
-     5: First Name
+     5: First Name - "Other Write-Ins" is used for write-in candidates
      6: Party
      7: Winner - Value is 0 or 1
      8: UNKNOWN - Values are "(Vote for One)", "(Vote for No More Than Three)", etc.
@@ -250,6 +263,11 @@ class MDLoader2002(MDBaseLoader):
 
     House of Delegates                                                  |32 |Anne Arundel County                               |Burton                                                      |W.              |Robert                                                      |Republican                                        |              0|(Vote for No More Than Three)                     |           1494|\N
 
+    Notes:
+
+    In the general election file, there are rows for judges and for
+    "Statewide Ballot Questions".  The columns in these rows are shifted over,
+    but we can ignore these rows since we're not interested in these offices.
 
     """
 
@@ -268,70 +286,46 @@ class MDLoader2002(MDBaseLoader):
             'fill2'
         ]
         self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'county'
         # Store result instances for bulk loading
         results = []
+
         with self._file_handle as csvfile:
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers, delimiter='|', encoding='latin-1')
-            reporting_level = 'county'
-            #TODO: replace jurisidctions with datasource.mappings
-            #geographies = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
-            geographies = self.mappings()
             for row in reader:
-                if row['jurisdiction'].strip() == 'Baltimore City':
-                    geo_obj = [x for x in geographies if x['name'] == "Baltimore City"][0]
-                else:
-                    geo_obj = [x for x in geographies if x['name']+" County" == row['jurisdiction'].strip()][0]
-
-                # Winner
-                winner = row['winner']
-                #if row['winner'] == '1':
-                #    raw_winner = True
-                #else:
-                #    raw_winner = False
-
-                #TODO: push name parsing to transform step
-                # zz998 is for write-ins
-                if row['last'].strip() == 'zz998':
-                #    name = row['last'].strip()
-                #    #candidate = Candidate(state=self.state.upper(), family_name=name)
-                     write_in=True
-                else:
-                #    cand_name = self.combine_name_parts([row['first'], row['middle'], row['last']])
-                #    name = self.parse_name(cand_name)
-                     write_in=False
-                #    candidate = Candidate(state=self.state.upper(), given_name=name.first, additional_name=name.middle, family_name=name.last, suffix=name.suffix, name=name.full_name)
-
-                #TODO: handle below using the self._get_candidate_whatever(row)
-                #TODO: need a new function/method to handle 2002?
-                cand_kwargs = {
-                    'raw_family_name': row['last'].strip(),
-                    'raw_given_name': row['first'].strip(),
-                    'raw_additional_name': row['middle'].strip(),
-                }
-
-                result_kwargs = {
-                    #'election':
-                    #'candidate': candidate,
-                    'ocd_id': geo_obj['ocd_id'],
-                    #TODO: make this the county number from file
-                    'raw_jurisdiction': row['jurisdiction'],
-                    'jurisdiction': geo_obj['name'],
-                    'raw_office': row['office'].strip(),
-                    'raw_district': row['district'].strip(),
-                    'reporting_level': 'county',
-                    'raw_party': row['party'], # needs to be a member of a list
-                    # TODO: For now raw_party and party are set to the same 
-                    # value, just so party is available to the first version of
-                    # the baker.
-                    # However, eventually raw results should be moved to a
-                    # separate document and the party name should be
-                    # standardized in a transform step.
-                    'party': row['party'], # needs to be a member of a list
-                    'write_in': write_in,
-                    'raw_total_votes': row['votes'],
-                }
-                results.append(RawResult(**result_kwargs))
+                if self._skip_row(row):
+                    continue
+                
+                rr_kwargs = self._common_kwargs.copy()
+                if rr_kwargs['primary_type'] == 'closed':
+                    rr_kwargs['primary_party'] = row['party'].strip()
+                rr_kwargs.update(self._build_contest_kwargs(row))
+                rr_kwargs.update(self._build_candidate_kwargs(row))
+                rr_kwargs.update({
+                    'party': row['party'].strip(),
+                    'jurisdiction': row['jurisdiction'].strip(),
+                    'office': row['office'].strip(),
+                    'district': row['district'].strip(),
+                    'votes': int(row['votes'].strip()),
+                })
+                results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
+
+    def _skip_row(self, row):
+        return row['office'].strip() not in self.target_offices
+
+    def _build_contest_kwargs(self, row):
+        return {
+            'office': row['office'].strip(),
+            'district': row['district'].strip(),
+        }
+
+    def _build_candidate_kwargs(self, row):
+        return {
+            'family_name': row['family_name'].strip(),
+            'given_name': row['given_name'].strip(),
+            'additional_name': row['additional_name'].strip(),
+        }
 
 
 class MDLoader2000Primary(MDBaseLoader):
