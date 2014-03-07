@@ -1,7 +1,6 @@
 from datetime import datetime
 import logging
 
-from mongoengine import Q
 from nameparser import HumanName
 
 from openelex.base.transform import registry
@@ -9,11 +8,18 @@ from openelex.models import Candidate, Contest, Office, Party, RawResult, Result
 
 
 PARTY_MAP = {
-    'BOT': 'UNF', 
+    'BOT': 'UNF',
+    'Democratic': 'DEM',
+    'Republican': 'REP',
 }
 """
-Map of party abbreviations as they appear in MD raw results to canonical
+Map of party values as they appear in MD raw results to canonical
 abbreviations.
+
+In 2002, the values are party names.  Map them to abbreviations.
+
+From 2003 onward, the values are party abbreviations and in most
+cases match the canonical abbreviations.
 """
 
 # Lists of fields on RawResult that are contributed to the canonical
@@ -23,7 +29,8 @@ abbreviations.
 meta_fields = ['source', 'election_id', 'state',]
 contest_fields = meta_fields + ['start_date', 'end_date',
     'election_type', 'primary_type', 'result_type', 'special',]
-candidate_fields = meta_fields + ['full_name',]
+candidate_fields = meta_fields + ['full_name', 'given_name', 
+    'family_name', 'additional_name']
 result_fields = meta_fields + ['reporting_level', 'jurisdiction',
     'votes', 'total_votes', 'vote_breakdowns']
 
@@ -49,12 +56,18 @@ def _get_fields(raw_result, field_names):
 
 
 def _clean_office(office):
-    if "president" in office.lower():
+    lc_office = office.lower()
+    if "president" in lc_office:
         return "President" 
-    elif "u.s. senat" in office.lower():
+    elif "u.s. senat" in lc_office:
         return "U.S. Senate"
-    elif "congress" in office.lower():
+    elif "congress" in lc_office:
         return "U.S. House of Representatives"
+    elif "state senat" in lc_office:
+        # Match both "State Senate" and "State Senator"
+        return "State Senate"
+    elif "governor" in lc_office:
+        return "Governor"
 
     return office
 
@@ -65,7 +78,7 @@ def _clean_party(party):
         return party
 
 def _strip_leading_zeros(val):
-    return val.strip("0")
+    return val.lstrip("0")
 
 def _get_office(raw_result):
     office_query = {
@@ -84,11 +97,15 @@ def _get_office(raw_result):
     try:
         return office_cache[key]
     except KeyError:
-        office = Office.objects.get(**office_query)
-        # TODO: Remove this once I'm sure this always works. It should.
-        assert key == office.key
-        office_cache[key] = office
-        return office
+        try:
+            office = Office.objects.get(**office_query)
+            # TODO: Remove this once I'm sure this always works. It should.
+            assert key == office.key
+            office_cache[key] = office
+            return office
+        except Office.DoesNotExist:
+            print "No office matching query %s" % (office_query)
+            raise
 
 def _get_party(raw_result, attr='party'):
     party = getattr(raw_result, attr)
@@ -99,13 +116,22 @@ def _get_party(raw_result, attr='party'):
     try:
         return party_cache[clean_abbrev]
     except KeyError:
-        party = Party.objects.get(abbrev=clean_abbrev)
-        party_cache[clean_abbrev] = party
-        return party
+        try:
+            party = Party.objects.get(abbrev=clean_abbrev)
+            party_cache[clean_abbrev] = party
+            return party
+        except Party.DoesNotExist:
+            print "No party with abbreviation %s" % (clean_abbrev)
+            raise
 
 def get_raw_results_after_2002():
-    # Filter raw results for everything newer than 2002
-    return RawResult.objects.filter(state='MD', end_date__gte=datetime(2003, 1, 1))
+    # Filter raw results for everything newer than 2002, inclusive
+    return RawResult.objects.filter(state='MD',
+        end_date__gte=datetime(2002, 1, 1))
+
+def get_raw_results_2002():
+    # TODO: Remove this when finished testing. 
+    return RawResult.objects.filter(state='MD', end_date__gte=datetime(2002, 1, 1), start_date__lt=datetime(2003,1,1)) 
 
 def get_results_after_2002():
     election_ids = get_raw_results_after_2002().distinct('election_id')
@@ -157,7 +183,39 @@ def cached_get_contest(raw_result, cache):
         return contest
 
 def get_candidate_fields(raw_result):
+    year = raw_result.end_date.year
+    if year == 2002:
+        return get_candidate_fields_2002(raw_result)
+    elif year >= 2003:
+        return get_candidate_fields_after_2002(raw_result)
+    else:
+        raise ValueError
+
+def get_candidate_fields_2002(raw_result):
     fields = _get_fields(raw_result, candidate_fields)
+    if fields['family_name'] == 'zz998':
+        # Write-In
+        del fields['family_name']
+        del fields['given_name']
+        del fields['additional_name']
+        fields['full_name'] =  "Other Write-Ins"
+    else:
+        bits = [fields['given_name']]
+        if fields['additional_name'] == '\\N':
+            # Null last name
+            del fields['additional_name']
+        else:
+            bits.append(fields['additional_name'])
+        bits.append(fields['family_name'])   
+        fields['full_name'] = ' '.join(bits)
+
+    return fields
+
+def get_candidate_fields_after_2002(raw_result):
+    fields = _get_fields(raw_result, candidate_fields)
+    if fields['full_name'] == "Other Write-Ins":
+        return fields
+
     name = HumanName(raw_result.full_name)
     fields['given_name'] = name.first
     fields['family_name'] = name.last
@@ -175,8 +233,8 @@ def create_unique_candidates_after_2002():
         if key not in seen:
             fields = get_candidate_fields(rr)
             fields['contest'] = cached_get_contest(rr, contest_cache) 
-            if "other" in rr.full_name.lower():
-                if rr.full_name == "Other Write-Ins":
+            if "other" in fields['full_name'].lower():
+                if fields['full_name'] == "Other Write-Ins":
                     fields['flags'] = ['aggregate',]
                 else:
                     # As far as I can tell the value should always be 
@@ -277,8 +335,14 @@ def create_unique_results_after_2002():
 #def clean_vote_counts():
     #pass
 
+def create_unique_results_2002():
+    # * Need to build ocd_id. Should be easy since all results are county
+    # BOOKMARK
+    raise NotImplemented
+
 registry.register('md', create_unique_contests_after_2002)
 registry.register('md', create_unique_candidates_after_2002)
 registry.register('md', create_unique_results_after_2002)
+#registry.register('md', create_unique_results_2002)
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)
