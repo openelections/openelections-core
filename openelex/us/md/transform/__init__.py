@@ -11,6 +11,9 @@ PARTY_MAP = {
     'BOT': 'UNF',
     'Democratic': 'DEM',
     'Republican': 'REP',
+    'Libertarian': 'LIB',
+    'Green': 'GRN',
+    'Unaffiliated': 'UNF',
 }
 """
 Map of party values as they appear in MD raw results to canonical
@@ -72,6 +75,12 @@ def _clean_office(office):
     return office
 
 def _clean_party(party):
+    if party == 'Both Parties':
+        # 2002 candidates have "Both Parties" in the write-in
+        # field
+        # TODO: Is this the right way to handle this?
+        return None
+
     try:
         return PARTY_MAP[party]
     except KeyError:
@@ -113,6 +122,9 @@ def _get_party(raw_result, attr='party'):
         return None
 
     clean_abbrev = _clean_party(party)
+    if not clean_abbrev:
+        return None
+
     try:
         return party_cache[clean_abbrev]
     except KeyError:
@@ -124,17 +136,13 @@ def _get_party(raw_result, attr='party'):
             print "No party with abbreviation %s" % (clean_abbrev)
             raise
 
-def get_raw_results_after_2002():
+def get_raw_results_after_2000():
     # Filter raw results for everything newer than 2002, inclusive
     return RawResult.objects.filter(state='MD',
         end_date__gte=datetime(2002, 1, 1))
 
-def get_raw_results_2002():
-    # TODO: Remove this when finished testing. 
-    return RawResult.objects.filter(state='MD', end_date__gte=datetime(2002, 1, 1), start_date__lt=datetime(2003,1,1)) 
-
-def get_results_after_2002():
-    election_ids = get_raw_results_after_2002().distinct('election_id')
+def get_results_after_2000():
+    election_ids = get_raw_results_after_2000().distinct('election_id')
     return Result.objects.filter(election_id__in=election_ids)
 
 def get_contest_fields(raw_result):
@@ -154,11 +162,11 @@ def contest_key(raw_result):
         slug = slug.replace('-' + raw_result.district.lower(), '')
     return (raw_result.election_id, slug)
 
-def create_unique_contests_after_2002():
+def create_unique_contests_after_2000():
     contests = []
     seen = set()
 
-    for rr in get_raw_results_after_2002():
+    for rr in get_raw_results_after_2000():
         key = contest_key(rr)
         if key not in seen:
             fields = get_contest_fields(rr)
@@ -187,7 +195,7 @@ def get_candidate_fields(raw_result):
     if year == 2002:
         return get_candidate_fields_2002(raw_result)
     elif year >= 2003:
-        return get_candidate_fields_after_2002(raw_result)
+        return get_candidate_fields_after_2000(raw_result)
     else:
         raise ValueError
 
@@ -211,7 +219,7 @@ def get_candidate_fields_2002(raw_result):
 
     return fields
 
-def get_candidate_fields_after_2002(raw_result):
+def get_candidate_fields_after_2000(raw_result):
     fields = _get_fields(raw_result, candidate_fields)
     if fields['full_name'] == "Other Write-Ins":
         return fields
@@ -223,12 +231,12 @@ def get_candidate_fields_after_2002(raw_result):
     fields['suffix'] = name.suffix
     return fields
 
-def create_unique_candidates_after_2002():
+def create_unique_candidates_after_2000():
     contest_cache = {}
     candidates = []
     seen = set()
 
-    for rr in get_raw_results_after_2002():
+    for rr in get_raw_results_after_2000():
         key = (rr.election_id, rr.candidate_slug)
         if key not in seen:
             fields = get_candidate_fields(rr)
@@ -251,13 +259,27 @@ def create_unique_candidates_after_2002():
     print "Created %d candidates." % len(candidates) 
 
 def _parse_winner(raw_result):
+    """
+    Converts raw winner value into boolean
+    """
     if raw_result.winner == 'Y':
+        # Winner in post-2002 contest
+        return True
+    elif raw_result.winner == 1:
+        # Winner in 2002 contest
         return True
     else:
         return False
 
 def _parse_write_in(raw_result):
+    """
+    Converts raw winner value into boolean
+    """
     if raw_result.write_in == 'Y':
+        # Write-in in post-2002 contest
+        return True
+    elif raw_result.family_name == 'zz998':
+        # Write-in in 2002 contest
         return True
     else:
         return False
@@ -265,6 +287,8 @@ def _parse_write_in(raw_result):
 def _get_ocd_id(raw_result):
     clean_jurisdiction = _strip_leading_zeros(raw_result.jurisdiction)
     if raw_result.reporting_level == "county":
+        # TODO: Should jurisdiction/ocd_id be different for Baltimore City?
+        # TODO: Slugify county name 
         return "ocd-division/country:us/state:md/county:%s" % clean_jurisdiction, 
     elif raw_result.reporting_level == "state_legislative":
         return "ocd-division/country:us/state:md/sldl:%s" % clean_jurisdiction
@@ -287,7 +311,7 @@ def cached_get_candidate(raw_result, cache):
         cache[key] = candidate 
         return candidate
 
-def create_unique_results_after_2002():
+def create_unique_results_after_2000():
     candidate_cache = {}
     results = []
     num_created = 0
@@ -299,16 +323,18 @@ def create_unique_results_after_2002():
     bufsiz = 1000
 
     # Delete existing results
-    old_results = get_results_after_2002()
+    old_results = get_results_after_2000()
     print "\tDeleting %d previously loaded results" % old_results.count() 
     old_results.delete()
 
-    for rr in get_raw_results_after_2002():
+    for rr in get_raw_results_after_2000():
         fields = _get_fields(rr, result_fields)
         fields['candidate'] = cached_get_candidate(rr, candidate_cache)
         fields['contest'] = fields['candidate'].contest 
         fields['raw_result'] = rr
-        fields['party'] = _get_party(rr).abbrev
+        party = _get_party(rr)
+        if party:
+            fields['party'] = party.abbrev
         fields['winner'] = _parse_winner(rr)
         fields['write_in'] = _parse_write_in(rr)
         fields['jurisdiction'] = _strip_leading_zeros(rr.jurisdiction)
@@ -335,14 +361,8 @@ def create_unique_results_after_2002():
 #def clean_vote_counts():
     #pass
 
-def create_unique_results_2002():
-    # * Need to build ocd_id. Should be easy since all results are county
-    # BOOKMARK
-    raise NotImplemented
-
-registry.register('md', create_unique_contests_after_2002)
-registry.register('md', create_unique_candidates_after_2002)
-registry.register('md', create_unique_results_after_2002)
-#registry.register('md', create_unique_results_2002)
+registry.register('md', create_unique_contests_after_2000)
+registry.register('md', create_unique_candidates_after_2000)
+registry.register('md', create_unique_results_after_2000)
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)
