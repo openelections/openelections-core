@@ -1,6 +1,7 @@
 from os.path import join
 import datetime
 import re
+import csv
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -21,6 +22,8 @@ class LoadResults(object):
             loader = MDLoader2002()
         elif '2000' in election_id and 'primary' in election_id:
             loader = MDLoader2000Primary()
+        elif '2000' in election_id and 'general' in election_id:
+            raise NotImplemented
         else:
             loader = MDLoaderAfter2002()
         loader.run(mapping)
@@ -329,98 +332,139 @@ class MDLoader2002(MDBaseLoader):
 
 
 class MDLoader2000Primary(MDBaseLoader):
+    office_choices = [
+        "President and Vice President of the United States",
+        "U.S. Senator",
+        "Representative in Congress",
+        "Judge of the Circuit Court",
+        "Female Delegates and Alternate to the Democratic National Convention",
+        "Female Delegates to the Democratic National Convention",
+        "Male Delegates to the Democratic National Convention",
+        "Male Delegates and Alternate to the Democratic National Convention",
+        "Delegates to the Republican National Convention",
+    ]
+
+    target_offices = set([
+        "President and Vice President of the United States",
+        "U.S. Senator",
+        "Representative in Congress",
+    ])
 
     def load(self):
         candidates = {}
         results = []
+        last_office = None
+        last_party = None
+        common_kwargs = self._build_common_election_kwargs()
+        common_kwargs['reporting_level'] = 'county'
+
         with self._file_handle as csvfile:
-            lines = csvfile.readlines()
             #TODO: use Datasource.mappings instead of jurisdiction_mappings
             #jurisdictions = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
             #jurisdictions = self.datasource.mappings()
-            for line in lines[0:377]:
-                if line.strip() == '':
-                    continue # skip blank lines
-                else: # determine if this is a row with an office
-                    #TODO: push party and office to transform step
-                    cols = line.strip().split(',')
-                    if cols[0][1:29] == 'President and Vice President':
-                        office_name = 'President - Vice Pres'
-                        if 'Democratic' in cols[0]:
-                            raw_party = "Democratic"
-                            party = 'DEM'
-                        else:
-                            raw_party = "Republican"
-                            party = 'REP'
-                        continue
-                    elif cols[0][1:13] == 'U.S. Senator':
-                        office_name = 'U.S. Senator'
-                        if 'Democratic' in cols[0]:
-                            raw_party = "Democratic"
-                            party = 'DEM'
-                        else:
-                            raw_party = "Republican"
-                            party = 'REP'
-                        continue
-                    elif cols[0][1:27] == 'Representative in Congress':
-                        district = int(cols[0][71:73])
-                        office_name = 'U.S. Congress ' + str(district)
-                        if 'Democratic' in cols[0]:
-                            raw_party = "Democratic"
-                            party = 'DEM'
-                        else:
-                            raw_party = "Republican"
-                            party = 'REP'
-                        continue
-                    # skip offices we don't want
-                    elif cols[0][1:21] == 'Judge of the Circuit':
-                        continue
-                    elif cols[0][1:31] == 'Female Delegates and Alternate':
-                        continue
-                    elif cols[0][1:29] == 'Male Delegates and Alternate':
-                        continue
-                    elif cols[0][1:28] == 'Delegates to the Republican':
-                        continue
-                    elif cols[0] == '""':
-                        candidates = [x.replace('"','').strip() for x in cols if x.replace('"','') != '']
-                        winner_index = [i for i, j in enumerate(candidates) if 'Winner' in j][0] # index of winning candidate
-                        candidates[winner_index], raw_winner = candidates[winner].split(' Winner') # trims "Winner" from candidate name; we can save the remainder for raw_winner
-                        # handle name_parse and Uncommitted candidate
-                    else: # has to be a county result
-                        result = [x.replace('"','').strip() for x in cols if x != '']
-                        #juris = [j for j in jurisdictions if j['name'] == result[0].strip()][0]
-                        juris = [j for j in self.datasource.mappings() if j['name'] == result[0].strip()][0]
-                        cand_results = zip(candidates, result[1:])
-                        for cand, votes in cand_results:
-                            name = self.parse_name(cand)
-                            #cand_kwargs = {
-                                #'given_name': name.first,
-                                #'additional_name': name.middle,
-                                #'family_name': name.last,
-                                #'suffix': name.suffix,
-                                #'name': name.full_name
-                            #}
-                            if office_name == 'President - Vice Pres':
-                                cand_kwargs['state'] = 'US'
-                            else:
-                                cand_kwargs['state'] = self.state.upper()
+            reader = csv.reader(csvfile)
+            for row in reader:
+                if not len(row): 
+                    continue # Skip blank lines
 
-                            #TODO Get or create candidate
-                            candidate = Candidate(**cand_kwargs)
-                            result_kwargs = {
-                                'candidate': candidate,
-                                'ocd_id': juris['ocd'],
-                                'jurisdiction': juris['name'],
-                                #TODO: verify __init__ election_id logic works here
-                                'election_id': self.election_id,
-                                'slug': 'TODO',
-                                #'raw_office': office_name,
-                                'reporting_level': 'county',
-                                'raw_party': raw_party,
-                                'party': party,
-                                'write_in': False,
-                                'total_votes': int(votes),
-                                'vote_breakdowns': {}
-                            }
-                            result = RawResult(**result_kwargs)
-                            results.append(result)
+                # determine if this is a row with an office
+                office, party, district = self._parse_header(row)
+                # TODO: QUESTION: How to handle the county/congressional
+                # district splits? 
+                if office:
+                    # It's a header row
+                    if office in self.target_offices:
+                        # It's an office we care about. Save the office and
+                        # party for the next row
+                        last_office = office
+                        last_party = party
+                    else:
+                        last_office = None
+                        last_party = None
+                elif last_office and row[0] == '':
+                    # Candidate name row
+                    candidates, winner_name = self._parse_candidates(row)
+                elif last_office: # has to be a county result
+                    new_results = self._parse_results(row, last_office, last_party,
+                        candidates, winner_name, common_kwargs)
+                    results.extend(new_results)
+        
+        RawResult.objects.insert(results)
+
+    def _parse_header(self, row):
+        """
+        Returns a tuple of office and party and congressional district
+        if the row is a header.
+
+        Returns (None, None, None) for a non-header row.
+
+        Note that the district doesn't represent the district of the office
+        """
+        office = self._parse_office(row)
+        if office:
+            party = self._parse_party(row)
+            district = self._parse_district(row)
+        else:
+            party = None
+
+        return office, party, district
+
+    def _parse_office(self, row):
+        for o in self.office_choices:
+            if o in row[0]:
+                return o
+
+        return None
+
+    def _parse_party(self, row):
+        if 'Democratic' in row[0]:
+            return 'Democratic'
+        elif 'Republican' in row[0]:
+            return 'Republican'
+        else:
+            return None
+
+    def _parse_district(self, row):
+        if 'District' not in row[0]:
+            return None
+
+        return re.search(r'(\d+)', row[0]).groups(0)
+
+    def _parse_candidates(self, row):
+        candidates = []
+        for col in row:
+            if col != '':
+                full_name = col.strip() 
+                if 'Winner' in full_name:
+                    # Trim winner from candidate name
+                    full_name, remainder = full_name.split(' Winner')
+                    winner = full_name
+
+            candidates.append(full_name)
+
+        return candidates, winner 
+        # TODO: QUESTION: How to handle "Uncomitted to any ..." values
+
+    def _parse_results(self, row, office, party, candidates, winner_name,
+            common_kwargs):
+        results = []
+        cols = [x.strip() for x in row if x != '']
+        jurisdiction = cols[0].strip()
+        cand_results = zip(candidates, cols[1:])
+
+        for cand, votes in cand_results:
+            # BOOKMARK
+            # TODO: Make sure we fill in all fields
+            result_kwargs = common_kwargs.copy()
+            result_kwargs.update({
+                'full_name': cand,
+                'votes': int(votes),
+                'jurisdiction': jurisdiction,
+                'party': party,
+            })
+            if cand == winner_name:
+                result_kwargs['winner'] = 'Winner'
+
+            results.append(RawResult(**result_kwargs))
+
+        return results
