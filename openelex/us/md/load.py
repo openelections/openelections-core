@@ -6,7 +6,7 @@ import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import slugify
+from openelex.lib.text import slugify, ocd_type_id
 from .datasource import Datasource
 
 class LoadResults(object):
@@ -23,7 +23,9 @@ class LoadResults(object):
         elif '2000' in election_id and 'primary' in election_id:
             loader = MDLoader2000Primary()
         elif '2000' in election_id and 'general' in election_id:
-            raise NotImplemented
+            # BOOKMARK
+            # TODO: Implement this
+            return
         else:
             loader = MDLoaderAfter2002()
         loader.run(mapping)
@@ -32,6 +34,7 @@ class LoadResults(object):
 class MDBaseLoader(BaseLoader):
     target_offices = set([
         'President - Vice Pres',
+        'President and Vice President of the United States',
         'U.S. Senator',
         'U.S. Congress',
         'Representative in Congress',
@@ -344,24 +347,15 @@ class MDLoader2000Primary(MDBaseLoader):
         "Delegates to the Republican National Convention",
     ]
 
-    target_offices = set([
-        "President and Vice President of the United States",
-        "U.S. Senator",
-        "Representative in Congress",
-    ])
-
     def load(self):
         candidates = {}
         results = []
         last_office = None
         last_party = None
+        last_district = None
         common_kwargs = self._build_common_election_kwargs()
-        common_kwargs['reporting_level'] = 'county'
 
         with self._file_handle as csvfile:
-            #TODO: use Datasource.mappings instead of jurisdiction_mappings
-            #jurisdictions = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
-            #jurisdictions = self.datasource.mappings()
             reader = csv.reader(csvfile)
             for row in reader:
                 if not len(row): 
@@ -369,8 +363,6 @@ class MDLoader2000Primary(MDBaseLoader):
 
                 # determine if this is a row with an office
                 office, party, district = self._parse_header(row)
-                # TODO: QUESTION: How to handle the county/congressional
-                # district splits? 
                 if office:
                     # It's a header row
                     if office in self.target_offices:
@@ -378,14 +370,17 @@ class MDLoader2000Primary(MDBaseLoader):
                         # party for the next row
                         last_office = office
                         last_party = party
+                        last_district = district
                     else:
                         last_office = None
                         last_party = None
+                        last_district = None
                 elif last_office and row[0] == '':
                     # Candidate name row
                     candidates, winner_name = self._parse_candidates(row)
                 elif last_office: # has to be a county result
-                    new_results = self._parse_results(row, last_office, last_party,
+                    new_results = self._parse_results(row, last_office,
+                        last_party, last_district,
                         candidates, winner_name, common_kwargs)
                     results.extend(new_results)
         
@@ -406,6 +401,7 @@ class MDLoader2000Primary(MDBaseLoader):
             district = self._parse_district(row)
         else:
             party = None
+            district = None
 
         return office, party, district
 
@@ -428,7 +424,7 @@ class MDLoader2000Primary(MDBaseLoader):
         if 'District' not in row[0]:
             return None
 
-        return re.search(r'(\d+)', row[0]).groups(0)
+        return re.search(r'(\d+)', row[0]).groups(0)[0]
 
     def _parse_candidates(self, row):
         candidates = []
@@ -440,31 +436,67 @@ class MDLoader2000Primary(MDBaseLoader):
                     full_name, remainder = full_name.split(' Winner')
                     winner = full_name
 
-            candidates.append(full_name)
+                candidates.append(full_name)
 
         return candidates, winner 
         # TODO: QUESTION: How to handle "Uncomitted to any ..." values
 
-    def _parse_results(self, row, office, party, candidates, winner_name,
-            common_kwargs):
+    def _parse_results(self, row, office, party, district, candidates,
+            winner_name, common_kwargs):
         results = []
         cols = [x.strip() for x in row if x != '']
-        jurisdiction = cols[0].strip()
+        county = cols[0].strip()
         cand_results = zip(candidates, cols[1:])
 
         for cand, votes in cand_results:
-            # BOOKMARK
-            # TODO: Make sure we fill in all fields
             result_kwargs = common_kwargs.copy()
             result_kwargs.update({
+                'jurisdiction': county,
+                'office': office,
+                'party': party,
                 'full_name': cand,
                 'votes': int(votes),
-                'jurisdiction': jurisdiction,
-                'party': party,
             })
+            if result_kwargs['primary_type'] == 'closed':
+                result_kwargs['primary_party'] = party
+            if office == "Representative in Congress":
+                # In the case of U.S. representatives, the district represents
+                # the office district.  In all other cases, it just
+                # represents the level of result aggregation.
+                result_kwargs['district'] = district
+
             if cand == winner_name:
                 result_kwargs['winner'] = 'Winner'
 
+            # Set reporting_level and ocd_id fields.  This gets a bit
+            # hairy because the results are returned as congressional districts
+            # split by counties.
+            result_kwargs['reporting_level'] = self._get_reporting_level(district)
+            result_kwargs['ocd_id'] = self._get_ocd_id(county, district)
+           
             results.append(RawResult(**result_kwargs))
 
         return results
+
+    def _get_reporting_level(self, district):
+        """
+        Returns the reporting level based on the value of the results' district.
+
+        This deals with the way in which results for 2000 primaries are
+        returned broken down by both congressional district, split by county.
+        """
+        if district:
+            return "congressional_district_by_county"
+        else:
+            return "county"
+
+    def _get_ocd_id(self, county, district):
+        if district:
+            # Return district ID
+            return "ocd-division/country:us/state:md/cd:%s" % (
+                ocd_type_id(district))
+            
+        else:
+            # Return county ID
+            return "ocd-division/country:us/state:md/county:%s" % (
+                ocd_type_id(county))
