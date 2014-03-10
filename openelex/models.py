@@ -29,6 +29,13 @@ PRIMARY_TYPE_CHOICES = (
 REPORTING_LEVEL_CHOICES = (
     'state',
     'congressional_district',
+    # Some Maryland primary results return results for a congressional
+    # district, but split by county, without giving a congressional district
+    # total in the raw data.  We need to be able to identify this case
+    # when storing RawResults so it can be detected by transforms.
+    #
+    # See https://github.com/openelections/core/issues/80
+    'congressional_district_by_county',
     'state_legislative',
     'county',
     'precinct',
