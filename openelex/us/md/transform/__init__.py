@@ -139,12 +139,8 @@ def _get_party(raw_result, attr='party'):
 
 def get_raw_results_after_2000():
     # Filter raw results for everything newer than 2002, inclusive
-    # Also exclude records that have a reporting level of
-    # congressional district by county.  We'll have to roll those
-    # up in a separate transform.
     return RawResult.objects.filter(state='MD',
-        end_date__gte=datetime(2002, 1, 1),
-        reporting_level__ne='congressional_district_by_county')
+        end_date__gte=datetime(2002, 1, 1))
 
 def get_results_after_2000():
     election_ids = get_raw_results_after_2000().distinct('election_id')
@@ -160,11 +156,7 @@ def get_contest_fields(raw_result):
     return fields
 
 def contest_key(raw_result):
-    # HACK: Work around districts put in presidential races in a few cases
     slug = raw_result.contest_slug
-    if (_clean_office(raw_result.office) not in district_offices and
-        raw_result.district):  
-        slug = slug.replace('-' + raw_result.district.lower(), '')
     return (raw_result.election_id, slug)
 
 def create_unique_contests_after_2000():
@@ -199,10 +191,17 @@ def get_candidate_fields(raw_result):
     year = raw_result.end_date.year
     if year == 2002:
         return get_candidate_fields_2002(raw_result)
-    elif year >= 2003:
-        return get_candidate_fields_after_2000(raw_result)
-    else:
-        raise ValueError
+
+    fields = _get_fields(raw_result, candidate_fields)
+    if fields['full_name'] == "Other Write-Ins":
+        return fields
+
+    name = HumanName(raw_result.full_name)
+    fields['given_name'] = name.first
+    fields['family_name'] = name.last
+    fields['additional_name'] = name.middle
+    fields['suffix'] = name.suffix
+    return fields
 
 def get_candidate_fields_2002(raw_result):
     fields = _get_fields(raw_result, candidate_fields)
@@ -222,18 +221,6 @@ def get_candidate_fields_2002(raw_result):
         bits.append(fields['family_name'])   
         fields['full_name'] = ' '.join(bits)
 
-    return fields
-
-def get_candidate_fields_after_2000(raw_result):
-    fields = _get_fields(raw_result, candidate_fields)
-    if fields['full_name'] == "Other Write-Ins":
-        return fields
-
-    name = HumanName(raw_result.full_name)
-    fields['given_name'] = name.first
-    fields['family_name'] = name.last
-    fields['additional_name'] = name.middle
-    fields['suffix'] = name.suffix
     return fields
 
 def create_unique_candidates_after_2000():
@@ -331,7 +318,11 @@ def create_unique_results_after_2000():
     print "\tDeleting %d previously loaded results" % old_results.count() 
     old_results.delete()
 
-    for rr in get_raw_results_after_2000():
+    raw_results = get_raw_results_after_2000()
+    # Exclude the congressional district by county results.  We'll
+    # aggregate them in a separate transform
+    raw_results = raw_results.filter(reporting_level__ne='congressional_district_by_county')
+    for rr in raw_results:
         fields = _get_fields(rr, result_fields)
         fields['candidate'] = cached_get_candidate(rr, candidate_cache)
         fields['contest'] = fields['candidate'].contest 
