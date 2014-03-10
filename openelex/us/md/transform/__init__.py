@@ -139,8 +139,12 @@ def _get_party(raw_result, attr='party'):
 
 def get_raw_results_after_2000():
     # Filter raw results for everything newer than 2002, inclusive
+    # Also exclude records that have a reporting level of
+    # congressional district by county.  We'll have to roll those
+    # up in a separate transform.
     return RawResult.objects.filter(state='MD',
-        end_date__gte=datetime(2002, 1, 1))
+        end_date__gte=datetime(2002, 1, 1),
+        reporting_level__ne='congressional_district_by_county')
 
 def get_results_after_2000():
     election_ids = get_raw_results_after_2000().distinct('election_id')

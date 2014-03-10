@@ -6,7 +6,7 @@ import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import slugify, ocd_type_id
+from openelex.lib.text import slugify
 from .datasource import Datasource
 
 class LoadResults(object):
@@ -43,6 +43,13 @@ class MDBaseLoader(BaseLoader):
         'Attorney General',
         'State Senator',
         'House of Delegates',
+    ])
+
+    district_offices = set([
+        'U.S. Congress',
+        'Representative in Congress',
+        'State Senator',
+        "House of Delegates",
     ])
 
     def _skip_row(self, row):
@@ -200,6 +207,12 @@ class MDLoaderAfter2002(MDBaseLoader):
             'party': row['Party'].strip(),
             'votes': self._votes(row['Total Votes']),
         })
+        if (kwargs['office'] not in self.district_offices
+                and kwargs['district'] != ''):
+            kwargs['reporting_level'] = 'congressional_district_by_county'
+            kwargs['reporting_district'] = kwargs['district']
+            del kwargs['district']
+
         return RawResult(**kwargs)
 
     def _prep_precinct_result(self, row):
@@ -468,12 +481,13 @@ class MDLoader2000Primary(MDBaseLoader):
             if cand == winner_name:
                 result_kwargs['winner'] = 'Winner'
 
-            # Set reporting_level and ocd_id fields.  This gets a bit
-            # hairy because the results are returned as congressional districts
-            # split by counties.
+            # Try to figure out if this is a case where results are
+            # provided by congressional district split by county and
+            # record this.
             result_kwargs['reporting_level'] = self._get_reporting_level(district)
-            result_kwargs['ocd_id'] = self._get_ocd_id(county, district)
-           
+            if result_kwargs['reporting_level'] == 'congressional_district_by_county':
+                result_kwargs['reporting_district'] = district
+
             results.append(RawResult(**result_kwargs))
 
         return results
@@ -489,14 +503,3 @@ class MDLoader2000Primary(MDBaseLoader):
             return "congressional_district_by_county"
         else:
             return "county"
-
-    def _get_ocd_id(self, county, district):
-        if district:
-            # Return district ID
-            return "ocd-division/country:us/state:md/cd:%s" % (
-                ocd_type_id(district))
-            
-        else:
-            # Return county ID
-            return "ocd-division/country:us/state:md/county:%s" % (
-                ocd_type_id(county))
