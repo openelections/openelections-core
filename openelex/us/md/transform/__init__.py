@@ -5,6 +5,7 @@ from nameparser import HumanName
 
 from openelex.base.transform import registry
 from openelex.models import Candidate, Contest, Office, Party, RawResult, Result
+from openelex.lib.text import ocd_type_id
 
 
 PARTY_MAP = {
@@ -285,15 +286,14 @@ def _parse_write_in(raw_result):
         return False
 
 def _get_ocd_id(raw_result):
-    clean_jurisdiction = _strip_leading_zeros(raw_result.jurisdiction)
+    juris_ocd = ocd_type_id(raw_result.jurisdiction)
     if raw_result.reporting_level == "county":
         # TODO: Should jurisdiction/ocd_id be different for Baltimore City?
-        # TODO: Slugify county name 
-        return "ocd-division/country:us/state:md/county:%s" % clean_jurisdiction, 
+        return "ocd-division/country:us/state:md/county:%s" % juris_ocd 
     elif raw_result.reporting_level == "state_legislative":
-        return "ocd-division/country:us/state:md/sldl:%s" % clean_jurisdiction
+        return "ocd-division/country:us/state:md/sldl:%s" % juris_ocd 
     elif raw_result.reporting_level == "precinct": 
-        return "%s/precinct:%s" % (raw_result.county_ocd_id, clean_jurisdiction)
+        return "%s/precinct:%s" % (raw_result.county_ocd_id, juris_ocd)
     else: 
         return None
 
