@@ -37,7 +37,10 @@ def ocd_type_id(text, strip_leading_zeros=True):
     # Use unicode for regexes
     re.UNICODE = True
     # Convert characters to unicode
-    u_text = unicode(text, "utf-8")
+    try:
+        u_text = text.encode('utf-8')
+    except AttributeError:
+        u_text = unicode(text, "utf-8")
     # Convert to lowercase
     u_text = u_text.lower()
     # Convert spaces to underscores
