@@ -1,12 +1,6 @@
-from os.path import dirname, exists, join
+from os.path import exists, join
 from urllib import urlretrieve
-import inspect
-import json
-import os
 import urlparse
-
-import requests
-import unicodecsv
 
 from .state import StateBase
 
