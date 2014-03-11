@@ -238,6 +238,10 @@ class Datasource(BaseDatasource):
             'year': year,
             'race_type': 'General'
         }
+        # In 2000, 2004 the files for St. Mary's county are prefixed
+        # with "Saint_Marys" instead of "St._Marys".
+        if name == "St._Marys" and int(year) in (2000, 2004):
+            name = "Saint_Marys"
         tmplt = self.base_url + name
         if precinct:
             tmplt += "_By_Precinct"
