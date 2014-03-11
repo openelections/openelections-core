@@ -33,7 +33,7 @@ class BaseFetcher(StateBase):
         """
         local_file_name = self._standardized_filename(url, fname)
         if overwrite:
-            name, response = urlretrieve(url, local_file_fname)
+            name, response = urlretrieve(url, local_file_name)
         else:
             if exists(local_file_name):
                 print "File is cached: %s" % local_file_name
