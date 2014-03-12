@@ -22,12 +22,8 @@ class LoadResults(object):
             loader = MDLoader2002()
         elif '2000' in election_id and 'primary' in election_id:
             loader = MDLoader2000Primary()
-        elif '2000' in election_id and 'general' in election_id:
-            # BOOKMARK
-            # TODO: Implement this
-            return
         else:
-            loader = MDLoaderAfter2002()
+            loader = MDLoader()
         loader.run(mapping)
 
 
@@ -111,8 +107,12 @@ class MDBaseLoader(BaseLoader):
         return kwargs
 
 
-class MDLoaderAfter2002(MDBaseLoader):
+class MDLoader(MDBaseLoader):
+    """
+    Parse Maryland election results for the 2000 general election and
+    all elections after 2002.
 
+    """
     def load(self):
         with self._file_handle as csvfile:
             results = []
@@ -144,7 +144,11 @@ class MDLoaderAfter2002(MDBaseLoader):
         return kwargs
 
     def _build_candidate_kwargs(self, row):
-        full_name = row['Candidate Name'].strip()
+        try:
+            full_name = row['Candidate Name'].strip()
+        except KeyError:
+            # 2000 results use "Candidate" for the column name
+            full_name = row['Candidate'].strip()
         slug = slugify(full_name, substitute='-')
         kwargs = {
             'full_name': full_name,
@@ -218,7 +222,7 @@ class MDLoaderAfter2002(MDBaseLoader):
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
         vote_breakdowns = {
-            'election_night_total': int(float(row['Election Night Votes']))
+            'election_night_total': self._votes(row['Election Night Votes'])
         }
         precinct = str(row['Election Precinct'])
         kwargs.update({
@@ -240,11 +244,17 @@ class MDLoaderAfter2002(MDBaseLoader):
         return RawResult(**kwargs)
 
     def _votes(self, val):
+        """
+        Returns cleaned version of votes or 0 if it's a non-numeric value.
+        """
         if val.strip() == '':
-            total_votes = 0
-        else:
-            total_votes = int(float(val))
-        return total_votes
+            return 0
+
+        try:
+            return int(float(val))
+        except ValueError:
+            # Count'y convert value from string   
+            return 0
 
     def _writein(self, row):
         # sometimes write-in field not present

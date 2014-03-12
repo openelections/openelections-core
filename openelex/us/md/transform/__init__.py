@@ -137,13 +137,11 @@ def _get_party(raw_result, attr='party'):
             print "No party with abbreviation %s" % (clean_abbrev)
             raise
 
-def get_raw_results_after_2000():
-    # Filter raw results for everything newer than 2002, inclusive
-    return RawResult.objects.filter(state='MD',
-        end_date__gte=datetime(2002, 1, 1))
+def get_raw_results():
+    return RawResult.objects.filter(state='MD')
 
-def get_results_after_2000():
-    election_ids = get_raw_results_after_2000().distinct('election_id')
+def get_results():
+    election_ids = get_raw_results().distinct('election_id')
     return Result.objects.filter(election_id__in=election_ids)
 
 def get_contest_fields(raw_result):
@@ -159,11 +157,11 @@ def contest_key(raw_result):
     slug = raw_result.contest_slug
     return (raw_result.election_id, slug)
 
-def create_unique_contests_after_2000():
+def create_unique_contests():
     contests = []
     seen = set()
 
-    for rr in get_raw_results_after_2000():
+    for rr in get_raw_results():
         key = contest_key(rr)
         if key not in seen:
             fields = get_contest_fields(rr)
@@ -183,7 +181,11 @@ def cached_get_contest(raw_result, cache):
     except KeyError:
         fields = get_contest_fields(raw_result)
         fields.pop('source')
-        contest = Contest.objects.get(**fields)
+        try:
+            contest = Contest.objects.get(**fields)
+        except Exception:
+            print fields
+            raise
         cache[key] = contest
         return contest
 
@@ -223,12 +225,12 @@ def get_candidate_fields_2002(raw_result):
 
     return fields
 
-def create_unique_candidates_after_2000():
+def create_unique_candidates():
     contest_cache = {}
     candidates = []
     seen = set()
 
-    for rr in get_raw_results_after_2000():
+    for rr in get_raw_results():
         key = (rr.election_id, rr.candidate_slug)
         if key not in seen:
             fields = get_candidate_fields(rr)
@@ -302,7 +304,7 @@ def cached_get_candidate(raw_result, cache):
         cache[key] = candidate 
         return candidate
 
-def create_unique_results_after_2000():
+def create_unique_results():
     candidate_cache = {}
     results = []
     num_created = 0
@@ -314,11 +316,11 @@ def create_unique_results_after_2000():
     bufsiz = 1000
 
     # Delete existing results
-    old_results = get_results_after_2000()
+    old_results = get_results()
     print "\tDeleting %d previously loaded results" % old_results.count() 
     old_results.delete()
 
-    raw_results = get_raw_results_after_2000()
+    raw_results = get_raw_results()
     # Exclude the congressional district by county results.  We'll
     # aggregate them in a separate transform
     raw_results = raw_results.filter(reporting_level__ne='congressional_district_by_county')
@@ -356,8 +358,8 @@ def create_unique_results_after_2000():
 #def clean_vote_counts():
     #pass
 
-registry.register('md', create_unique_contests_after_2000)
-registry.register('md', create_unique_candidates_after_2000)
-registry.register('md', create_unique_results_after_2000)
+registry.register('md', create_unique_contests)
+registry.register('md', create_unique_candidates)
+registry.register('md', create_unique_results)
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)
