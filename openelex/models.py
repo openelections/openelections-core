@@ -401,15 +401,19 @@ class Candidate(TimestampMixin, DynamicDocument):
         return (self.election_id, self.contest_slug, self.slug)
 
     @classmethod
-    def pre_save(cls, sender, document, **kwargs):
+    def post_init(cls, sender, document, **kwargs):
         if not document.contest_slug:
             document.contest_slug = document.contest.slug
 
         if not document.slug:
-            document.slug = slugify(document.full_name, '-')
+            document.slug = cls.make_slug(full_name=document.full_name) 
+
+    @classmethod
+    def make_slug(cls, **kwargs):
+        return slugify(kwargs.get('full_name'), '-')
 
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Candidate)
-signals.pre_save.connect(Candidate.pre_save, sender=Candidate)
+signals.post_init.connect(Candidate.post_init, sender=Candidate)
 
 
 class Result(TimestampMixin, DynamicDocument):
@@ -463,12 +467,24 @@ class Result(TimestampMixin, DynamicDocument):
         return u'%s-%s-%s-%s-%s (%s)' % bits
 
     @classmethod
-    def pre_save(cls, sender, document, **kwargs):
+    def post_init(cls, sender, document, **kwargs):
         if not document.contest_slug:
             document.contest_slug = document.contest.slug
 
         if not document.candidate_slug:
             document.candidate_slug = document.candidate.slug
 
+    @classmethod
+    def make_slug(cls, **kwargs):
+        bits = (
+            kwargs['election_id'],
+            kwargs['contest_slug'],
+            kwargs['candidate_slug'],
+            kwargs['reporting_level'],
+            slugify(kwargs['jurisdiction']),
+        )
+        return u'%s-%s-%s-%s-%s' % bits
+
+
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Result)
-signals.pre_save.connect(Result.pre_save, sender=Result)
+signals.post_init.connect(Result.post_init, sender=Result)
