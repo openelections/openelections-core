@@ -280,14 +280,28 @@ def _parse_write_in(raw_result):
     else:
         return False
 
-def _get_ocd_id(raw_result):
+def _get_ocd_id(raw_result, reporting_level=None):
+    """
+    Returns the OCD ID for a RawResult's reporting level.
+
+    Arguments:
+    
+    raw_result - the RawResult instance used to determine the OCD ID
+    reporting_level - the reporting level to reflect in the OCD ID.
+        Default is raw_result.reporting_level. Specifying this
+        argument is useful if you want to use a RawResult's
+        jurisdiction, but override the reporting level.
+
+    """
+    if reporting_level is None:
+        reporting_level = raw_result.reporting_level
     juris_ocd = ocd_type_id(raw_result.jurisdiction)
-    if raw_result.reporting_level == "county":
+    if reporting_level == "county":
         # TODO: Should jurisdiction/ocd_id be different for Baltimore City?
         return "ocd-division/country:us/state:md/county:%s" % juris_ocd 
-    elif raw_result.reporting_level == "state_legislative":
+    elif reporting_level == "state_legislative":
         return "ocd-division/country:us/state:md/sldl:%s" % juris_ocd 
-    elif raw_result.reporting_level == "precinct": 
+    elif reporting_level == "precinct": 
         return "%s/precinct:%s" % (raw_result.county_ocd_id, juris_ocd)
     else: 
         return None
@@ -338,7 +352,148 @@ def create_unique_results():
     results.flush()
 
     print "Created %d results." % results.count()
-        
+
+def create_district_results_from_county_splits():
+    """
+    Aggregate results that were reported by congressional districts split
+    by county.
+    """
+    results = []
+    candidate_cache = {}
+    result_cache = {}
+
+    # Delete previously created results
+    delete_district_results_from_county_splits()
+
+    raw_results = RawResult.objects.filter(state='MD',
+        reporting_level='congressional_district_by_county')
+    for rr in raw_results:
+        # We only grab the meta fields here because we're aggregating results.
+        # 
+        # We'll grab the votes explicitely later.
+        #
+        # Don't parse winner because it looks like it's reported as the
+        # contest winner and not the jurisdiction winner.
+        # 
+        # Don't parse write-in because this case is only for primaries and
+        # I'm pretty sure there aren't any write-in candidates in those
+        # contests.
+        fields = _get_fields(rr, meta_fields)
+        fields['candidate'] = cached_get_candidate(rr, candidate_cache)
+        fields['contest'] = fields['candidate'].contest
+        party = _get_party(rr)
+        if party:
+            fields['party'] = party.abbrev
+        fields['reporting_level'] = 'congressional_district'
+        fields['jurisdiction'] = _strip_leading_zeros(rr.reporting_district)
+        fields['ocd_id'] = "ocd-division/country:us/state:md/cd:%s" % (
+            ocd_type_id(fields['jurisdiction']))
+      
+        # Instantiate a new result for this candidate, contest and jurisdiction,
+        # but only do it once.
+        result, instantiated = _get_or_instantiate_result(fields, result_cache)
+        if instantiated:
+            results.append(result)
+
+        # Contribute votes from this particular raw result 
+        votes = result.votes if result.votes else 0
+        rr_votes = rr.votes if rr.votes else 0
+        votes += rr_votes
+        result.votes = votes
+
+    Result.objects.insert(results, load_bulk=False)
+
+    print "Created %d results." % len(results)
+
+def delete_district_results_from_county_splits():
+    """
+    Delete result objects aggregated from results reported by congressional
+    districts split by county.
+    """
+    count = 0
+    # Delete house results
+    results = Result.objects.filter(election_id='md-2000-03-07-primary',
+        contest_slug__startswith='us-house-of-representatives',
+        reporting_level='congressional_district')
+    count += results.count()
+    results.delete()
+
+    # Delete presidential contest results
+    president_contests = ['president-dem', 'president-rep']
+    for election_id in ('md-2000-03-07-primary', 'md-2008-02-12-primary',
+            'md-2012-04-03-primary'):
+        results = Result.objects.filter(election_id=election_id,
+            contest_slug__in=president_contests,
+            reporting_level='congressional_district')
+        count += results.count()
+        results.delete()
+
+    print "\tDeleted %d previously loaded results" % count 
+
+def _get_or_instantiate_result(fields, cache):
+    slug = Result.make_slug(election_id=fields['election_id'],
+        contest_slug=fields['contest'].slug,
+        candidate_slug=fields['candidate'].slug,
+        reporting_level=fields['reporting_level'],
+        jurisdiction=fields['jurisdiction'])
+    try:
+        return cache[slug], False
+    except KeyError:
+        result = Result(**fields)
+        cache[slug] = result
+        return result, True
+
+def create_2000_primary_congress_county_results():
+    """
+    Create county-level results for the 2000 U.S. House of Representatives
+    contests.
+
+    This is done in a separate transform to avoid confusion.  The RawResults
+    for these records have a reporting_level of
+    'congressional_district_by_county'.  We aggregate them to the congressional
+    district level in a separate transform, but we also need to create county
+    result records.  This is easy since the per-county records are unique
+    by district.
+    """
+    # Delete existing results
+    old_results = get_2000_primary_congress_county_results()
+    print "\tDeleting %d previously loaded results" % old_results.count() 
+    old_results.delete()
+
+    candidate_cache = {}
+    results = []
+
+    raw_results = RawResult.objects.filter(state='MD',
+        reporting_level='congressional_district_by_county',
+        election_id='md-2000-03-07-primary',
+        office="Representative in Congress")
+    for rr in raw_results:
+        fields = _get_fields(rr, result_fields)
+        fields['candidate'] = cached_get_candidate(rr, candidate_cache)
+        fields['contest'] = fields['candidate'].contest 
+        # Signals will set these automatically when creating a single
+        # Result, but not when doing bulk inserts
+        fields['candidate_slug'] = fields['candidate'].slug
+        fields['contest_slug'] = fields['contest'].slug
+        fields['raw_result'] = rr
+        party = _get_party(rr)
+        if party:
+            fields['party'] = party.abbrev
+        fields['winner'] = _parse_winner(rr)
+        fields['jurisdiction'] = _strip_leading_zeros(rr.jurisdiction)
+        fields['reporting_level'] = 'county'
+        fields['ocd_id'] = _get_ocd_id(rr, 'county')
+        result = Result(**fields)
+        results.append(result)
+
+    Result.objects.insert(results, load_bulk=False)
+    print "Created %d results." % len(results)
+
+def get_2000_primary_congress_county_results():
+    return Result.objects.filter(state='MD',
+        reporting_level='county',
+        election_id='md-2000-03-07-primary',
+        contest_slug__startswith='us-house-of-representatives')
 
 # TODO: When should we create a Person
 
@@ -351,5 +506,7 @@ def create_unique_results():
 registry.register('md', create_unique_contests)
 registry.register('md', create_unique_candidates)
 registry.register('md', create_unique_results)
+registry.register('md', create_district_results_from_county_splits)
+registry.register('md', create_2000_primary_congress_county_results)
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)
