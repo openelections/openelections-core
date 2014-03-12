@@ -6,6 +6,7 @@ from nameparser import HumanName
 from openelex.base.transform import registry
 from openelex.models import Candidate, Contest, Office, Party, RawResult, Result
 from openelex.lib.text import ocd_type_id
+from openelex.lib.insertbuffer import BulkInsertBuffer
 
 
 PARTY_MAP = {
@@ -138,7 +139,8 @@ def _get_party(raw_result, attr='party'):
             raise
 
 def get_raw_results():
-    return RawResult.objects.filter(state='MD')
+    # Use a non-caching queryset because otherwise we run out of memory
+    return RawResult.objects.filter(state='MD').no_cache()
 
 def get_results():
     election_ids = get_raw_results().distinct('election_id')
@@ -172,7 +174,7 @@ def create_unique_contests():
 
     Contest.objects.insert(contests, load_bulk=False)
 
-    print "Created %d contests." % len(contests) 
+    print "Created %d contests." % len(contests)
 
 def cached_get_contest(raw_result, cache):
     key = "%s-%s" % (raw_result.election_id, raw_result.contest_slug)
@@ -296,6 +298,7 @@ def cached_get_candidate(raw_result, cache):
         return cache[key]
     except KeyError:
         fields = get_candidate_fields(raw_result)
+        del fields['source']
         try:
             candidate = Candidate.objects.get(**fields)
         except Candidate.DoesNotExist:
@@ -306,14 +309,7 @@ def cached_get_candidate(raw_result, cache):
 
 def create_unique_results():
     candidate_cache = {}
-    results = []
-    num_created = 0
-    # Number of records to insert at once.  We need to do this because
-    # the number of records we create will exceed with what Mongo can
-    # do in a single call to QuerySet.insert().  
-    #
-    # 1000 is a totally arbitrary size 
-    bufsiz = 1000
+    results = BulkInsertBuffer(Result) 
 
     # Delete existing results
     old_results = get_results()
@@ -338,16 +334,10 @@ def create_unique_results():
         fields['ocd_id'] = _get_ocd_id(rr)
         result = Result(**fields)
         results.append(result)
-        if len(results) >= bufsiz:
-            Result.objects.insert(results, load_bulk=False)
-            num_created += len(results)
-            results = []
 
-    if len(results):
-        Result.objects.insert(results, load_bulk=False)
-        num_created += len(results)
+    results.flush()
 
-    print "Created %d results." % num_created 
+    print "Created %d results." % results.count()
         
 
 # TODO: When should we create a Person
