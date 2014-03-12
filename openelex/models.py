@@ -158,7 +158,7 @@ class RawResult(TimestampMixin, DynamicDocument):
         """
         slug = "%s" % slugify(self.office)
         if self.district:
-            slug += "-%s" % slugify(self.district)
+            slug += "-%s" % slugify(self.district.lstrip('0'))
         if self.primary_party:
             slug += "-%s" % slugify(self.primary_party)
         return slug
