@@ -1,12 +1,6 @@
-from os.path import dirname, exists, join
+from os.path import exists, join
 from urllib import urlretrieve
-import inspect
-import json
-import os
 import urlparse
-
-import requests
-import unicodecsv
 
 from .state import StateBase
 
@@ -33,7 +27,7 @@ class BaseFetcher(StateBase):
         """
         local_file_name = self._standardized_filename(url, fname)
         if overwrite:
-            name, response = urlretrieve(url, local_file_fname)
+            name, response = urlretrieve(url, local_file_name)
         else:
             if exists(local_file_name):
                 print "File is cached: %s" % local_file_name

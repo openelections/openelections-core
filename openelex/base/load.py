@@ -1,9 +1,6 @@
-from os.path import dirname, exists, join
-from os import listdir
-import inspect
+from os.path import join
 import json
 
-import csv
 import unicodecsv
 
 from .state import StateBase
@@ -14,6 +11,15 @@ class BaseLoader(StateBase):
     Base class for loading results data into MongoDB
     Intended to be subclassed in state-specific load.py modules.
     Reads from cached resources inside each state directory.
+    
+    Subclasses should create RawResult models and only do minimal
+    cleaning such as:
+
+    * Strip leading/trailing whitespace from values
+    * Convert votes from string to integer
+
+    All other cleaning or transformation of values should be
+    done by creating transforms.
 
     """
 

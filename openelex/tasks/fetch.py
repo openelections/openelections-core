@@ -1,8 +1,5 @@
-import os
-
 from invoke import task
 
-from openelex import COUNTRY_DIR
 from openelex.base.fetch import BaseFetcher
 from .utils import load_module
 

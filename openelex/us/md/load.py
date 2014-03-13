@@ -1,6 +1,7 @@
-from os.path import exists, join
+from os.path import join
 import datetime
 import re
+import csv
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -22,11 +23,39 @@ class LoadResults(object):
         elif '2000' in election_id and 'primary' in election_id:
             loader = MDLoader2000Primary()
         else:
-            loader = MDLoaderAfter2002()
+            loader = MDLoader()
         loader.run(mapping)
 
 
 class MDBaseLoader(BaseLoader):
+    target_offices = set([
+        'President - Vice Pres',
+        'President and Vice President of the United States',
+        'U.S. Senator',
+        'U.S. Congress',
+        'Representative in Congress',
+        'Governor / Lt. Governor',
+        'Comptroller',
+        'Attorney General',
+        'State Senator',
+        'House of Delegates',
+    ])
+
+    district_offices = set([
+        'U.S. Congress',
+        'Representative in Congress',
+        'State Senator',
+        "House of Delegates",
+    ])
+
+    def _skip_row(self, row):
+        """
+        Should this row be skipped?
+
+        This should be implemented in subclasses.
+        """
+        return False
+
 
     #TODO: QUESTION: Move to BaseLoader?
     def run(self, mapping):
@@ -56,13 +85,12 @@ class MDBaseLoader(BaseLoader):
 
     #TODO: QUESTION: Move to BaseLoader? Should be able to provide
     # the meta fields for free on all states.
-    def _build_meta_fields(self, row):
+    def _build_common_election_kwargs(self):
         """These fields are derived from OpenElex API and common to all RawResults"""
         year = int(re.search(r'\d{4}', self.election_id).group())
         elecs = self.datasource.elections(year)[year]
         # Get election metadata by matching on election slug
         elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
-        party = row['Party'].strip()
         kwargs = {
             'created':  self.timestamp,
             'updated': self.timestamp,
@@ -76,35 +104,22 @@ class MDBaseLoader(BaseLoader):
             'result_type': elec_meta['result_type'],
             'special': elec_meta['special'],
         }
-        # Add party if it's a primary
-        #TODO: Update logic to check primary_type == closed
-        #TODO: QUESTION: Should semi-closed also have party?
-        if 'primary' in self.election_id:
-            kwargs['primary_party'] = party
-        else:
-            kwargs['primary_party'] = ''
         return kwargs
 
 
-class MDLoaderAfter2002(MDBaseLoader):
+class MDLoader(MDBaseLoader):
+    """
+    Parse Maryland election results for the 2000 general election and
+    all elections after 2002.
 
+    """
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            target_offices = set([
-                'President - Vice Pres',
-                'U.S. Senator',
-                'U.S. Congress',
-                'Governor / Lt. Governor',
-                'Comptroller',
-                'Attorney General',
-                'State Senator',
-                'House of Delegates'
-            ])
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if not row['Office Name'].strip() in target_offices:
+                if self._skip_row(row): 
                     continue
                 elif 'state_legislative' in self.source:
                     results.extend(self._prep_state_leg_results(row))
@@ -114,15 +129,26 @@ class MDLoaderAfter2002(MDBaseLoader):
                     results.append(self._prep_county_result(row))
             RawResult.objects.insert(results)
 
-    def _build_contest_kwargs(self, row):
+    def _skip_row(self, row):
+        return row['Office Name'].strip() not in self.target_offices
+
+    def _build_contest_kwargs(self, row, primary_type):
         kwargs = {
             'office': row['Office Name'].strip(),
             'district': row['Office District'].strip(),
         }
+        # Add party if it's a primary
+        #TODO: QUESTION: Should semi-closed also have party?
+        if primary_type == 'closed':
+            kwargs['primary_party'] = row['Party'].strip()
         return kwargs
 
     def _build_candidate_kwargs(self, row):
-        full_name = row['Candidate Name'].strip()
+        try:
+            full_name = row['Candidate Name'].strip()
+        except KeyError:
+            # 2000 results use "Candidate" for the column name
+            full_name = row['Candidate'].strip()
         slug = slugify(full_name, substitute='-')
         kwargs = {
             'full_name': full_name,
@@ -133,13 +159,13 @@ class MDLoaderAfter2002(MDBaseLoader):
 
     def _base_kwargs(self, row):
         "Build base set of kwargs for RawResult"
-        meta_kwargs = self._build_meta_fields(row)
-        contest_kwargs = self._build_contest_kwargs(row)
+        # TODO: Can this just be called once?
+        kwargs = self._build_common_election_kwargs()
+        contest_kwargs = self._build_contest_kwargs(row, kwargs['primary_type'])
         candidate_kwargs = self._build_candidate_kwargs(row)
-        #TODO: Merge kwags
-        meta_kwargs.update(contest_kwargs)
-        meta_kwargs.update(candidate_kwargs)
-        return meta_kwargs
+        kwargs.update(contest_kwargs)
+        kwargs.update(candidate_kwargs)
+        return kwargs
 
     def _prep_state_leg_results(self, row):
         kwargs = self._base_kwargs(row)
@@ -185,19 +211,30 @@ class MDLoaderAfter2002(MDBaseLoader):
             'party': row['Party'].strip(),
             'votes': self._votes(row['Total Votes']),
         })
+        if (kwargs['office'] not in self.district_offices
+                and kwargs['district'] != ''):
+            kwargs['reporting_level'] = 'congressional_district_by_county'
+            kwargs['reporting_district'] = kwargs['district']
+            del kwargs['district']
+
         return RawResult(**kwargs)
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
         vote_breakdowns = {
-            'election_night_total': int(float(row['Election Night Votes']))
+            'election_night_total': self._votes(row['Election Night Votes'])
         }
-        district = str(row['Election District'])
         precinct = str(row['Election Precinct'])
         kwargs.update({
             'reporting_level': 'precinct',
-            'jurisdiction':precinct,
-            'jurisdiction': self.mapping['name'] + ' ' + district  + "-" + precinct,
+            'jurisdiction': precinct,
+            # In Maryland, precincts are nested below counties.
+            #
+            # The mapping ocd_id will be for the precinct's county.
+            # We'll save it as an expando property of the raw result because
+            # we won't have an easy way of looking up the county in the 
+            # transforms.
+            'county_ocd_id': self.mapping['ocd_id'],
             'party': row['Party'].strip(),
             'votes': self._votes(row['Election Night Votes']),
             'winner': row['Winner'],
@@ -207,11 +244,17 @@ class MDLoaderAfter2002(MDBaseLoader):
         return RawResult(**kwargs)
 
     def _votes(self, val):
+        """
+        Returns cleaned version of votes or 0 if it's a non-numeric value.
+        """
         if val.strip() == '':
-            total_votes = 0
-        else:
-            total_votes = int(float(val))
-        return total_votes
+            return 0
+
+        try:
+            return int(float(val))
+        except ValueError:
+            # Count'y convert value from string   
+            return 0
 
     def _writein(self, row):
         # sometimes write-in field not present
@@ -223,200 +266,250 @@ class MDLoaderAfter2002(MDBaseLoader):
 
 
 class MDLoader2002(MDBaseLoader):
+    """
+    Loads Maryland results for 2002.
+
+    Format:
+
+    Maryland results for 2002 are in a delimited text file where the delimiter
+    is '|'.
+
+    Fields:
+
+     0: Office
+     1: Office District - '-' is used to denote null values 
+     2: County
+     3: Last Name - "zz998" is used for write-in candidates
+     4: Middle Name - "\N" is used to denote null values
+     5: First Name - "Other Write-Ins" is used for write-in candidates
+     6: Party
+     7: Winner - Value is 0 or 1
+     8: UNKNOWN - Values are "(Vote for One)", "(Vote for No More Than Three)", etc.
+     9: Votes 
+    10: UNKNOWN - Values are "\N" for every row
+    
+    Sample row:
+
+    House of Delegates                                                  |32 |Anne Arundel County                               |Burton                                                      |W.              |Robert                                                      |Republican                                        |              0|(Vote for No More Than Three)                     |           1494|\N
+
+    Notes:
+
+    In the general election file, there are rows for judges and for
+    "Statewide Ballot Questions".  The columns in these rows are shifted over,
+    but we can ignore these rows since we're not interested in these offices.
+
+    """
 
     def load(self):
         headers = [
             'office',
             'district',
             'jurisdiction',
-            'last',
-            'middle',
-            'first',
+            'family_name',
+            'additional_name',
+            'given_name',
             'party',
             'winner',
             'vote_type',
             'votes',
             'fill2'
         ]
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'county'
         # Store result instances for bulk loading
         results = []
+
         with self._file_handle as csvfile:
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers, delimiter='|', encoding='latin-1')
-            reporting_level = 'county'
-            #TODO: replace jurisidctions with datasource.mappings
-            #geographies = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
-            geographies = self.mappings()
             for row in reader:
-                if row['jurisdiction'].strip() == 'Baltimore City':
-                    geo_obj = [x for x in geographies if x['name'] == "Baltimore City"][0]
-                else:
-                    geo_obj = [x for x in geographies if x['name']+" County" == row['jurisdiction'].strip()][0]
-
-                # Winner
-                winner = row['winner']
-                #if row['winner'] == '1':
-                #    raw_winner = True
-                #else:
-                #    raw_winner = False
-
-                #TODO: push name parsing to transform step
-                # zz998 is for write-ins
-                if row['last'].strip() == 'zz998':
-                #    name = row['last'].strip()
-                #    #candidate = Candidate(state=self.state.upper(), family_name=name)
-                     write_in=True
-                else:
-                #    cand_name = self.combine_name_parts([row['first'], row['middle'], row['last']])
-                #    name = self.parse_name(cand_name)
-                     write_in=False
-                #    candidate = Candidate(state=self.state.upper(), given_name=name.first, additional_name=name.middle, family_name=name.last, suffix=name.suffix, name=name.full_name)
-
-                #TODO: handle below using the self._get_candidate_whatever(row)
-                #TODO: need a new function/method to handle 2002?
-                cand_kwargs = {
-                    'raw_family_name': row['last'].strip(),
-                    'raw_given_name': row['first'].strip(),
-                    'raw_additional_name': row['middle'].strip(),
-                }
-
-                result_kwargs = {
-                    #'election':
-                    #'candidate': candidate,
-                    'ocd_id': geo_obj['ocd_id'],
-                    #TODO: make this the county number from file
-                    'raw_jurisdiction': row['jurisdiction'],
-                    'jurisdiction': geo_obj['name'],
-                    'raw_office': row['office'].strip(),
-                    'raw_district': row['district'].strip(),
-                    'reporting_level': 'county',
-                    'raw_party': row['party'], # needs to be a member of a list
-                    # TODO: For now raw_party and party are set to the same 
-                    # value, just so party is available to the first version of
-                    # the baker.
-                    # However, eventually raw results should be moved to a
-                    # separate document and the party name should be
-                    # standardized in a transform step.
-                    'party': row['party'], # needs to be a member of a list
-                    'write_in': write_in,
-                    'raw_total_votes': row['votes'],
-                }
-                result = RawResult(**result_kwargs)
+                if self._skip_row(row):
+                    continue
+                
+                rr_kwargs = self._common_kwargs.copy()
+                if rr_kwargs['primary_type'] == 'closed':
+                    rr_kwargs['primary_party'] = row['party'].strip()
+                rr_kwargs.update(self._build_contest_kwargs(row))
+                rr_kwargs.update(self._build_candidate_kwargs(row))
+                rr_kwargs.update({
+                    'party': row['party'].strip(),
+                    'jurisdiction': row['jurisdiction'].strip(),
+                    'office': row['office'].strip(),
+                    'district': row['district'].strip(),
+                    'votes': int(row['votes'].strip()),
+                })
+                results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
 
-    def load_county_2002(self, row):
-        total_votes = int(float(row['votes']))
-        #TODO: replace above 2 lines with below
-        reporting_level = 'precinct'
-        ocd_id = mapping['ocd_id']
-        total_votes = int(float(row['votes']))
-        kwargs = {
-            #TODO: generate ocd_id
-            #'ocd_id': ocd_id,
-            #'jurisdiction': jurisdiction,
-            'reporting_level': reporting_level,
-            'raw_office': row['office'].strip(),
-            'candidate': candidate,
-            'party': row['party'].strip(),
-            'write_in': write_in,
-            'raw_total_votes': total_votes,
-            'vote_breakdowns': {}
+    def _skip_row(self, row):
+        return row['office'].strip() not in self.target_offices
+
+    def _build_contest_kwargs(self, row):
+        return {
+            'office': row['office'].strip(),
+            'district': row['district'].strip(),
         }
-        return RawResult(**kwargs)
+
+    def _build_candidate_kwargs(self, row):
+        return {
+            'family_name': row['family_name'].strip(),
+            'given_name': row['given_name'].strip(),
+            'additional_name': row['additional_name'].strip(),
+        }
 
 
 class MDLoader2000Primary(MDBaseLoader):
+    office_choices = [
+        "President and Vice President of the United States",
+        "U.S. Senator",
+        "Representative in Congress",
+        "Judge of the Circuit Court",
+        "Female Delegates and Alternate to the Democratic National Convention",
+        "Female Delegates to the Democratic National Convention",
+        "Male Delegates to the Democratic National Convention",
+        "Male Delegates and Alternate to the Democratic National Convention",
+        "Delegates to the Republican National Convention",
+    ]
 
     def load(self):
         candidates = {}
         results = []
-        with self._file_handle as csvfile:
-            lines = csvfile.readlines()
-            #TODO: use Datasource.mappings instead of jurisdiction_mappings
-            #jurisdictions = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
-            #jurisdictions = self.datasource.mappings()
-            for line in lines[0:377]:
-                if line.strip() == '':
-                    continue # skip blank lines
-                else: # determine if this is a row with an office
-                    #TODO: push party and office to transform step
-                    cols = line.strip().split(',')
-                    if cols[0][1:29] == 'President and Vice President':
-                        office_name = 'President - Vice Pres'
-                        if 'Democratic' in cols[0]:
-                            raw_party = "Democratic"
-                            party = 'DEM'
-                        else:
-                            raw_party = "Republican"
-                            party = 'REP'
-                        continue
-                    elif cols[0][1:13] == 'U.S. Senator':
-                        office_name = 'U.S. Senator'
-                        if 'Democratic' in cols[0]:
-                            raw_party = "Democratic"
-                            party = 'DEM'
-                        else:
-                            raw_party = "Republican"
-                            party = 'REP'
-                        continue
-                    elif cols[0][1:27] == 'Representative in Congress':
-                        district = int(cols[0][71:73])
-                        office_name = 'U.S. Congress ' + str(district)
-                        if 'Democratic' in cols[0]:
-                            raw_party = "Democratic"
-                            party = 'DEM'
-                        else:
-                            raw_party = "Republican"
-                            party = 'REP'
-                        continue
-                    # skip offices we don't want
-                    elif cols[0][1:21] == 'Judge of the Circuit':
-                        continue
-                    elif cols[0][1:31] == 'Female Delegates and Alternate':
-                        continue
-                    elif cols[0][1:29] == 'Male Delegates and Alternate':
-                        continue
-                    elif cols[0][1:28] == 'Delegates to the Republican':
-                        continue
-                    elif cols[0] == '""':
-                        candidates = [x.replace('"','').strip() for x in cols if x.replace('"','') != '']
-                        winner_index = [i for i, j in enumerate(candidates) if 'Winner' in j][0] # index of winning candidate
-                        candidates[winner_index], raw_winner = candidates[winner].split(' Winner') # trims "Winner" from candidate name; we can save the remainder for raw_winner
-                        # handle name_parse and Uncommitted candidate
-                    else: # has to be a county result
-                        result = [x.replace('"','').strip() for x in cols if x != '']
-                        #juris = [j for j in jurisdictions if j['name'] == result[0].strip()][0]
-                        juris = [j for j in self.datasource.mappings() if j['name'] == result[0].strip()][0]
-                        cand_results = zip(candidates, result[1:])
-                        for cand, votes in cand_results:
-                            name = self.parse_name(cand)
-                            #cand_kwargs = {
-                                #'given_name': name.first,
-                                #'additional_name': name.middle,
-                                #'family_name': name.last,
-                                #'suffix': name.suffix,
-                                #'name': name.full_name
-                            #}
-                            if office_name == 'President - Vice Pres':
-                                cand_kwargs['state'] = 'US'
-                            else:
-                                cand_kwargs['state'] = self.state.upper()
+        last_office = None
+        last_party = None
+        last_district = None
+        common_kwargs = self._build_common_election_kwargs()
 
-                            #TODO Get or create candidate
-                            candidate = Candidate(**cand_kwargs)
-                            result_kwargs = {
-                                'candidate': candidate,
-                                'ocd_id': juris['ocd'],
-                                'jurisdiction': juris['name'],
-                                #TODO: verify __init__ election_id logic works here
-                                'election_id': self.election_id,
-                                'slug': 'TODO',
-                                #'raw_office': office_name,
-                                'reporting_level': 'county',
-                                'raw_party': raw_party,
-                                'party': party,
-                                'write_in': False,
-                                'total_votes': int(votes),
-                                'vote_breakdowns': {}
-                            }
-                            result = RawResult(**result_kwargs)
-                            results.append(result)
+        with self._file_handle as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                if not len(row): 
+                    continue # Skip blank lines
+
+                # determine if this is a row with an office
+                office, party, district = self._parse_header(row)
+                if office:
+                    # It's a header row
+                    if office in self.target_offices:
+                        # It's an office we care about. Save the office and
+                        # party for the next row
+                        last_office = office
+                        last_party = party
+                        last_district = district
+                    else:
+                        last_office = None
+                        last_party = None
+                        last_district = None
+                elif last_office and row[0] == '':
+                    # Candidate name row
+                    candidates, winner_name = self._parse_candidates(row)
+                elif last_office: # has to be a county result
+                    new_results = self._parse_results(row, last_office,
+                        last_party, last_district,
+                        candidates, winner_name, common_kwargs)
+                    results.extend(new_results)
+        
+        RawResult.objects.insert(results)
+
+    def _parse_header(self, row):
+        """
+        Returns a tuple of office and party and congressional district
+        if the row is a header.
+
+        Returns (None, None, None) for a non-header row.
+
+        Note that the district doesn't represent the district of the office
+        """
+        office = self._parse_office(row)
+        if office:
+            party = self._parse_party(row)
+            district = self._parse_district(row)
+        else:
+            party = None
+            district = None
+
+        return office, party, district
+
+    def _parse_office(self, row):
+        for o in self.office_choices:
+            if o in row[0]:
+                return o
+
+        return None
+
+    def _parse_party(self, row):
+        if 'Democratic' in row[0]:
+            return 'Democratic'
+        elif 'Republican' in row[0]:
+            return 'Republican'
+        else:
+            return None
+
+    def _parse_district(self, row):
+        if 'District' not in row[0]:
+            return None
+
+        return re.search(r'(\d+)', row[0]).groups(0)[0]
+
+    def _parse_candidates(self, row):
+        candidates = []
+        for col in row:
+            if col != '':
+                full_name = col.strip() 
+                if 'Winner' in full_name:
+                    # Trim winner from candidate name
+                    full_name, remainder = full_name.split(' Winner')
+                    winner = full_name
+
+                candidates.append(full_name)
+
+        return candidates, winner 
+        # TODO: QUESTION: How to handle "Uncomitted to any ..." values
+
+    def _parse_results(self, row, office, party, district, candidates,
+            winner_name, common_kwargs):
+        results = []
+        cols = [x.strip() for x in row if x != '']
+        county = cols[0].strip()
+        cand_results = zip(candidates, cols[1:])
+
+        for cand, votes in cand_results:
+            result_kwargs = common_kwargs.copy()
+            result_kwargs.update({
+                'jurisdiction': county,
+                'office': office,
+                'party': party,
+                'full_name': cand,
+                'votes': int(votes),
+            })
+            if result_kwargs['primary_type'] == 'closed':
+                result_kwargs['primary_party'] = party
+            if office == "Representative in Congress":
+                # In the case of U.S. representatives, the district represents
+                # the office district.  In all other cases, it just
+                # represents the level of result aggregation.
+                result_kwargs['district'] = district
+
+            if cand == winner_name:
+                result_kwargs['winner'] = 'Winner'
+
+            # Try to figure out if this is a case where results are
+            # provided by congressional district split by county and
+            # record this.
+            result_kwargs['reporting_level'] = self._get_reporting_level(district)
+            if result_kwargs['reporting_level'] == 'congressional_district_by_county':
+                result_kwargs['reporting_district'] = district
+
+            results.append(RawResult(**result_kwargs))
+
+        return results
+
+    def _get_reporting_level(self, district):
+        """
+        Returns the reporting level based on the value of the results' district.
+
+        This deals with the way in which results for 2000 primaries are
+        returned broken down by both congressional district, split by county.
+        """
+        if district:
+            return "congressional_district_by_county"
+        else:
+            return "county"

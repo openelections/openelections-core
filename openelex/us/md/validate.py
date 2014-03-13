@@ -20,7 +20,7 @@ def validate_unique_contests():
 
 def validate_unique_prez_2012_general():
     """Should only be a single contest for 2012 prez general"""
-    count = Contest.objects.filter(election_id='md-2012-11-06-general', slug='president-vice-pres').count()
+    count = Contest.objects.filter(election_id='md-2012-11-06-general', slug='president').count()
     expected = 1
     try:
         assert count == expected
@@ -47,7 +47,7 @@ def validate_obama_primary_candidacy_2012():
     elec_id= 'md-2012-04-03-primary'
     kwargs = {
         'election_id': elec_id,
-        'contest_slug': 'president-vice-pres-dem',
+        'contest_slug': 'president-dem',
         'slug': 'barack-obama',
     }
     try:
