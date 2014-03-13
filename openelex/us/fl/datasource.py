@@ -63,7 +63,7 @@ class Datasource(BaseDatasource):
         return meta
     
     def _generate_filename(self, election):
-        # example: 20021105__fl__general.txt
+        # example: 20021105__fl__general.tsv
         if election['race_type'] == 'primary-runoff':
             race_type = 'primary__runoff'
         else:
@@ -75,7 +75,7 @@ class Datasource(BaseDatasource):
             self.state.lower(),
             race_type
         ]
-        name = "__".join(bits) + '.txt'
+        name = "__".join(bits) + '.tsv'
         return name
     
     def _jurisdictions(self):
