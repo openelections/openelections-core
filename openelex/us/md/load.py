@@ -1,5 +1,3 @@
-from os.path import join
-import datetime
 import re
 import csv
 import unicodecsv
@@ -28,6 +26,8 @@ class LoadResults(object):
 
 
 class MDBaseLoader(BaseLoader):
+    datasource = Datasource()
+
     target_offices = set([
         'President - Vice Pres',
         'President and Vice President of the United States',
@@ -55,56 +55,6 @@ class MDBaseLoader(BaseLoader):
         This should be implemented in subclasses.
         """
         return False
-
-
-    #TODO: QUESTION: Move to BaseLoader?
-    def run(self, mapping):
-        self.mapping = mapping
-        self.source = mapping['generated_filename']
-        self.timestamp = datetime.datetime.now()
-        self.datasource = Datasource()
-        self.election_id = mapping['election']
-
-        self.delete_previously_loaded()
-        self.load()
-
-    #TODO: QUESTION: Move to BaseLoader?
-    def delete_previously_loaded(self):
-        print("LOAD: %s" % self.source)
-        # Reload raw results fresh every time
-        result_count = RawResult.objects.filter(source=self.source).count()
-        if result_count > 0:
-            print("\tDeleting %s previously loaded raw results" % result_count)
-            RawResult.objects.filter(source=self.source).delete()
-
-    # Private methods
-    #TODO: QUESTION: Move to BaseLoader?
-    @property
-    def _file_handle(self):
-        return open(join(self.cache.abspath, self.source), 'rU')
-
-    #TODO: QUESTION: Move to BaseLoader? Should be able to provide
-    # the meta fields for free on all states.
-    def _build_common_election_kwargs(self):
-        """These fields are derived from OpenElex API and common to all RawResults"""
-        year = int(re.search(r'\d{4}', self.election_id).group())
-        elecs = self.datasource.elections(year)[year]
-        # Get election metadata by matching on election slug
-        elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
-        kwargs = {
-            'created':  self.timestamp,
-            'updated': self.timestamp,
-            'source': self.source,
-            'election_id': self.election_id,
-            'state': self.state.upper(),
-            'start_date': datetime.datetime.strptime(elec_meta['start_date'], "%Y-%m-%d"),
-            'end_date': datetime.datetime.strptime(elec_meta['end_date'], "%Y-%m-%d"),
-            'election_type': elec_meta['race_type'],
-            'primary_type': elec_meta['primary_type'],
-            'result_type': elec_meta['result_type'],
-            'special': elec_meta['special'],
-        }
-        return kwargs
 
 
 class MDLoader(MDBaseLoader):
