@@ -8,11 +8,6 @@ File-name conventions on FL site are very consistent: tab-delimited text files c
 
 These are represented in the dashboard API as the `direct_link` attribute on elections.
 """
-import os
-from os.path import join
-import re
-import json
-import unicodecsv
 
 from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
@@ -57,7 +52,6 @@ class Datasource(BaseDatasource):
 
     def _build_metadata(self, year, elections):
         meta = []
-        year_int = int(year)
         for election in elections:
             meta.append({
                 "generated_filename": self._generate_filename(election),
@@ -69,7 +63,7 @@ class Datasource(BaseDatasource):
         return meta
     
     def _generate_filename(self, election):
-        # example: 20021105__fl__general.txt
+        # example: 20021105__fl__general.tsv
         if election['race_type'] == 'primary-runoff':
             race_type = 'primary__runoff'
         else:
@@ -81,7 +75,7 @@ class Datasource(BaseDatasource):
             self.state.lower(),
             race_type
         ]
-        name = "__".join(bits) + '.txt'
+        name = "__".join(bits) + '.tsv'
         return name
     
     def _jurisdictions(self):
