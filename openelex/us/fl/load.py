@@ -27,11 +27,17 @@ class LoadResults(BaseLoader):
     The ``CanNameMiddle`` field also includes nicknames, but not in a standard
     format.  Examples include "Anne 'Libby'" and "(Doc)".
 
+    Name suffixes are in the ``CanNameLast`` field, e.g. "Braynon,, II"
+
     Write-in candidates are identified by a value of "Write-In" in the 
     ``PartyName`` field.
 
     "No Party Affiliation" is also a possibility.  This is different than
     "Independent Party".
+
+    Some contests force the last names of the governor and lieutenant
+    governor into the ``CanNameLast`` and ``CanNameFirst`` fields.
+    For these records, the value of ``CanNameMiddle`` is '/'.
  
     """
     datasource = Datasource()
@@ -43,7 +49,9 @@ class LoadResults(BaseLoader):
         "United States Representative",
         "State Representative",
         "State Senator",
+        "Governor",
         "State Attorney",
+        "Chief Financial Officer",
     ])
 
     district_offices = set([
