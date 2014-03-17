@@ -3,3 +3,6 @@ source,description,fixed?,transform
 20060509__wv__primary__house.csv,Total for "Nick Joe Rahall, II" is incorrect,false,
 20040511__wv__primary__house_of_delegates.csv,Totals for D & R primary in District 1 are off,false,
 20041102__wv__general__house_of_delegates.csv,Total for K. Steven Kominar in District 20 should be 4999,false,
+20041102__wv__general__house_of_delegates.csv,Total for Mulvie William Grimes in District 37 is repeat of Bill Proudfoot,false,
+20020514__wv__primary__house_of_delegates.csv,Republican primary for District 29 has Democratic candidates,false,
+
