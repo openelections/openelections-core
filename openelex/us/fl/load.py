@@ -1,3 +1,4 @@
+import logging
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -54,11 +55,14 @@ class LoadResults(BaseLoader):
         "Governor and Lieutenant Governor",
         "Attorney General",
         "Chief Financial Officer",
+        "Commissioner of Agriculture",
     ])
 
     district_offices = set([
         "United States Representative",
         "State Representative",
+        "State Senate",
+        "State Senator",
     ])
 
     def load(self):
@@ -70,15 +74,25 @@ class LoadResults(BaseLoader):
                 encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if not self._skip_row(row): 
-                    result = self._prep_result(row)
-                    # Only add non-duplicate results.  This is needed because
-                    # there are duplicate results in some data files, e.g.
-                    # 20120814__fl__primary.tsv
-                    key = self._key(result)
-                    if not key in seen:
-                        results.append(result)
-                        seen.add(key)
+                if self._skip_row(row): 
+                    office_name = row['OfficeDesc'].strip()
+                    # Log skipped office names in case we forgot to add them
+                    # to our list of target offices.  Ignore long office names
+                    # because these are probably ballot initiatives that we
+                    # definitely want to ignore
+                    if len(office_name) < 100:
+                        logging.info("Skipping result for office '%s'" %
+                            office_name)
+                    continue
+
+                result = self._prep_result(row)
+                # Only add non-duplicate results.  This is needed because
+                # there are duplicate results in some data files, e.g.
+                # 20120814__fl__primary.tsv
+                key = self._key(result)
+                if not key in seen:
+                    results.append(result)
+                    seen.add(key)
 
             RawResult.objects.insert(results)
 
