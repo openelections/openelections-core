@@ -1,4 +1,4 @@
-import csv
+import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.lib.text import slugify
@@ -48,9 +48,11 @@ class LoadResults(BaseLoader):
         "United States Senator",
         "United States Representative",
         "State Representative",
+        "State Senate",
         "State Senator",
         "Governor",
-        "State Attorney",
+        "Governor and Lieutenant Governor",
+        "Attorney General",
         "Chief Financial Officer",
     ])
 
@@ -64,10 +66,8 @@ class LoadResults(BaseLoader):
             results = []
             seen = set()
             self._common_kwargs = self._build_common_election_kwargs()
-            # Use csv instead of unicodecsv because I was getting errors with
-            # unicodecsv.  Both the ``file`` and ``uchardet`` report ASCII
-            # encoding.
-            reader = csv.DictReader(csvfile, delimiter='\t')
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t',
+                encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
                 if not self._skip_row(row): 
