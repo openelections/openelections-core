@@ -2,7 +2,7 @@
 Standardize names of data files on West Virginia Secretary of State and 
 save to mappings/filenames.json
 
-The state offers CSV files containing county-level results by election date from 2008 onwards:
+The state offers CSV files containing precinct-level results for each county by election date from 2008 onwards:
 
     http://apps.sos.wv.gov/elections/results/readfile.aspx?path=NC80LVN0YXRlQ291bnR5VG90YWxzLmNzdg==
 
@@ -79,14 +79,6 @@ class Datasource(BaseDatasource):
         else:
             for election in elections:
                 csv_links = self._find_csv_links(election['direct_link'])
-                statewide_link = csv_links[0]
-                meta.append({
-                    "generated_filename": self._generate_statewide_filename(election),
-                    "raw_url": statewide_link,
-                    "ocd_id": 'ocd-division/country:us/state:wv',
-                    "name": 'West Virginia',
-                    "election": election['slug']
-                })
                 counties = self._jurisdictions()
                 results = zip(counties, csv_links[1:])
                 for result in results:
