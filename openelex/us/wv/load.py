@@ -1,381 +1,214 @@
-from os.path import exists, join
-import datetime
 import re
-import xlrd
+import csv
+import unicodecsv
 
 from openelex.base.load import BaseLoader
-from openelex.models import Candidate, Result, Contest
+from openelex.models import RawResult
 from openelex.lib.text import slugify
-
 from .datasource import Datasource
 
-# for testing purposes in the console, need to import init_db to make db connection
-
 """
-West Virginia elections have 2-3 Excel results files, including an Absentee ballot report by county for 2008-onward. The two main files are 
-precinct-level results for state legislative offices and for statewide/federal offices. The precincts are divided by county
-with occasional blank rows with a single column like so: "ADA (continued)"; these lines should be skipped. Candidate names are displayed vertically 
-and contain carriage returns that need to be stripped out.
-
-Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
+West Virginia elections have CSV results files for elections after 2006. These files contain precinct-level data for each of the state's
+counties, and includes all contests in that county. Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
 https://github.com/openelections/openelections-data-wv repository.
 """
 
 class LoadResults(BaseLoader):
+    """Entry point for data loading.
+
+    Determines appropriate loader for file and triggers load process.
+
+    """
 
     def run(self, mapping):
-        self.source = mapping['generated_filename']
-        self.timestamp = datetime.datetime.now()
-        self.datasource = Datasource()
-        self.election_id = mapping['election']
-        # Unlike Results, Contest and Candidate metadata is not deleted and reloaded each
-        # time, since this metadata is required for multiple file types.
-        # We build lookups for this data to optimize Results data loading.
-        self.contest_lkup = self._build_lkup(Contest)
-        self.cand_lkup = self._build_lkup(Candidate)
-        
-        print("LOAD: %s" % self.source)
-        # Reload results fresh every time
-        result_count = Result.objects.filter(source=self.source).count()
-        if result_count > 0:
-            print("\tDeleting %s previously loaded results" % result_count)
-            Result.objects.filter(source=self.source).delete()
-
-        # Load results based on year and election type
-        if '2002' in self.election_id:
-            self.load_2002_file(mapping)
-        # special case for 2000 primary
-        elif '2000' in self.election_id and 'primary' in self.election_id:
-            self.load_2000_primary_file(mapping)
+        election_id = mapping['election']
+        if any(s in election_id for s in ['2008', '2010', '2012']):
+            loader = WVLoader()
         else:
-            self.load_non2002_file(mapping)
+            loader = WVLoaderPre2008()
+        loader.run(mapping)
 
-    # Private methods
-    def _build_lkup(self, doc_klass):
-        """Build lkup for Contests/Candiates
 
-        self_build_lkup(Candidate, mapping['generated_filename'])
+class WVBaseLoader(BaseLoader):
+    datasource = Datasource()
 
+    target_offices = set([
+        'U.S. President',
+        'U.S. Senate',
+        'U.S. House of Representatives',
+        'Governor',
+        'Secretary of State',
+        'Auditor',
+        'State Treasurer',
+        'Commissioner of Agriculture'
+        'Attorney General',
+        'State Senate',
+        'House of Delegates',
+    ])
+
+    district_offices = set([
+        'U.S. House of Representatives',
+        'State Senate',
+        'House of Delegates',
+    ])
+
+    def _skip_row(self, row):
         """
-        # Fetch all contests or candidates for given election
-        lkup = {}
-        objs = doc_klass.objects.filter(election_id = self.election_id)
-        for obj in objs:
-            lkup[obj.key] = obj
-        return lkup
+        Should this row be skipped?
 
-    @property
-    def _file_handle(self):
-        return open(join(self.cache.abspath, self.source), 'rU')
+        This should be implemented in subclasses.
+        """
+        return False
 
-    def _get_or_create_contest(self, row, mapping):
-        year = int(re.search(r'\d{4}', self.election_id).group())
-        elecs = self.datasource.elections(year)[year]
-        # Get election metadata by matching on election slug
-        elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
-        party = row['Party'].strip()
-        slug = self._build_contest_slug(row)
-        key = (self.election_id, slug)
-        try:
-            contest = self.contest_lkup[key]
-        except KeyError:
-            kwargs = {
-                'created':  self.timestamp,
-                'updated': self.timestamp,
-                'source': self.source,
-                'election_id': self.election_id,
-                'slug': slug,
-                'state': self.state.upper(),
-                'start_date': datetime.datetime.strptime(elec_meta['start_date'], "%Y-%m-%d"),
-                'end_date': datetime.datetime.strptime(elec_meta['end_date'], "%Y-%m-%d"),
-                'election_type': elec_meta['race_type'],
-                'result_type': elec_meta['result_type'],
-                'special': elec_meta['special'],
-                'raw_office': row['Office Name'].strip(),
-                'raw_district': row['Office District'].strip(),
-            }
-            contest = Contest(**kwargs)
-            # Add party if it's a primary
-            if 'primary' in self.election_id:
-                kwargs['raw_party'] = party
-            contest.save()
-            self.contest_lkup[key] = contest
-        return contest
 
-    def _get_or_create_candidate(self, row, contest):
-        raw_full_name = row['Candidate Name'].strip()
-        slug = slugify(raw_full_name, substitute='-')
-        key = (self.election_id, contest.slug, slug)
-        try:
-            candidate = self.cand_lkup[key]
-        except KeyError:
-            cand_kwargs = {
-                'source': self.source,
-                'election_id': self.election_id,
-                'contest': contest,
-                'contest_slug': contest.slug,
-                'state': self.state.upper(),
-                'raw_full_name': raw_full_name,
-                'slug': slug,
-            }
-            candidate = Candidate.objects.create(**cand_kwargs)
-            candidate.save()
-            self.cand_lkup[key] = candidate
-        return candidate
+class WVLoader(WVBaseLoader):
+    """
+    Parse West Virginia election results for all elections after 2006.
 
-    def _build_contest_slug(self, row):
-        office = row['Office Name'].strip()
-        bits = [office]
-        district = row['Office District'].strip()
-        if district and 'pres' not in office.lower():
-            bits.append(district)
-        if 'primary' in self.source:
-            bits.append(row['Party'].lower())
-        return slugify(" ".join(bits), substitute='-')
-
-    def load_non2002_file(self, mapping):
+    """
+    def load(self):
         with self._file_handle as csvfile:
             results = []
-            target_offices = set([
-                'President - Vice Pres',
-                'U.S. Senator',
-                'U.S. Congress',
-                'Governor / Lt. Governor',
-                'Comptroller',
-                'Attorney General',
-                'State Senator',
-                'House of Delegates'
-            ])
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if not row['Office Name'].strip() in target_offices:
+                if self._skip_row(row): 
                     continue
-                elif 'state_legislative' in self.source:
-                    results.extend(self._prep_non2002_state_leg_results(row, mapping))
-                elif 'precinct' in self.source:
-                    results.append(self._prep_non2002_precinct_result(row, mapping))
                 else:
-                    results.append(self._prep_non2002_county_result(row, mapping))
-            Result.objects.insert(results)
+                    results.append(self._prep_precinct_result(row))
+            RawResult.objects.insert(results)
 
-    def _result_kwargs_non2002(self, row, mapping):
-        contest = self._get_or_create_contest(row, mapping)
-        candidate = self._get_or_create_candidate(row, contest)
+    def _skip_row(self, row):
+        return row['OfficeDescription'].strip() not in self.target_offices
+
+    def _build_contest_kwargs(self, row, primary_type):
         kwargs = {
-            'source': self.source,
-            'election_id': self.election_id,
-            'state': self.state.upper(),
-            'contest': contest,
-            'contest_slug': contest.slug,
-            'candidate': candidate,
-            'candidate_slug': candidate.slug,
+            'office': row['OfficeDescription'].strip(),
+            'district': row['District'].strip(),
+            'primary_party': row['PartyName'].strip()
         }
         return kwargs
 
-    def _prep_non2002_state_leg_results(self, row, mapping):
-        kwargs = self._result_kwargs_non2002(row, mapping)
-        kwargs.update({
-            'reporting_level': 'state_legislative',
-            'raw_winner': self._non2002_winner(row), # at the contest-level
-            'write_in': self._non2002_writein(row),
-        })
-        try:
-            kwargs['raw_write_in'] = row['Write-In?'].strip(), # at the contest-level
-        except KeyError as e:
-            pass
-        self._update_non2002_candidate_parties(row, kwargs['candidate'])
-        results = []
-        for field, val in row.items():
-            # Legislative fields prefixed with LEGS
-            if not field.startswith('LEGS'):
-                continue
-            district = field.split()[1].strip()
-            kwargs.update({
-                'ocd_id': "ocd-division/country:us/state:md/sldl:%s" % district,
-                'jurisdiction': district,
-                'raw_jurisdiction': field,
-                'raw_total_votes': self._non2002_total_votes(val),
-            })
-            results.append(Result(**kwargs))
-        return results
-
-    def _prep_non2002_county_result(self, row, mapping):
-        kwargs = self._result_kwargs_non2002(row, mapping)
-        vote_brkdwon_fields = [
-           ('election_night_total', 'Election Night Votes'),
-           ('absentee_total', 'Absentees Votes'),
-           ('provisional_total', 'Provisional Votes'),
-           ('second_absentee_total', '2nd Absentees Votes'),
-        ]
-        vote_breakdowns = {}
-        for field, key in vote_brkdwon_fields:
-            try:
-                vote_breakdowns[field] = row[key].strip()
-            except KeyError:
-                pass
-        kwargs.update({
-            'ocd_id': mapping['ocd_id'],
-            'reporting_level': 'county',
-            'jurisdiction': mapping['name'],
-            'party': row['Party'].strip(),
-            'raw_total_votes': self._non2002_total_votes(row['Total Votes']),
-            'raw_winner': self._non2002_winner(row),
-            'raw_write_in': self._non2002_writein(row),
-            'raw_vote_breakdowns': vote_breakdowns,
-            #TODO: Move to transforms step?
-            #'total_votes': self._non2002_total_votes(row['Total Votes']),
-            #'winner': self._non2002_winner(row),
-            #'write_in': self._non2002_writein(row),
-        })
-        return Result(**kwargs)
-
-    def _prep_non2002_precinct_result(self, row, mapping):
-        kwargs = self._result_kwargs_non2002(row, mapping)
-        vote_breakdowns = {
-            'election_night_total': int(float(row['Election Night Votes']))
+    def _build_candidate_kwargs(self, row):
+        full_name = row['Name'].strip()
+        slug = slugify(full_name, substitute='-')
+        kwargs = {
+            'full_name': full_name,
+            #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
+            'name_slug': slug,
         }
-        raw_district = str(row['Election District'])
-        raw_precinct = str(row['Election Precinct'])
+        return kwargs
+
+    def _base_kwargs(self, row):
+        "Build base set of kwargs for RawResult"
+        # TODO: Can this just be called once?
+        kwargs = self._build_common_election_kwargs()
+        contest_kwargs = self._build_contest_kwargs(row, kwargs['primary_type'])
+        candidate_kwargs = self._build_candidate_kwargs(row)
+        kwargs.update(contest_kwargs)
+        kwargs.update(candidate_kwargs)
+        return kwargs
+
+    def _prep_precinct_result(self, row):
+        kwargs = self._base_kwargs(row)
+        precinct = str(row['Precinct'])
         kwargs.update({
-            #'ocd_id': mapping['ocd_id'],
             'reporting_level': 'precinct',
-            'raw_jurisdiction':raw_precinct,
-            'jurisdiction': mapping['name'] + ' ' + raw_district  + "-" + raw_precinct,
-            'party': row['Party'].strip(),
-            'raw_total_votes': int(float(row['Election Night Votes'])),
-            'raw_winner': self._non2002_winner(row),
-            'raw_write_in': self._non2002_writein(row),
-            'raw_vote_breakdowns': vote_breakdowns,
-            #TODO: Move total votes to transform step?
-            #'total_votes': int(float(row['Election Night Votes'])),
-            #'winner': self._non2002_winner(row),
-            #'write_in': self._non2002_writein(row),
+            'jurisdiction': precinct,
+            # In West Virginia, precincts are nested below counties.
+            #
+            # The mapping ocd_id will be for the precinct's county.
+            # We'll save it as an expando property of the raw result because
+            # we won't have an easy way of looking up the county in the 
+            # transforms.
+            'county_ocd_id': self.mapping['ocd_id'],
+            'party': row['PartyName'].strip(),
+            'votes': self._votes(row['Votes']),
+            'vote_breakdowns': {},
         })
-        return Result(**kwargs)
+        return RawResult(**kwargs)
 
-    def _update_non2002_candidate_parties(self, row, candidate):
-        raw_party = row['Party'].strip()
-        if raw_party not in candidate.raw_parties:
-            candidate.raw_parties.append(raw_party)
-        candidate.save()
-
-    def _non2002_total_votes(self, val):
+    def _votes(self, val):
+        """
+        Returns cleaned version of votes or 0 if it's a non-numeric value.
+        """
         if val.strip() == '':
-            total_votes = 0
-        else:
-            total_votes = int(float(val))
-        return total_votes
+            return 0
 
-    def _non2002_winner(self, row):
-        if row['Winner'] == 'Y':
-            winner = True
-        else:
-            winner = False
-        return winner
+        try:
+            return int(float(val))
+        except ValueError:
+            # Count'y convert value from string   
+            return 0
 
-    def _non2002_writein(self, row):
+    def _writein(self, row):
         # sometimes write-in field not present
         try:
-            if row['Write-In?'] == 'Y':
-                write_in = True
-            else:
-                write_in = False
+            write_in = row['Write-In?'].strip()
         except KeyError:
             write_in = None
         return write_in
 
-    def load_county_2002(self, row):
-        total_votes = int(float(row['votes']))
-        #TODO: replace above 2 lines with below
-        reporting_level = 'precinct'
-        ocd_id = mapping['ocd_id']
-        total_votes = int(float(row['votes']))
-        kwargs = {
-            #TODO: generate ocd_id
-            #'ocd_id': ocd_id,
-            #'jurisdiction': jurisdiction,
-            'reporting_level': reporting_level,
-            'raw_office': row['office'].strip(),
-            'candidate': candidate,
-            'party': row['party'].strip(),
-            'write_in': write_in,
-            'raw_total_votes': total_votes,
-            'vote_breakdowns': {}
-        }
-        return Result(**kwargs)
 
-    def load_2002_file(self, mapping):
+class WVLoaderPre2008(WVBaseLoader):
+    """
+    Loads West Virginia results for 2000-2006.
+
+    Format:
+
+    West Virginia has PDF files that have been converted to CSV files with office names that correspond
+    to those used for elections after 2006. Header rows are identical except for statewide offices that
+    do not contain districts.
+    """
+
+    def load(self):
         headers = [
+            'year',
+            'election',
             'office',
-            'district',
-            'jurisdiction',
-            'last',
-            'middle',
-            'first',
             'party',
-            'winner',
-            'vote_type',
-            'votes',
-            'fill2'
+            'district',
+            'candidate',
+            'county',
+            'votes'
+            'winner'
         ]
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'county'
         # Store result instances for bulk loading
         results = []
+
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, delimiter='|', encoding='latin-1')
-            reporting_level = 'county'
-            #TODO: replace jurisidctions with datasource.mappings
-            #geographies = self.jurisdiction_mappings(('ocd','fips','urlname','name'))
-            geographies = self.mappings()
+            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
             for row in reader:
-                if row['jurisdiction'].strip() == 'Baltimore City':
-                    geo_obj = [x for x in geographies if x['name'] == "Baltimore City"][0]
-                else:
-                    geo_obj = [x for x in geographies if x['name']+" County" == row['jurisdiction'].strip()][0]
+                if self._skip_row(row):
+                    continue
+                
+                rr_kwargs = self._common_kwargs.copy()
+                rr_kwargs['primary_party'] = row['party'].strip()
+                rr_kwargs.update(self._build_contest_kwargs(row))
+                rr_kwargs.update(self._build_candidate_kwargs(row))
+                rr_kwargs.update({
+                    'party': row['party'].strip(),
+                    'jurisdiction': row['county'].strip(),
+                    'office': row['office'].strip(),
+                    'district': row['district'].strip(),
+                    'votes': int(row['votes'].strip()),
+                    'winner': row['winner'].strip()
+                })
+                results.append(RawResult(**rr_kwargs))
+        RawResult.objects.insert(results)
 
-                # Winner
-                #TODO: make this raw_winner
-                #TODO: push this to transform step
-                raw_winner = row['winner']
-                #if row['winner'] == '1':
-                #    raw_winner = True
-                #else:
-                #    raw_winner = False
+    def _skip_row(self, row):
+        return row['office'].strip() not in self.target_offices
 
-                #TODO: push name parsing to transform step
-                # zz998 is for write-ins
-                if row['last'].strip() == 'zz998':
-                #    name = row['last'].strip()
-                #    #candidate = Candidate(state=self.state.upper(), family_name=name)
-                     write_in=True
-                else:
-                #    cand_name = self.combine_name_parts([row['first'], row['middle'], row['last']])
-                #    name = self.parse_name(cand_name)
-                     write_in=False
-                #    candidate = Candidate(state=self.state.upper(), given_name=name.first, additional_name=name.middle, family_name=name.last, suffix=name.suffix, name=name.full_name)
+    def _build_contest_kwargs(self, row):
+        return {
+            'office': row['office'].strip(),
+            'district': row['district'].strip(),
+        }
 
-                #TODO: handle below using the self._get_candidate_whatever(row)
-                #TODO: need a new function/method to handle 2002?
-                cand_kwargs = {
-                    'raw_family_name': row['last'].strip(),
-                    'raw_given_name': row['first'].strip(),
-                    'raw_additional_name': row['middle'].strip(),
-                }
-                 #TODO: add raw_party to candidate.raw_parties
-
-                result_kwargs = {
-                    #'election':
-                    #'candidate': candidate,
-                    'ocd_id': geo_obj['ocd_id'],
-                    #TODO: make this the county number from file
-                    'raw_jurisdiction': row['jurisdiction'],
-                    'jurisdiction': geo_obj['name'],
-                    'raw_office': row['office'].strip(),
-                    'raw_district': row['district'].strip(),
-                    'reporting_level': 'county',
-                    'raw_party': row['party'], # needs to be a member of a list
-                    'write_in': write_in,
-                    'raw_total_votes': row['votes'],
-                }
-                result = Result(**result_kwargs)
-        Result.objects.insert(results)
+    def _build_candidate_kwargs(self, row):
+        return {
+            'full_name': row['candidate'].strip()
+        }
