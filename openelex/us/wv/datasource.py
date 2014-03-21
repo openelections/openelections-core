@@ -8,8 +8,8 @@ The state offers CSV files containing county-level results by election date from
 
 These are represented in the dashboard API as the `direct_link` attribute on elections.
 
-Results files for elections prior to 2008 are consistently (and readably) named, but they come in multiple files for each election, one per office contested,
-and are PDF files. Converted CSV versions of them are in the local cache directory for now.
+Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
+https://github.com/openelections/openelections-data-wv repository.
 """
 import os
 from os.path import join

@@ -17,10 +17,8 @@ precinct-level results for state legislative offices and for statewide/federal o
 with occasional blank rows with a single column like so: "ADA (continued)"; these lines should be skipped. Candidate names are displayed vertically 
 and contain carriage returns that need to be stripped out.
 
-Prior to 2008, county-level results are contained in office-specific PDF files, named like so:
-
-    http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20President%20Pri.pdf
-    http://www.sos.wv.gov/elections/history/electionreturns/Documents/2004/2004%20Com%20of%20Ag%20Gen.pdf    
+Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
+https://github.com/openelections/openelections-data-wv repository.
 """
 
 class LoadResults(BaseLoader):
