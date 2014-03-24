@@ -30,12 +30,16 @@ class BaseTransform(Transform):
     """
 
     PARTY_MAP = {
-        'BOT': 'UNF',
-        'Democratic': 'DEM',
-        'Republican': 'REP',
+        'Both Parties': 'BOT',
+        'Democratic': 'D',
+        'DEM': 'D',
+        'Green': 'GRE',
+        'GRN': 'GRE',
         'Libertarian': 'LIB',
-        'Green': 'GRN',
-        'Unaffiliated': 'UNF',
+        'Republican': 'R',
+        'REP': 'R',
+        'Unaffiliated': 'UN',
+        'UNF': 'UN',
     }
     """
     Map of party values as they appear in MD raw results to canonical
@@ -43,7 +47,7 @@ class BaseTransform(Transform):
 
     In 2002, the values are party names.  Map them to abbreviations.
 
-    From 2003 onward, the values are party abbreviations and in most
+    From 2003 onward, the values are party abbreviations and in many
     cases match the canonical abbreviations.
     """
 
@@ -148,12 +152,6 @@ class BaseTransform(Transform):
                 raise
 
     def _clean_party(self, party):
-        if party == 'Both Parties':
-            # 2002 candidates have "Both Parties" in the write-in
-            # field
-            # TODO: Is this the right way to handle this?
-            return None
-
         try:
             return self.PARTY_MAP[party]
         except KeyError:
