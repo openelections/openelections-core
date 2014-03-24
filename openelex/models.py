@@ -226,9 +226,22 @@ class Office(Document):
 
 
 class Party(Document):
-    name = StringField(required=True)
-    abbrev = StringField(required=True)
-    description = StringField()
+    # We use 'US' as a fake state for national parties such as Democrat and
+    # Republican
+    PARTY_STATES = STATE_POSTALS + ['US',]
+
+    name = StringField(required=True, help_text="Name of the party, "
+        "preferring the one in FEC results if available.")
+    state_name = StringField(help_text="Name of the party as it appears in "
+        "state results, if it differs from the value in the name field.")
+    state = StringField(required=True, choices=PARTY_STATES)
+    abbrev = StringField(required=True, help_text="Abbreviation of the party, "
+        "preferring the one in FEC results if available.")
+    fec_abbrev = StringField(help_text="FEC Abbreviation of the party.")
+    state_abbrev = StringField(help_text="Abbreviation of the party as it "
+        "appears in state results.")
+    description = StringField(help_text="Notes to disambiguate party names or "
+        "meanings that change over time.")
 
     def __unicode__(self):
         return u'%s (%s)' % (self.name, self.abbrev)
