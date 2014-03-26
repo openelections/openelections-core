@@ -47,7 +47,7 @@ def validate_obama_primary_candidacy_2012():
     elec_id= 'md-2012-04-03-primary'
     kwargs = {
         'election_id': elec_id,
-        'contest_slug': 'president-dem',
+        'contest_slug': 'president-d',
         'slug': 'barack-obama',
     }
     try:
