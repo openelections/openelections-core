@@ -5,3 +5,4 @@ source,description,fixed?,transform
 20041102__wv__general__house_of_delegates.csv,Total for Mulvie William Grimes in District 37 is repeat of Bill Proudfoot,false,
 20020514__wv__primary__house_of_delegates.csv,Republican primary for District 29 has Democratic candidate names,false,
 20020514__wv__primary__house_of_delegates.csv,Last 5 Republican primary candidates for District 30 have same vote totals as last 2 Dem candidates,false,
+20000509__wv__primary__house_of_delegates.csv,Libertarian candidate in District 44 vote total is higher than any D or R,false,
