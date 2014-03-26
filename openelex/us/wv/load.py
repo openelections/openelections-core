@@ -13,7 +13,7 @@ counties, and includes all contests in that county. Prior to 2008, county-level 
 https://github.com/openelections/openelections-data-wv repository.
 """
 
-class LoadResults(BaseLoader):
+class LoadResults(object):
     """Entry point for data loading.
 
     Determines appropriate loader for file and triggers load process.
