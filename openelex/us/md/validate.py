@@ -1,4 +1,4 @@
-from openelex.models import Office, Contest, Candidate, Result
+from openelex.models import Contest, Candidate, Result
 
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
@@ -73,56 +73,67 @@ def validate_aggregate_congressional_district_results():
     election_id = 'md-2000-03-07-primary'
 
     # President
-    contest = Contest.objects.get(election_id=election_id, slug='president-d')
     results = Result.objects.filter(election_id=election_id,
-        contest=contest, reporting_level='congressional_district')
+        contest_slug='president-d', reporting_level='congressional_district')
     # Maryland has 8 congressional districts
-    assert len(results.distinct('jurisdiction')) == 8
+    count = len(results.distinct('jurisdiction'))
+    assert count == 8, ("There should be results for 8 congressional "
+        "districts.  Instead there are results for %d." % count)
     # 4 candidates * 8 districts = 32 results
-    assert results.count() == 32
+    count = results.count()
+    assert count == 32, ("There should be 32 results.  Instead there are %d" %
+        count)
     # Al Gore got 32426 votes in district 1
-    candidate = Candidate.objects.get(slug='al-gore', election_id=election_id)
-    assert results.get(candidate=candidate, jurisdiction='1').votes == 32426
+    votes = results.get(candidate_slug='al-gore', jurisdiction='1').votes
+    assert votes == 32426, ("Al Gore should have 32426 votes in District 1. "
+        "Instead there are %d" % votes)
 
     # U.S. House 
-    contest = Contest.objects.get(election_id=election_id,
-        slug='us-house-of-representatives-1-r')
-    results = Result.objects.filter(election_id=election_id, contest=contest,
+    results = Result.objects.filter(election_id=election_id,
+        contest_slug='us-house-of-representatives-1-r',
         reporting_level='congressional_district')
     # Only 1 candidate in 1 district
-    assert results.count() == 1
+    count = results.count()
+    assert count == 1, ("There should be 1 result.  Instead there are %d" %
+        count)
     # Wayne T. Gilchrest got 49232 votes
-    candidate = Candidate.objects.get(slug='wayne-t-gilchrest',
-        election_id=election_id)
-    assert results.get(candidate=candidate, jurisdiction='1').votes == 49232 
+    votes = results.get(candidate_slug='wayne-t-gilchrest', jurisdiction='1').votes
+    assert votes == 49232, ("Wayne T. Gilchrest should have 49232 votes in "
+        "District 1. Instead he has %d." % votes) 
 
     election_id = 'md-2008-02-12-primary'
     
     # President
-    contest = Contest.objects.get(election_id=election_id, slug='president-d')
     results = Result.objects.filter(election_id=election_id,
-        contest=contest, reporting_level='congressional_district')
+        contest_slug='president-d', reporting_level='congressional_district')
     # Maryland has 8 congressional districts
-    assert len(results.distinct('jurisdiction')) == 8
+    count = len(results.distinct('jurisdiction'))
+    assert count == 8, ("There should be results for 8 congressional "
+        "districts.  Instead there are results for %d." % count)
     # 9 candidates * 8 districts = 72 results
-    assert results.count() == 72
-    candidate = Candidate.objects.get(slug='hillary-clinton',
-        election_id=election_id)
-    assert results.get(candidate=candidate, jurisdiction='6').votes == 34322 
+    count = results.count()
+    assert count == 72, ("There should be 72 results.  Instead there are %d" %
+        count)
+    votes = results.get(candidate_slug='hillary-clinton', jurisdiction='6').votes 
+    assert votes == 34322, ("Hillary Clinton should have 34322 votes in "
+        "District 6, instead she has %d" % votes) 
 
     election_id = 'md-2012-04-03-primary'
 
     # President
-    contest = Contest.objects.get(election_id=election_id, slug='president-d')
     results = Result.objects.filter(election_id=election_id,
-        contest=contest, reporting_level='congressional_district')
+        contest_slug='president-d', reporting_level='congressional_district')
     # Maryland has 8 congressional districts
-    assert len(results.distinct('jurisdiction')) == 8
+    count = len(results.distinct('jurisdiction'))
+    assert count == 8, ("There should be results for 8 congressional "
+        "districts.  Instead there are results for %d." % count)
     # 2 candidates * 8 disctricts = 16 results
-    assert results.count() == 16
-    candidate = Candidate.objects.get(slug='barack-obama',
-        election_id=election_id)
-    assert results.get(candidate=candidate, jurisdiction='1').votes == 20343
+    count = results.count()
+    assert count == 16, ("There should be 16 results.  Instead there are %d" %
+        count)
+    votes = results.get(candidate_slug='barack-obama', jurisdiction='1').votes
+    assert votes == 20343, ("Barack Obama should have 20343 votes in District "
+        "1, instead he has %d" % votes)
 
 def validate_2000_primary_congress_county_results():
     """Confirm that county level results are created for congressional races in the 2000 primary"""
