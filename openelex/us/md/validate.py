@@ -3,6 +3,149 @@ from openelex.models import Contest, Candidate, Result
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
 
+class MDElectionDescription(object):
+    counties = [
+        "Allegany",
+        "Anne Arundel",
+        "Baltimore City",
+        "Baltimore",
+        "Calvert",
+        "Caroline",
+        "Carroll",
+        "Cecil",
+        "Charles",
+        "Dorchester",
+        "Frederick",
+        "Garrett",
+        "Harford",
+        "Howard",
+        "Kent",
+        "Montgomery",
+        "Prince George's",
+        "Queen Anne's",
+        "St. Mary's",
+        "Somerset",
+        "Talbot",
+        "Washington",
+        "Wicomico",
+        "Worcester",
+    ]
+
+    district_to_county = {
+        1: [
+            "Anne Arundel",
+            "Baltimore City",
+            "Caroline",
+            "Cecil",
+            "Dorchester",
+            "Kent",
+            "Queen Anne's",
+            "Somerset",
+            "Talbot",
+            "Wicomico",
+            "Worcester",
+        ],
+        2: [
+            "Anne Arundel",
+            "Baltimore",
+            "Harford",
+        ],
+        3: [
+            "Anne Arundel",
+            "Baltimore City",
+            "Baltimore",
+            "Howard",
+        ],
+        4: [
+            "Montgomery",
+            "Prince George's",
+        ],
+        5: [
+            "Anne Arundel",
+            "Calvert",
+            "Charles",
+            "Prince George's",
+            "St. Mary's",
+        ],
+        6: [
+            "Allegany",
+            "Carroll",
+            "Frederick",
+            "Garrett",
+            "Howard",
+            "Washington",
+        ],
+        7: [
+            "Baltimore City",
+            "Baltimore",
+        ],
+        8: [
+            "Montgomery",
+        ],
+    }
+
+    @property
+    def congressional_districts(self):
+        return range(1, 9)
+
+    @property
+    def contests(self):
+        raise NotImplemented
+
+class Primary2000ElectionDescription(MDElectionDescription):
+    candidate_counts = {
+        # 4 candidates, including "Uncommitted To Any Presidential Candidate"
+        'president-d': 4,
+        'president-r': 6,
+        'us-senate-d': 3,
+        'us-senate-r': 8,
+        'us-house-of-representatives-1-d': 4,
+        'us-house-of-representatives-1-r': 1,
+        'us-house-of-representatives-2-d': 4,
+        'us-house-of-representatives-2-r': 1,
+        'us-house-of-representatives-3-d': 1,
+        'us-house-of-representatives-3-r': 1,
+        'us-house-of-representatives-4-d': 2,
+        'us-house-of-representatives-4-r': 1,
+        'us-house-of-representatives-5-d': 2,
+        'us-house-of-representatives-5-r': 1,
+        'us-house-of-representatives-6-d': 4,
+        'us-house-of-representatives-6-r': 2,
+        'us-house-of-representatives-7-d': 1,
+        'us-house-of-representatives-7-r': 2,
+        'us-house-of-representatives-8-d': 5,
+        'us-house-of-representatives-8-r': 1,
+    }
+
+    @property
+    def contests(self):
+        return self.candidate_counts.keys()
+
+    @property
+    def num_results(self):
+        # Presidential
+        num_counties = len(self.counties)
+        num_congressional_districts = len(self.congressional_districts)
+        num_pres = self.candidate_counts['president-d'] + self.candidate_counts['president-r']
+        count = (num_pres * num_counties) +\
+                (num_pres * num_congressional_districts)
+
+        # U.S. Senate
+        num_senate = self.candidate_counts['us-senate-d'] +\
+                     self.candidate_counts['us-senate-r']
+        count += num_senate * num_counties
+
+        # U.S House
+        for district in self.congressional_districts:
+            for party in ('d', 'r'):
+                contest = 'us-house-of-representatives-%d-%s' % (district,
+                    party)
+                num_candidates = self.candidate_counts[contest]
+                count += num_candidates
+                count += len(self.district_to_county[district]) * num_candidates
+    
+        return count
+
 def validate_unique_contests():
     """Should have a unique set of contests for all elections"""
     # Get all election ids
@@ -57,6 +200,43 @@ def validate_obama_primary_candidacy_2012():
         raise Candidate.DoesNotExist("zero obama primary candidacies found for 2012")
     except Candidate.MultipleObjectsReturned as e:
         raise Candidate.MultipleObjectsReturned("multiple obama primary candidacies found for 2012: %s" %  e)
+
+def validate_contests_2000_primary():
+    """Check that there are the correct number of Contest records for the 2000 primary"""
+    expected_contest_slugs = Primary2000ElectionDescription().contests
+    contests = Contest.objects.filter(state='MD',
+        election_id='md-2000-03-07-primary')
+    expected = len(expected_contest_slugs)
+    count = contests.count()
+    assert count == expected, ("There should be %d contests, but there are %d" %
+        (expected, count))
+
+    for slug in expected_contest_slugs: 
+        try:
+            contests.get(slug=slug)
+        except Contest.DoesNotExist:
+            raise Contest.DoesNotExist("No contest with slug '%s' found" %
+                slug)
+
+def validate_candidate_count_2000_primary():
+    """Check that there are the correct number of Candidate records for the 2000 primary"""
+    candidate_counts = Primary2000ElectionDescription().candidate_counts
+    candidates = Candidate.objects.filter(state='MD',
+        election_id='md-2000-03-07-primary')
+    for contest_slug, expected_count in candidate_counts.items():
+        count = candidates.filter(contest_slug=contest_slug).count() 
+        assert count == expected_count, ("There should be %d candidates "
+            "for the contest '%s', but there are %d" %
+            (expected_count, contest_slug, count))
+
+def validate_result_count_2000_primary():
+    """Should have results for every candidate and contest in 2000 primary"""
+    results = Result.objects.filter(state='MD',
+        election_id='md-2000-03-07-primary')
+    expected = Primary2000ElectionDescription().num_results
+    count = results.count()
+    assert count == expected, ("Expected %d results.  Instead there are %d" %
+        (expected, count))
 
 def validate_result_count_2012_general_state_legislative():
     """Should be 5504 results for the 2012 general election at the state legislative district level""" 
