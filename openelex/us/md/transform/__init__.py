@@ -233,7 +233,7 @@ class CreateCandidatesTransform(BaseTransform):
         seen = set()
 
         for rr in self.get_rawresults():
-            key = (rr.election_id, rr.candidate_slug)
+            key = (rr.election_id, rr.contest_slug, rr.candidate_slug)
             if key not in seen:
                 fields = self.get_candidate_fields(rr)
                 fields['contest'] = self.get_contest(rr) 
@@ -346,7 +346,8 @@ class CreateResultsTransform(BaseTransform):
         old_results.delete()
 
     def get_candidate(self, raw_result):
-        key = "%s-%s" % (raw_result.election_id, raw_result.candidate_slug)
+        key = "%s-%s" % (raw_result.election_id, raw_result.contest_slug,
+            raw_result.candidate_slug)
         try:
             return self._candidate_cache[key]
         except KeyError:
