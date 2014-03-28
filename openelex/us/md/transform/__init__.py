@@ -61,6 +61,7 @@ class BaseTransform(Transform):
         super(BaseTransform, self).__init__()
         self._office_cache = {}
         self._party_cache = {}
+        self._contest_cache = {}
 
     def get_rawresults(self):
         # Use a non-caching queryset because otherwise we run out of memory
@@ -193,6 +194,27 @@ class BaseTransform(Transform):
 
         return fields
 
+    def get_contest(self, raw_result):
+        """
+        Returns the Contest model instance for a given RawResult.
+
+        Caches the result in memory to reduce the number of calls to the
+        datastore.
+        """
+        key = "%s-%s" % (raw_result.election_id, raw_result.contest_slug)
+        try:
+            return self._contest_cache[key]
+        except KeyError:
+            fields = self.get_contest_fields(raw_result)
+            fields.pop('source')
+            try:
+                contest = Contest.objects.get(**fields)
+            except Exception:
+                print fields
+                raise
+            self._contest_cache[key] = contest
+            return contest
+
 
 class CreateContestsTransform(BaseTransform):
     name = 'create_unique_contests'
@@ -226,7 +248,6 @@ class CreateCandidatesTransform(BaseTransform):
 
     def __init__(self):
         super(CreateCandidatesTransform, self).__init__()
-        self._contest_cache = {}
 
     def __call__(self):
         candidates = []
@@ -253,26 +274,6 @@ class CreateCandidatesTransform(BaseTransform):
         Candidate.objects.insert(candidates, load_bulk=False)
         print "Created %d candidates." % len(candidates) 
 
-    def get_contest(self, raw_result):
-        """
-        Returns the Contest model instance for a given RawResult.
-
-        Caches the result in memory to reduce the number of calls to the
-        datastore.
-        """
-        key = "%s-%s" % (raw_result.election_id, raw_result.contest_slug)
-        try:
-            return self._contest_cache[key]
-        except KeyError:
-            fields = self.get_contest_fields(raw_result)
-            fields.pop('source')
-            try:
-                contest = Contest.objects.get(**fields)
-            except Exception:
-                print fields
-                raise
-            self._contest_cache[key] = contest
-            return contest
 
     def reverse(self):
         Candidate.objects.filter(state='MD').delete()
@@ -303,7 +304,10 @@ class CreateResultsTransform(BaseTransform):
 
         for rr in self.get_rawresults():
             fields = self._get_fields(rr, result_fields)
-            fields['candidate'] = self.get_candidate(rr)
+            fields['contest'] = self.get_contest(rr)
+            fields['candidate'] = self.get_candidate(rr, extra={
+                'contest': fields['contest'],
+            })
             fields['contest'] = fields['candidate'].contest 
             fields['raw_result'] = rr
             party = self.get_party(rr)
@@ -345,13 +349,22 @@ class CreateResultsTransform(BaseTransform):
         print "\tDeleting %d previously loaded results" % old_results.count() 
         old_results.delete()
 
-    def get_candidate(self, raw_result):
-        key = "%s-%s" % (raw_result.election_id, raw_result.contest_slug,
+    def get_candidate(self, raw_result, extra={}):
+        """
+        Get the Candidate model for a RawResult
+
+        Keyword arguments:
+
+        * extra - Dictionary of extra query parameters that will
+                  be used to select the candidate. 
+        """
+        key = (raw_result.election_id, raw_result.contest_slug,
             raw_result.candidate_slug)
         try:
             return self._candidate_cache[key]
         except KeyError:
             fields = self.get_candidate_fields(raw_result)
+            fields.update(extra)
             del fields['source']
             try:
                 candidate = Candidate.objects.get(**fields)
