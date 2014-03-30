@@ -174,7 +174,7 @@ class MDLoader(MDBaseLoader):
         vote_breakdowns = {
             'election_night_total': self._votes(row['Election Night Votes'])
         }
-        precinct = str(row['Election Precinct'])
+        precinct = "%s-%s" % (row['Election District'], row['Election Precinct'].strip())
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,

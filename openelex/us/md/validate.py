@@ -1,3 +1,5 @@
+import re
+
 from openelex.models import Contest, Candidate, Result
 
 #TODO: Add generic test for unique candidacies per contest
@@ -388,6 +390,12 @@ def validate_2000_primary_congress_county_results():
     assert result.votes == 35472, ("Constance A. Morella should have 35472 "
         "votes in Montgomery county.  Instead has %d" % result.votes)
 
+def validate_precinct_names_normalized():
+    """Precinct jurisdiction names should be in the format 'NN-NNN'"""
+    precincts = Result.objects.filter(state='MD', reporting_level='precinct').distinct('jurisdiction')
+    for precinct in precincts:
+        assert re.match(r'\d+-0\d\d', precinct), ("Precinct %s doesn't match "
+            "normalized format." % precinct)
 
 #def validate_name_parsing():
     #Check assortment of names

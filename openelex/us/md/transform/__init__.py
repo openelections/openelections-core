@@ -7,6 +7,7 @@ from openelex.base.transform import Transform, registry
 from openelex.models import Candidate, Contest, Office, Party, RawResult, Result
 from openelex.lib.text import ocd_type_id
 from openelex.lib.insertbuffer import BulkInsertBuffer
+from ..validate import validate_precinct_names_normalized
 
 
 # Lists of fields on RawResult that are contributed to the canonical
@@ -579,6 +580,39 @@ class Create2000PrimaryCongressCountyResultsTransform(CreateResultsTransform):
             office="Representative in Congress")
 
 
+class NormalizePrecinctTransform(BaseTransform):
+    name = 'normalize_precinct_names'
+
+    def get_results(self):
+        return Result.objects.filter(state='MD',
+            reporting_level='precinct', election_id='md-2006-11-07-general',
+            source='20061107__md__general__anne_arundel__precinct.csv')
+
+    def update_ocd_id(self, ocd_id, jurisdiction):
+        ocd_id_bits = ocd_id.split('/')
+        ocd_id_bits.pop()
+        ocd_id_bits.append(ocd_type_id("precinct:%s" % jurisdiction))
+        return '/'.join(ocd_id_bits)
+
+    def __call__(self):
+        for result in self.get_results():
+            district, precinct = result.jurisdiction.split('-')
+            result.jurisdiction = "%s-%s" % (district,
+                    precinct.zfill(3))
+            result.ocd_id = self.update_ocd_id(result.ocd_id,
+                result.jurisdiction)
+            result.save()
+
+    def reverse(self):
+        for result in self.get_results():
+            district, precinct = result.jurisdiction.split('-')
+            result.jurisdiction = "%s-%s" % (district,
+                    precinct.lstrip('0'))
+            result.ocd_id = self.update_ocd_id(result.ocd_id,
+                result.jurisdiction)
+            result.save()
+
+
 # TODO: When should we create a Person
 
 #def standardize_office_and_district():
@@ -592,5 +626,7 @@ registry.register('md', CreateCandidatesTransform)
 registry.register('md', CreateResultsTransform)
 registry.register('md', CreateDistrictResultsTransform)
 registry.register('md', Create2000PrimaryCongressCountyResultsTransform)
+registry.register('md', NormalizePrecinctTransform,
+    [validate_precinct_names_normalized])
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)
