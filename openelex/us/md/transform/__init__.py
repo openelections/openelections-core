@@ -236,7 +236,9 @@ class CreateContestsTransform(BaseTransform):
         print "Created %d contests." % len(contests)
 
     def reverse(self):
-        Contest.objects.filter(state='MD').delete()
+        old = Contest.objects.filter(state='MD')
+        print "\tDeleting %d previously created contests" % old.count() 
+        old.delete()
 
     def _contest_key(self, raw_result):
         slug = raw_result.contest_slug
@@ -276,7 +278,9 @@ class CreateCandidatesTransform(BaseTransform):
 
 
     def reverse(self):
-        Candidate.objects.filter(state='MD').delete()
+        old = Candidate.objects.filter(state='MD')
+        print "\tDeleting %d previously created candidates" % old.count() 
+        old.delete()
 
 
 class CreateResultsTransform(BaseTransform): 
