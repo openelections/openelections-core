@@ -146,6 +146,31 @@ class Primary2000ElectionDescription(MDElectionDescription):
     
         return count
 
+class General2000ElectionDescription(MDElectionDescription):
+    candidate_counts = {
+        'president': 21,
+        'us-senate': 4,
+        'us-house-of-representatives-1': 4,
+        'us-house-of-representatives-2': 3,
+        'us-house-of-representatives-3': 4,
+        'us-house-of-representatives-4': 4,
+        'us-house-of-representatives-5': 3,
+        'us-house-of-representatives-6': 4,
+        'us-house-of-representatives-7': 3,
+        'us-house-of-representatives-8': 6,
+    }
+
+    @property
+    def contests(self):
+        return self.candidate_counts.keys()
+
+    @property
+    def num_results(self):
+        # TODO: Implement this.  Will need a count of precincts and state
+        # legislative districts and a precinct to other stuff map 
+        # BOOKMARK
+        raise NotImplemented
+
 def validate_unique_contests():
     """Should have a unique set of contests for all elections"""
     # Get all election ids
@@ -201,11 +226,10 @@ def validate_obama_primary_candidacy_2012():
     except Candidate.MultipleObjectsReturned as e:
         raise Candidate.MultipleObjectsReturned("multiple obama primary candidacies found for 2012: %s" %  e)
 
-def validate_contests_2000_primary():
-    """Check that there are the correct number of Contest records for the 2000 primary"""
-    expected_contest_slugs = Primary2000ElectionDescription().contests
+def _validate_contests(election_id, election_description):
+    expected_contest_slugs = election_description.contests
     contests = Contest.objects.filter(state='MD',
-        election_id='md-2000-03-07-primary')
+        election_id=election_id)
     expected = len(expected_contest_slugs)
     count = contests.count()
     assert count == expected, ("There should be %d contests, but there are %d" %
@@ -218,16 +242,35 @@ def validate_contests_2000_primary():
             raise Contest.DoesNotExist("No contest with slug '%s' found" %
                 slug)
 
-def validate_candidate_count_2000_primary():
-    """Check that there are the correct number of Candidate records for the 2000 primary"""
-    candidate_counts = Primary2000ElectionDescription().candidate_counts
+def validate_contests_2000_primary():
+    """Check that there are the correct number of Contest records for the 2000 primary"""
+    _validate_contests('md-2000-03-07-primary', 
+        Primary2000ElectionDescription())
+
+def validate_contests_2000_general():
+    """Check that there are the correct number of Contest records for the 2000 general election"""
+    _validate_contests('md-2000-11-07-general',
+        General2000ElectionDescription())
+
+def _validate_candidate_count(election_id, election_description):
+    candidate_counts = election_description.candidate_counts
     candidates = Candidate.objects.filter(state='MD',
-        election_id='md-2000-03-07-primary')
+        election_id=election_id)
     for contest_slug, expected_count in candidate_counts.items():
         count = candidates.filter(contest_slug=contest_slug).count() 
         assert count == expected_count, ("There should be %d candidates "
             "for the contest '%s', but there are %d" %
             (expected_count, contest_slug, count))
+
+def validate_candidate_count_2000_primary():
+    """Check that there are the correct number of Candidate records for the 2000 primary"""
+    _validate_candidate_count('md-2000-03-07-primary',
+        Primary2000ElectionDescription())
+
+def validate_candidate_count_2000_general():
+    """Check that there are the correct number of Candidate records for the 2000 general election"""
+    _validate_candidate_count('md-2000-11-07-general',
+        General2000ElectionDescription())
 
 def validate_result_count_2000_primary():
     """Should have results for every candidate and contest in 2000 primary"""
