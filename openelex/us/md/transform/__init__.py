@@ -282,6 +282,8 @@ class CreateCandidatesTransform(BaseTransform):
 class CreateResultsTransform(BaseTransform): 
     name = 'create_unique_results'
 
+    auto_reverse = True
+
     def __init__(self):
         super(CreateResultsTransform, self).__init__()
         self._candidate_cache = {}
@@ -297,9 +299,6 @@ class CreateResultsTransform(BaseTransform):
         return Result.objects.filter(election_id__in=election_ids)
 
     def __call__(self):
-        # Delete existing results
-        self.reverse()
-
         results = self._create_results_collection() 
 
         for rr in self.get_rawresults():
@@ -435,15 +434,14 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
 
     name = 'create_district_results_from_county_splits' 
 
+    auto_reverse = True
+
     def __init__(self):
         super(CreateDistrictResultsTransform, self).__init__()
         self._results_cache = {}
 
     def __call__(self):
         results = []
-
-        # Delete previously created results
-        self.reverse()
 
         for rr in self.get_rawresults(): 
             # We only grab the meta fields here because we're aggregating results.

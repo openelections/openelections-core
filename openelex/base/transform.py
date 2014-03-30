@@ -4,6 +4,12 @@ from .state import StateBase
 
 
 class Transform(object):
+    auto_reverse = False
+    """
+    Set to True to automatically run the reverse() method before running the
+    transform.
+    """
+
     """Base class that defines API for transforms."""
     def __init__(self):
         self._validators = OrderedDict()
