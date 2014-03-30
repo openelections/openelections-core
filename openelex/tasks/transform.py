@@ -89,7 +89,7 @@ def run(state, include=None, exclude=None, no_reverse=False):
         print 'Executing %s' % transform 
         transform()
 
-        validators = transform.validators
+        validators = transform.validators.values()
         if validators:
             print "Executing validation"
             run_validation(state, validators)

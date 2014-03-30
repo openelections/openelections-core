@@ -20,10 +20,10 @@ class Transform(object):
         """
         for v in validators:
             self._validators[v.__name__] = v
-    
+
     @property
     def validators(self):
-        return self._validators.values()
+        return self._validators
 
     def __str__(self):
         return self.name
