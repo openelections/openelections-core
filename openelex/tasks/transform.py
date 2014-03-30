@@ -92,7 +92,7 @@ def run(state, include=None, exclude=None, no_reverse=False):
         validators = transform.validators
         if validators:
             print "Executing validation"
-            run_validation(validators)
+            run_validation(state, validators)
 
 
 @task(help={
