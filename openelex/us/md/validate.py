@@ -2,94 +2,12 @@ import re
 
 from openelex.models import Contest, Candidate, Result
 
+import openelex.us.md.jurisdiction as jurisdiction
+
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
 
 class MDElectionDescription(object):
-    counties = [
-        "Allegany",
-        "Anne Arundel",
-        "Baltimore City",
-        "Baltimore",
-        "Calvert",
-        "Caroline",
-        "Carroll",
-        "Cecil",
-        "Charles",
-        "Dorchester",
-        "Frederick",
-        "Garrett",
-        "Harford",
-        "Howard",
-        "Kent",
-        "Montgomery",
-        "Prince George's",
-        "Queen Anne's",
-        "St. Mary's",
-        "Somerset",
-        "Talbot",
-        "Washington",
-        "Wicomico",
-        "Worcester",
-    ]
-
-    district_to_county = {
-        1: [
-            "Anne Arundel",
-            "Baltimore City",
-            "Caroline",
-            "Cecil",
-            "Dorchester",
-            "Kent",
-            "Queen Anne's",
-            "Somerset",
-            "Talbot",
-            "Wicomico",
-            "Worcester",
-        ],
-        2: [
-            "Anne Arundel",
-            "Baltimore",
-            "Harford",
-        ],
-        3: [
-            "Anne Arundel",
-            "Baltimore City",
-            "Baltimore",
-            "Howard",
-        ],
-        4: [
-            "Montgomery",
-            "Prince George's",
-        ],
-        5: [
-            "Anne Arundel",
-            "Calvert",
-            "Charles",
-            "Prince George's",
-            "St. Mary's",
-        ],
-        6: [
-            "Allegany",
-            "Carroll",
-            "Frederick",
-            "Garrett",
-            "Howard",
-            "Washington",
-        ],
-        7: [
-            "Baltimore City",
-            "Baltimore",
-        ],
-        8: [
-            "Montgomery",
-        ],
-    }
-
-    @property
-    def congressional_districts(self):
-        return range(1, 9)
-
     @property
     def contests(self):
         raise NotImplemented
@@ -126,8 +44,8 @@ class Primary2000ElectionDescription(MDElectionDescription):
     @property
     def num_results(self):
         # Presidential
-        num_counties = len(self.counties)
-        num_congressional_districts = len(self.congressional_districts)
+        num_counties = len(jurisdiction.counties)
+        num_congressional_districts = len(jurisdiction.congressional_districts)
         num_pres = self.candidate_counts['president-d'] + self.candidate_counts['president-r']
         count = (num_pres * num_counties) +\
                 (num_pres * num_congressional_districts)
@@ -138,13 +56,13 @@ class Primary2000ElectionDescription(MDElectionDescription):
         count += num_senate * num_counties
 
         # U.S House
-        for district in self.congressional_districts:
+        for district in jurisdiction.congressional_districts:
             for party in ('d', 'r'):
                 contest = 'us-house-of-representatives-%d-%s' % (district,
                     party)
                 num_candidates = self.candidate_counts[contest]
                 count += num_candidates
-                count += len(self.district_to_county[district]) * num_candidates
+                count += len(jurisdiction.congressional_district_to_county[district]) * num_candidates
     
         return count
 
