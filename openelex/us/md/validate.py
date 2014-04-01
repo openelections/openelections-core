@@ -7,10 +7,45 @@ import openelex.us.md.jurisdiction as jurisdiction
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
 
+# Classes that describe election attributes
+
 class MDElectionDescription(object):
+    """
+    Base class for describing Maryland elections.
+
+    Subclasses, should, at the very least, define ``election_id`` and
+    ``candidate_counts`` attributes.
+   
+
+    It will also likely be useful to define ``num_{{reporting_level}}_results``
+    attributes that contain the known number of results for a particular
+    reporting level.
+    """
+
+    election_id = None
+    """
+    Identifier for election.
+
+    This should match the ID from the OpenElections metadata API.
+    """
+
+    candidate_counts = {}
+    """
+    Map of contest slugs to known number of candidates.
+    """
+
+    reporting_levels = []
+    """
+    Iterable of available reporting levels of results in this election.
+    """
+  
     @property
     def contests(self):
-        raise NotImplemented
+        """
+        Return a list of contest slugs.
+        """
+        return self.candidate_counts.keys()
+
 
 class Primary2000ElectionDescription(MDElectionDescription):
     election_id = 'md-2000-03-07-primary'
@@ -40,10 +75,6 @@ class Primary2000ElectionDescription(MDElectionDescription):
         'us-house-of-representatives-8-d': 5,
         'us-house-of-representatives-8-r': 1,
     }
-
-    @property
-    def contests(self):
-        return self.candidate_counts.keys()
 
     @property
     def num_pres_candidates(self):
@@ -97,10 +128,6 @@ class General2000ElectionDescription(MDElectionDescription):
         'us-house-of-representatives-7': 3,
         'us-house-of-representatives-8': 6,
     }
-
-    @property
-    def contests(self):
-        return self.candidate_counts.keys()
 
     @property
     def num_state_legislative_results(self):
