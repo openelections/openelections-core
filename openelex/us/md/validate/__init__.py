@@ -1,7 +1,9 @@
 import re
+import os
+
+import unicodecsv
 
 from openelex.models import Contest, Candidate, Result
-
 import openelex.us.md.jurisdiction as jurisdiction
 
 #TODO: Add generic test for unique candidacies per contest
@@ -45,6 +47,32 @@ class MDElectionDescription(object):
         Return a list of contest slugs.
         """
         return self.candidate_counts.keys()
+
+    def candidate_counts_filename(self): 
+        bits = self.election_id.split('-')
+        tpl ="candidate_counts__{year}{month}{day}__{state}__{election_type}.csv"
+        return tpl.format(year=bits[1], month=bits[2], day=bits[3],
+            state=bits[0], election_type=bits[4])
+
+    def load_candidate_counts(self, skip_zero=True):
+        """
+        Load candidate counts from a CSV fixture
+        
+        Args: 
+
+        skip_zero: Should contests with zero candidates be ignored? Default is True.
+        """
+        pwd = os.path.abspath(os.path.dirname(__file__)) 
+        filename = os.path.join(pwd, 'fixtures', self.candidate_counts_filename())
+        with open(filename, 'rU') as csvfile:
+            self.candidate_counts = {}
+            reader = unicodecsv.DictReader(csvfile)
+            for row in reader:
+                count = int(row['count'].strip())
+                contest = row['contest'].strip()
+                if count == 0 and skip_zero:
+                    continue
+                self.candidate_counts[contest] = count
 
 
 class Primary2000ElectionDescription(MDElectionDescription):
@@ -92,10 +120,11 @@ class Primary2000ElectionDescription(MDElectionDescription):
         num_results += self.num_senate_candidates * num_counties
         for district in jurisdiction.congressional_districts:
             for party in ('d', 'r'):
-                contest = 'us-house-of-representatives-%d-%s' % (district,
+                contest = 'us-house-of-representatives-%s-%s' % (district,
                     party)
                 num_candidates = self.candidate_counts[contest]
-                num_results += len(jurisdiction.congressional_district_to_county[district]) * num_candidates
+                num_results += len(jurisdiction.congressional_district_to_county_pre_2002[district]) * num_candidates
+               
 
         return num_results
 
@@ -106,7 +135,7 @@ class Primary2000ElectionDescription(MDElectionDescription):
         num_results += self.num_pres_candidates * num_congressional_districts
         for district in jurisdiction.congressional_districts:
             for party in ('d', 'r'):
-                contest = 'us-house-of-representatives-%d-%s' % (district,
+                contest = 'us-house-of-representatives-%s-%s' % (district,
                     party)
                 num_candidates = self.candidate_counts[contest]
                 num_results += num_candidates
@@ -139,14 +168,94 @@ class General2000ElectionDescription(MDElectionDescription):
     def num_county_results(self):
         num_results = 0
         num_counties = len(jurisdiction.counties)
+
         num_results += self.candidate_counts['president'] * num_counties 
         num_results += self.candidate_counts['us-senate'] * num_counties
+
         for district in jurisdiction.congressional_districts:
-            contest = 'us-house-of-representatives-%d' % (district)
+            contest = 'us-house-of-representatives-%s' % (district)
             num_candidates = self.candidate_counts[contest]
-            num_results += len(jurisdiction.congressional_district_to_county[district]) * num_candidates
+            num_results += len(jurisdiction.congressional_district_to_county_pre_2002[district]) * num_candidates
+           
         return num_results
 
+class Primary2002ElectionDescription(MDElectionDescription):
+    election_id = 'md-2002-09-10-primary'
+
+    reporting_levels = ['county']
+
+    def __init__(self):
+        self.load_candidate_counts()
+
+    @property
+    def num_county_results_congress(self):
+        num_results = 0
+
+        for district in jurisdiction.congressional_districts:
+            for party in ('d', 'r'):
+                contest = 'us-house-of-representatives-%s-%s' % (district,
+                    party)
+                try:
+                    num_candidates = self.candidate_counts[contest]
+                    num_results += len(jurisdiction.congressional_district_to_county[district]) * num_candidates
+                except KeyError:
+                    print district, party
+                    pass
+
+        return num_results
+
+    @property
+    def num_county_results_state_senate(self):
+        num_results = 0
+
+        for district in jurisdiction.state_senate_districts:
+            for party in ('d', 'r'):
+                contest = 'state-senate-%s-%s' % (district,
+                    party)
+                try:
+                    num_candidates = self.candidate_counts[contest]
+                    num_results += len(jurisdiction.state_senate_district_to_county[district]) * num_candidates
+                except KeyError:
+                    pass
+        
+        return num_results
+
+    @property
+    def num_county_results_state_legislature(self):
+        num_results = 0
+
+        for district in jurisdiction.state_legislative_districts:
+            for party in ('d', 'r'):
+                contest = 'house-of-delegates-%s-%s' % (district.lower(),
+                    party)
+                try:
+                    num_candidates = self.candidate_counts[contest]
+                    num_results += len(jurisdiction.state_legislative_district_to_county[district]) * num_candidates
+                except KeyError:
+                    pass
+
+        return num_results
+
+
+    @property
+    def num_county_results(self):
+        num_results = 0
+        num_counties = len(jurisdiction.counties)
+        num_gov_candidates = (self.candidate_counts['governor-d'] +
+            self.candidate_counts['governor-r'])
+        num_comptroller_candidates = (self.candidate_counts['comptroller-d'] +
+            self.candidate_counts['comptroller-r'])
+        num_ag_candidates = (self.candidate_counts['attorney-general-d'] +
+            self.candidate_counts['attorney-general-r'])
+
+        num_results += num_gov_candidates * num_counties
+        num_results += num_comptroller_candidates * num_counties
+        num_results += num_ag_candidates * num_counties
+        num_results += self.num_county_results_congress
+        num_results += self.num_county_results_state_senate
+        num_results += self.num_county_results_state_legislature
+
+        return num_results
 
 # Generic validation helpers
 
@@ -175,6 +284,7 @@ def _validate_candidate_count(election_description):
             (expected_count, contest_slug, count))
 
 def _validate_result_count(election_description, reporting_levels=None):
+    failed_levels = []
     if reporting_levels == None:
         reporting_levels = election_description.reporting_levels
     for level in reporting_levels:
@@ -182,6 +292,10 @@ def _validate_result_count(election_description, reporting_levels=None):
             _validate_result_count_for_reporting_level(election_description, level)
         except AssertionError as e:
             print e
+            failed_levels.append(level)
+    
+    assert len(failed_levels) == 0, ("Result count does not match the expected "
+        "value for these levels: {0}".format(", ".join(failed_levels)))
 
 def _validate_result_count_for_reporting_level(election_description, level):
     results = Result.objects.filter(election_id=election_description.election_id,
@@ -203,9 +317,21 @@ def validate_contests_2000_general():
     """Check that there are the correct number of Contest records for the 2000 general election"""
     _validate_contests(General2000ElectionDescription())
 
+def validate_contests_2002_primary():
+    """Check that there are the correct number of Contest records for the 2002 primary"""
+    _validate_contests(Primary2002ElectionDescription())
+
 def validate_candidate_count_2000_primary():
     """Check that there are the correct number of Candidate records for the 2000 primary"""
     _validate_candidate_count(Primary2000ElectionDescription())
+
+def validate_candidate_count_2000_general():
+    """Check that there are the correct number of Candidate records for the 2000 general election"""
+    _validate_candidate_count(General2000ElectionDescription())
+
+def validate_candidate_count_2002_primary():
+    """Check that there are the correct number of Candidate records for the 2002 primary"""
+    _validate_candidate_count(Primary2002ElectionDescription())
 
 def validate_result_count_2000_primary():
     """Should have results for every candidate and contest in 2000 primary"""
@@ -241,16 +367,16 @@ def validate_2000_primary_congress_county_results():
     assert result.votes == 35472, ("Constance A. Morella should have 35472 "
         "votes in Montgomery county.  Instead has %d" % result.votes)
 
-def validate_candidate_count_2000_general():
-    """Check that there are the correct number of Candidate records for the 2000 general election"""
-    _validate_candidate_count(General2000ElectionDescription())
-
 def validate_result_count_2000_general():
     """Should have results for every candidate and contest in 2000 general election"""
     # TODO: Include precincts if it's not too hard
     reporting_levels = ['county', 'state_legislative']
     _validate_result_count(General2000ElectionDescription(),
         reporting_levels)
+
+def validate_result_count_2002_primary():
+    """Should have results for every candidate and contest in 2002 primary"""
+    _validate_result_count(Primary2002ElectionDescription())
 
 def validate_result_count_2012_general_state_legislative():
     """Should be 5504 results for the 2012 general election at the state legislative district level""" 
