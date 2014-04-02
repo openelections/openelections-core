@@ -7,7 +7,8 @@ from openelex.base.transform import Transform, registry
 from openelex.models import Candidate, Contest, Office, Party, RawResult, Result
 from openelex.lib.text import ocd_type_id
 from openelex.lib.insertbuffer import BulkInsertBuffer
-from ..validate import validate_precinct_names_normalized
+from ..validate import (validate_precinct_names_normalized,
+    validate_no_baltimore_city_comptroller)
 
 
 # Lists of fields on RawResult that are contributed to the canonical
@@ -613,6 +614,27 @@ class NormalizePrecinctTransform(BaseTransform):
             result.save()
 
 
+class RemoveBaltimoreCityComptroller(BaseTransform):
+    """
+    Remove Baltimore City comptroller results.
+
+    Maryland election results use the string "Comptroller" for both the 
+    state comptroller and the Baltimore City Comptroller.  We're only
+    interested in the state comptroller.
+
+    """
+    name = 'remove_baltimore_city_comptroller'
+
+    def __call__(self):
+        election_id = 'md-2004-11-02-general'
+        office = Office.objects.get(state='MD', name='Comptroller')
+        Contest.objects.filter(election_id=election_id, office=office).delete()
+        Candidate.objects.filter(election_id=election_id,
+            contest_slug='comptroller').delete()
+        Result.objects.filter(election_id=election_id,
+            contest_slug='comptroller').delete()
+
+
 # TODO: When should we create a Person
 
 #def standardize_office_and_district():
@@ -628,5 +650,7 @@ registry.register('md', CreateDistrictResultsTransform)
 registry.register('md', Create2000PrimaryCongressCountyResultsTransform)
 registry.register('md', NormalizePrecinctTransform,
     [validate_precinct_names_normalized])
+registry.register('md', RemoveBaltimoreCityComptroller,
+    [validate_no_baltimore_city_comptroller])
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)

@@ -156,6 +156,22 @@ class MDElection(object):
             "Instead there are %d" % (expected, level, count))
 
 
+class CountyCongressResultsMixin(object):
+    @property
+    def num_county_results_congress(self):
+        return self._get_num_district_results('us-house-of-representatives',
+            jurisdiction.congressional_districts,
+            jurisdiction.congressional_district_to_county)
+
+
+class StateLegislativeResultsMixin(object):
+    @property
+    def num_state_legislative_results(self):
+        total_candidates = reduce(lambda x, y: x+y,
+            self.candidate_counts.values())
+        return total_candidates * len(jurisdiction.state_legislative_districts)
+
+
 class Election2000(MDElection):
     @property
     def num_county_results(self):
@@ -222,7 +238,7 @@ class Election2000Primary(Election2000):
         return num_results
 
 
-class Election2000General(Election2000):
+class Election2000General(StateLegislativeResultsMixin, Election2000):
     election_id = 'md-2000-11-07-general'
 
     race_type = 'general'
@@ -240,24 +256,12 @@ class Election2000General(Election2000):
         'us-house-of-representatives-8': 6,
     }
 
-    @property
-    def num_state_legislative_results(self):
-        total_candidates = reduce(lambda x, y: x+y,
-            self.candidate_counts.values())
-        return total_candidates * len(jurisdiction.state_legislative_districts)
 
-
-class Election2002(MDElection):
+class Election2002(CountyCongressResultsMixin, MDElection):
     reporting_level = ['county']
 
     def __init__(self):
         self.load_candidate_counts()
-
-    @property
-    def num_county_results_congress(self):
-        return self._get_num_district_results('us-house-of-representatives',
-            jurisdiction.congressional_districts,
-            jurisdiction.congressional_district_to_county)
 
     @property
     def num_county_results_state_senate(self):
@@ -300,9 +304,75 @@ class Election2002Primary(Election2002):
 class Election2002General(Election2002):
     election_id = 'md-2002-11-05-general'
 
-    reporting_levels = ['county']
-
     race_type = 'general'
 
     def __init__(self):
         self.load_candidate_counts()
+
+
+class Election2004(StateLegislativeResultsMixin, CountyCongressResultsMixin,
+        MDElection):
+    reporting_levels = ['county', 'precinct', 'state_legislative']
+
+    @property
+    def num_county_results(self):
+        num_results = 0
+        num_counties = len(jurisdiction.counties)
+        num_pres_candidates = self._get_candidate_count('president')
+        num_senate_candidates = self._get_candidate_count('us-senate')
+
+        num_results += num_pres_candidates * num_counties
+        num_results += num_senate_candidates * num_counties
+        num_results += self.num_county_results_congress
+
+        return num_results
+
+
+class Election2004Primary(Election2004):
+    election_id = 'md-2004-03-02-primary'
+
+    race_type = 'primary'
+
+    primary_type = 'closed'
+
+    candidate_counts = {
+        'president-d': 12,
+        'president-r': 1,
+        'us-senate-d': 3,
+        'us-senate-r': 9,
+        'us-house-of-representatives-1-d': 4,
+        'us-house-of-representatives-1-r': 2,
+        'us-house-of-representatives-2-d': 1,
+        'us-house-of-representatives-2-r': 3,
+        'us-house-of-representatives-3-d': 2,
+        'us-house-of-representatives-3-r': 3,
+        'us-house-of-representatives-4-d': 2,
+        'us-house-of-representatives-4-r': 6,
+        'us-house-of-representatives-5-d': 1,
+        'us-house-of-representatives-5-r': 3,
+        'us-house-of-representatives-6-d': 7,
+        'us-house-of-representatives-6-r': 2,
+        'us-house-of-representatives-7-d': 2,
+        'us-house-of-representatives-7-r': 3,
+        'us-house-of-representatives-8-d': 3,
+        'us-house-of-representatives-8-r': 3,
+    }
+
+
+class Election2004General(Election2004):
+    election_id = 'md-2004-11-02-general'
+
+    race_type = 'general'
+
+    candidate_counts = {
+        'president': 12,
+        'us-senate': 8,
+        'us-house-of-representatives-1': 3,
+        'us-house-of-representatives-2': 4,
+        'us-house-of-representatives-3': 4,
+        'us-house-of-representatives-4': 5,
+        'us-house-of-representatives-5': 5,
+        'us-house-of-representatives-6': 4,
+        'us-house-of-representatives-7': 4,
+        'us-house-of-representatives-8': 4,
+    }

@@ -1,8 +1,9 @@
 import re
 
-from openelex.models import Contest, Candidate, Result
+from openelex.models import Contest, Candidate, Office, Result
 from .election import (Election2000Primary, Election2000General,
-    Election2002Primary, Election2002General)
+    Election2002Primary, Election2002General,
+    Election2004Primary, Election2004General)
 
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
@@ -25,6 +26,14 @@ def validate_contests_2002_general():
     """Check that there are the correct number of Contest records for the 2002 general"""
     Election2002General().validate_contests()
 
+def validate_contests_2004_primary():
+    """Check that there are the correct number of Contest records for the 2004 primary"""
+    Election2004Primary().validate_contests()
+
+def validate_contests_2004_general():
+    """Check that there are the correct number of Contest records for the 2004 general election"""
+    Election2004General().validate_contests()
+
 def validate_candidate_count_2000_primary():
     """Check that there are the correct number of Candidate records for the 2000 primary"""
     Election2000Primary().validate_candidate_count()
@@ -38,8 +47,16 @@ def validate_candidate_count_2002_primary():
     Election2002Primary().validate_candidate_count()
 
 def validate_candidate_count_2002_general():
-    """Check that there are the correct number of Candidate records for the 2002 general"""
+    """Check that there are the correct number of Candidate records for the 2002 general election"""
     Election2002General().validate_candidate_count()
+
+def validate_candidate_count_2004_primary():
+    """Check that there are the correct number of Candidate records for the 2004 primary"""
+    Election2004Primary().validate_candidate_count()
+
+def validate_candidate_count_2004_general():
+    """Check that there are the correct number of Candidate records for the 2004 general election"""
+    Election2004General().validate_candidate_count()
 
 def validate_result_count_2000_primary():
     """Should have results for every candidate and contest in 2000 primary"""
@@ -88,6 +105,19 @@ def validate_result_count_2002_primary():
 def validate_result_count_2002_general():
     """Should have results for every candidate and contest in 2002 general"""
     Election2002General().validate_result_count()
+
+def validate_result_count_2004_primary():
+    """Should have results for every candidate and contest in 2004 primary"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2004Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2004_general():
+    """Should have results for every candidate and contest in 2004 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2004General().validate_result_count(reporting_levels)
+
 
 def validate_result_count_2012_general_state_legislative():
     """Should be 5504 results for the 2012 general election at the state legislative district level""" 
@@ -231,6 +261,22 @@ def validate_unique_contests():
         except AssertionError:
             raise AssertionError("%s contests expected for elec_id '%s', but %s found" % (expected, elec_id, count))
     print "PASS: unique contests counts found for all elections"
+
+def validate_no_baltimore_city_comptroller():
+    """Should not have contest, candidates or results for a Baltimore City comptroller"""
+    election_id = 'md-2004-11-02-general'
+    office = Office.objects.get(state='MD', name='Comptroller')
+    count = Contest.objects.filter(election_id=election_id, office=office).count() 
+    msg = "There should be no comptroller contest for election {0}"
+    assert count == 0, msg.format(election_id)
+    count = Candidate.objects.filter(election_id=election_id,
+        contest_slug='comptroller').count()
+    msg = "There should be no comptroller candidates for election {0}"
+    assert count == 0, msg.format(election_id)
+    count = Result.objects.filter(election_id=election_id,
+        contest_slug='comptroller').count()
+    msg = "There should be no comptroller results for election {0}"
+    assert count == 0, msg.format(election_id)
 
 #def validate_name_parsing():
     #Check assortment of names
