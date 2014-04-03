@@ -164,6 +164,22 @@ class CountyCongressResultsMixin(object):
             jurisdiction.congressional_district_to_county)
 
 
+class CountyStateSenateResultsMixin(object):
+    @property
+    def num_county_results_state_senate(self):
+        return self._get_num_district_results('state-senate',
+            jurisdiction.state_senate_districts,
+            jurisdiction.state_senate_district_to_county)
+
+
+class CountyStateLegislatureResultsMixin(object):
+    @property
+    def num_county_results_state_legislature(self):
+        return self._get_num_district_results('house-of-delegates',
+            jurisdiction.state_legislative_districts,
+            jurisdiction.state_legislative_district_to_county)
+
+
 class StateLegislativeResultsMixin(object):
     @property
     def num_state_legislative_results(self):
@@ -223,7 +239,6 @@ class Election2000Primary(Election2000):
         'us-house-of-representatives-8-r': 1,
     }
 
-
     @property
     def num_congressional_district_results(self):
         num_results = 0
@@ -257,23 +272,12 @@ class Election2000General(StateLegislativeResultsMixin, Election2000):
     }
 
 
-class Election2002(CountyCongressResultsMixin, MDElection):
+class Election2002(CountyCongressResultsMixin, CountyStateSenateResultsMixin,
+        CountyStateLegislatureResultsMixin, MDElection):
     reporting_level = ['county']
 
     def __init__(self):
         self.load_candidate_counts()
-
-    @property
-    def num_county_results_state_senate(self):
-        return self._get_num_district_results('state-senate',
-            jurisdiction.state_senate_districts,
-            jurisdiction.state_senate_district_to_county)
-
-    @property
-    def num_county_results_state_legislature(self):
-        return self._get_num_district_results('house-of-delegates',
-            jurisdiction.state_legislative_districts,
-            jurisdiction.state_legislative_district_to_county)
 
     @property
     def num_county_results(self):
@@ -376,3 +380,41 @@ class Election2004General(Election2004):
         'us-house-of-representatives-7': 4,
         'us-house-of-representatives-8': 4,
     }
+
+
+class Election2006(StateLegislativeResultsMixin, CountyCongressResultsMixin,
+        CountyStateSenateResultsMixin, CountyStateLegislatureResultsMixin, 
+        MDElection):
+    reporting_levels = ['county', 'precinct', 'state_legislative']
+
+    @property
+    def num_county_results(self):
+        num_results = 0
+        num_counties = len(jurisdiction.counties)
+        num_gov_candidates = self._get_candidate_count('governor')
+        num_comptroller_candidates = self._get_candidate_count('comptroller')
+        num_ag_candidates = self._get_candidate_count('attorney-general')
+        num_senate_candidates = self._get_candidate_count('us-senate')
+
+        num_results += num_gov_candidates * num_counties
+        num_results += num_comptroller_candidates * num_counties
+        num_results += num_ag_candidates * num_counties
+        num_results += num_senate_candidates * num_counties
+
+        num_results += self.num_county_results_congress
+        num_results += self.num_county_results_state_senate
+        num_results += self.num_county_results_state_legislature
+
+        return num_results
+
+
+
+class Election2006Primary(Election2006):
+    election_id = 'md-2006-09-12-primary'
+
+    race_type = 'primary'
+
+    primary_type = 'closed'
+
+    def __init__(self):
+        self.load_candidate_counts()
