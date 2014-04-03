@@ -131,11 +131,12 @@ class MDLoader(MDBaseLoader):
             pass
         results = []
         for field, val in row.items():
+            clean_field = field.strip()
             # Legislative fields prefixed with LEGS
-            if not field.startswith('LEGS'):
+            if not clean_field.startswith('LEGS'):
                 continue
             kwargs.update({
-                'jurisdiction': field,
+                'jurisdiction': clean_field,
                 'votes': self._votes(val),
             })
             results.append(RawResult(**kwargs))
