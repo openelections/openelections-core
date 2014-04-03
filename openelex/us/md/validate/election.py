@@ -387,6 +387,9 @@ class Election2006(StateLegislativeResultsMixin, CountyCongressResultsMixin,
         MDElection):
     reporting_levels = ['county', 'precinct', 'state_legislative']
 
+    def __init__(self):
+        self.load_candidate_counts()
+
     @property
     def num_county_results(self):
         num_results = 0
@@ -408,7 +411,6 @@ class Election2006(StateLegislativeResultsMixin, CountyCongressResultsMixin,
         return num_results
 
 
-
 class Election2006Primary(Election2006):
     election_id = 'md-2006-09-12-primary'
 
@@ -416,5 +418,8 @@ class Election2006Primary(Election2006):
 
     primary_type = 'closed'
 
-    def __init__(self):
-        self.load_candidate_counts()
+
+class Election2006General(Election2006):
+    election_id = 'md-2006-11-07-general'
+
+    race_type = 'general'

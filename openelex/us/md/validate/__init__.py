@@ -4,7 +4,7 @@ from openelex.models import Contest, Candidate, Office, Result
 from .election import (Election2000Primary, Election2000General,
     Election2002Primary, Election2002General,
     Election2004Primary, Election2004General,
-    Election2006Primary)
+    Election2006Primary, Election2006General)
 
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
@@ -39,6 +39,10 @@ def validate_contests_2006_primary():
     """Check that there are the correct number of Contest records for the 2006 primary"""
     Election2006Primary().validate_contests()
 
+def validate_contests_2006_general():
+    """Check that there are the correct number of Contest records for the 2006 general election"""
+    Election2006General().validate_contests()
+
 def validate_candidate_count_2000_primary():
     """Check that there are the correct number of Candidate records for the 2000 primary"""
     Election2000Primary().validate_candidate_count()
@@ -66,6 +70,10 @@ def validate_candidate_count_2004_general():
 def validate_candidate_count_2006_primary():
     """Check that there are the correct number of Candidate records for the 2006 primary"""
     Election2006Primary().validate_candidate_count()
+
+def validate_candidate_count_2006_general():
+    """Check that there are the correct number of Candidate records for the 2006 general election"""
+    Election2006General().validate_candidate_count()
 
 def validate_result_count_2000_primary():
     """Should have results for every candidate and contest in 2000 primary"""
@@ -132,6 +140,12 @@ def validate_result_count_2006_primary():
     # TODO: Include precincts if it's not too hard
     reporting_levels = ['county', 'state_legislative']
     Election2006Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2006_general():
+    """Should have results for every candidate and contest in 2006 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2006General().validate_result_count(reporting_levels)
 
 def validate_result_count_2012_general_state_legislative():
     """Should be 5504 results for the 2012 general election at the state legislative district level""" 
