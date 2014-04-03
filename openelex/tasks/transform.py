@@ -55,11 +55,13 @@ def _select_transforms(state, include=None, exclude=None):
         for trx in transforms:
             if trx.name in to_run:
                 run_transforms.append(trx)
-    if exclude:
+    elif exclude:
         to_skip = split_args(exclude)
         for trx in transforms:
             if trx.name not in to_skip:
                 run_transforms.append(trx)
+    else:
+        run_transforms = transforms
 
     return run_transforms
 
