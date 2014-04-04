@@ -4,7 +4,8 @@ from openelex.models import Contest, Candidate, Office, Result
 from .election import (Election2000Primary, Election2000General,
     Election2002Primary, Election2002General,
     Election2004Primary, Election2004General,
-    Election2006Primary, Election2006General)
+    Election2006Primary, Election2006General,
+    Election2008Primary, Election2008General)
 
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
@@ -43,6 +44,14 @@ def validate_contests_2006_general():
     """Check that there are the correct number of Contest records for the 2006 general election"""
     Election2006General().validate_contests()
 
+def validate_contests_2008_primary():
+    """Check that there are the correct number of Contest records for the 2008 primary"""
+    Election2008Primary().validate_contests()
+
+def validate_contests_2008_general():
+    """Check that there are the correct number of Contest records for the 2008 general election"""
+    Election2008General().validate_contests()
+
 def validate_candidate_count_2000_primary():
     """Check that there are the correct number of Candidate records for the 2000 primary"""
     Election2000Primary().validate_candidate_count()
@@ -74,6 +83,14 @@ def validate_candidate_count_2006_primary():
 def validate_candidate_count_2006_general():
     """Check that there are the correct number of Candidate records for the 2006 general election"""
     Election2006General().validate_candidate_count()
+
+def validate_candidate_count_2008_primary():
+    """Check that there are the correct number of Candidate records for the 2008 primary"""
+    Election2008Primary().validate_candidate_count()
+
+def validate_candidate_count_2008_general():
+    """Check that there are the correct number of Candidate records for the 2008 general election"""
+    Election2008General().validate_candidate_count()
 
 def validate_result_count_2000_primary():
     """Should have results for every candidate and contest in 2000 primary"""
@@ -146,6 +163,18 @@ def validate_result_count_2006_general():
     # TODO: Include precincts if it's not too hard
     reporting_levels = ['county', 'state_legislative']
     Election2006General().validate_result_count(reporting_levels)
+
+def validate_result_count_2008_primary():
+    """Should have results for every candidate and contest in 2008 primary"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2008Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2008_general():
+    """Should have results for every candidate and contest in 2008 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2008General().validate_result_count(reporting_levels)
 
 def validate_result_count_2012_general_state_legislative():
     """Should be 5504 results for the 2012 general election at the state legislative district level""" 
@@ -305,6 +334,16 @@ def validate_no_baltimore_city_comptroller():
         contest_slug='comptroller').count()
     msg = "There should be no comptroller results for election {0}"
     assert count == 0, msg.format(election_id)
+
+def validate_uncommitted_primary_state_legislative_results():
+    """Should only have one uncommitted result per legislative district"""
+    results = Result.objects.filter(election_id='md-2008-02-12-primary',
+        reporting_level='state_legislative',
+        contest_slug='president-d',
+        candidate_slug='uncommitted-to-any-presidential-candidate')
+    count = results.count()
+    assert count == 65, ("There should be only one result per "
+        "state legislative district, instead there are {0}".format(count))
 
 #def validate_name_parsing():
     #Check assortment of names

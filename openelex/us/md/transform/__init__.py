@@ -8,7 +8,8 @@ from openelex.models import Candidate, Contest, Office, Party, RawResult, Result
 from openelex.lib.text import ocd_type_id
 from openelex.lib.insertbuffer import BulkInsertBuffer
 from ..validate import (validate_precinct_names_normalized,
-    validate_no_baltimore_city_comptroller)
+    validate_no_baltimore_city_comptroller,
+    validate_uncommitted_primary_state_legislative_results)
 
 
 # Lists of fields on RawResult that are contributed to the canonical
@@ -635,6 +636,41 @@ class RemoveBaltimoreCityComptroller(BaseTransform):
             contest_slug='comptroller').delete()
 
 
+class CombineUncommittedPresStateLegislativeResults(BaseTransform):
+    """
+    Combine "Uncommitted to Any Presidential Candidate" results.
+    
+    In the 2008 Democratic primary, in the results aggregated at the State
+    Legislative level, there are multiple rows for the
+    "Uncommitted to Any Presidential Candidate" pseudo-candidate, with empty
+    values for many of the state legislative district.  There appears to be
+    one row per county.  Most of these entries are empty.
+
+    Combine these into a single result per state legislative district. 
+    """
+    name = 'combine_uncommitted_pres_state_leg_results'
+
+    def __call__(self):
+        results = Result.objects.filter(election_id='md-2008-02-12-primary',
+            reporting_level='state_legislative',
+            contest_slug='president-d',
+            candidate_slug='uncommitted-to-any-presidential-candidate')
+        districts = results.distinct('jurisdiction')
+        assert len(districts) == 65
+        for district in districts:
+            district_results = results.filter(jurisdiction=district)
+            assert district_results.count() == 24 
+            total_votes = 0
+            # Save the first result.  We'll use this for the combined results
+            first_result = district_results[0]
+            for result in district_results:
+                total_votes += result.votes
+            assert total_votes != 0
+            first_result.votes = total_votes
+            first_result.save()
+            district_results.filter(id__ne=first_result.id).delete()
+
+
 # TODO: When should we create a Person
 
 #def standardize_office_and_district():
@@ -652,5 +688,7 @@ registry.register('md', NormalizePrecinctTransform,
     [validate_precinct_names_normalized])
 registry.register('md', RemoveBaltimoreCityComptroller,
     [validate_no_baltimore_city_comptroller])
+registry.register('md', CombineUncommittedPresStateLegislativeResults,
+    [validate_uncommitted_primary_state_legislative_results])
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)

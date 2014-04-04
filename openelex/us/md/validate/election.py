@@ -413,13 +413,67 @@ class Election2006(StateLegislativeResultsMixin, CountyCongressResultsMixin,
 
 class Election2006Primary(Election2006):
     election_id = 'md-2006-09-12-primary'
-
     race_type = 'primary'
-
     primary_type = 'closed'
 
 
 class Election2006General(Election2006):
     election_id = 'md-2006-11-07-general'
-
     race_type = 'general'
+
+
+class Election2008(CountyCongressResultsMixin, StateLegislativeResultsMixin, MDElection):
+    reporting_levels = ['county', 'precinct', 'state_legislative']
+
+    @property
+    def num_county_results(self):
+        num_results = 0
+        num_counties = len(jurisdiction.counties)
+        num_pres_candidates = self._get_candidate_count('president')
+
+        num_results += num_pres_candidates * num_counties
+        num_results += self.num_county_results_congress
+
+        return num_results
+
+
+class Election2008Primary(Election2008):
+    election_id = 'md-2008-02-12-primary'
+    race_type = 'primary'
+    primary_type = 'closed'
+    candidate_counts = {
+      'president-d': 9,
+      'president-r': 9,
+      'us-house-of-representatives-1-d': 4,
+      'us-house-of-representatives-1-r': 5,
+      'us-house-of-representatives-2-d': 1,
+      'us-house-of-representatives-2-r': 1,
+      'us-house-of-representatives-3-d': 2,
+      'us-house-of-representatives-3-r': 4,
+      'us-house-of-representatives-4-d': 6,
+      'us-house-of-representatives-4-r': 4,
+      'us-house-of-representatives-5-d': 2,
+      'us-house-of-representatives-5-r': 3,
+      'us-house-of-representatives-6-d': 5,
+      'us-house-of-representatives-6-r': 5,
+      'us-house-of-representatives-7-d': 2,
+      'us-house-of-representatives-7-r': 2,
+      'us-house-of-representatives-8-d': 3,
+      'us-house-of-representatives-8-r': 5,
+    }
+
+
+class Election2008General(Election2008):
+    election_id = 'md-2008-06-17-general'
+    race_type = 'general'
+    candidate_counts = {
+      'president': 24,
+      'us-house-of-representatives-1': 4,
+      'us-house-of-representatives-2': 4,
+      'us-house-of-representatives-3': 3,
+      'us-house-of-representatives-4': 7,
+      'us-house-of-representatives-5': 4,
+      'us-house-of-representatives-6': 4,
+      'us-house-of-representatives-7': 6,
+      'us-house-of-representatives-8': 7,
+    }
