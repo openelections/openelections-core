@@ -108,6 +108,7 @@ class RawResult(TimestampMixin, DynamicDocument):
     office = StringField(required=True)
     district = StringField(help_text="Only populate this if district is a distinct field in raw data already."
             "If it requires parsing, perform this as a transform step")
+    contest_winner = BooleanField(default=False, help_text="Flag, if provided in raw results.")
 
     ### Candidate fields ###
     #TODO: Add validation to require full_name or family_name
