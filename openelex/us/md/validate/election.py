@@ -89,7 +89,11 @@ class MDElection(object):
     def _get_candidate_count(self, base_contest):
         count = 0
         for contest in self.get_party_contests(base_contest):
-            count += self.candidate_counts[contest]
+            try:
+                count += self.candidate_counts[contest]
+            except KeyError:
+                print "WARN: no candidate count for contest '{0}'".format(
+                    contest)
 
         return count
         
@@ -525,9 +529,6 @@ class Election2010Primary(Election2010):
     election_id = 'md-2010-09-14-primary'
     race_type = 'primary'
     primary_type = 'closed'
-
-    def __init__(self):
-        self.load_candidate_counts(False)
 
 
 class Election2010General(Election2010):
