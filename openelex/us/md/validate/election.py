@@ -477,3 +477,44 @@ class Election2008General(Election2008):
       'us-house-of-representatives-7': 6,
       'us-house-of-representatives-8': 7,
     }
+
+class Election2010(StateLegislativeResultsMixin, CountyCongressResultsMixin,
+        CountyStateSenateResultsMixin, CountyStateLegislatureResultsMixin, 
+        MDElection):
+    reporting_levels = ['county', 'precinct', 'state_legislative']
+
+    def __init__(self):
+        self.load_candidate_counts()
+
+    @property
+    def num_county_results(self):
+        num_results = 0
+        num_counties = len(jurisdiction.counties)
+        num_gov_candidates = self._get_candidate_count('governor')
+        num_comptroller_candidates = self._get_candidate_count('comptroller')
+        num_ag_candidates = self._get_candidate_count('attorney-general')
+        num_senate_candidates = self._get_candidate_count('us-senate')
+
+        num_results += num_gov_candidates * num_counties
+        num_results += num_comptroller_candidates * num_counties
+        num_results += num_ag_candidates * num_counties
+        num_results += num_senate_candidates * num_counties
+
+        num_results += self.num_county_results_congress
+        num_results += self.num_county_results_state_senate
+        num_results += self.num_county_results_state_legislature
+
+        return num_results
+
+class Election2010Primary(Election2010):
+    election_id = 'md-2010-09-14-primary'
+    race_type = 'primary'
+    primary_type = 'closed'
+
+    def __init__(self):
+        self.load_candidate_counts(False)
+
+
+class Election2010General(Election2010):
+    election_id = 'md-2010-11-02-general'
+    race_type = 'general'

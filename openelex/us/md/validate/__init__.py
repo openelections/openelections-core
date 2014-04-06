@@ -5,7 +5,8 @@ from .election import (Election2000Primary, Election2000General,
     Election2002Primary, Election2002General,
     Election2004Primary, Election2004General,
     Election2006Primary, Election2006General,
-    Election2008Primary, Election2008General)
+    Election2008Primary, Election2008General,
+    Election2010Primary, Election2010General)
 
 #TODO: Add generic test for unique candidacies per contest
 #TODO: Add Result validations
@@ -52,6 +53,14 @@ def validate_contests_2008_general():
     """Check that there are the correct number of Contest records for the 2008 general election"""
     Election2008General().validate_contests()
 
+def validate_contests_2010_primary():
+    """Check that there are the correct number of Contest records for the 2010 primary"""
+    Election2010Primary().validate_contests()
+
+def validate_contests_2010_general():
+    """Check that there are the correct number of Contest records for the 2010 general election"""
+    Election2010General().validate_contests()
+
 def validate_candidate_count_2000_primary():
     """Check that there are the correct number of Candidate records for the 2000 primary"""
     Election2000Primary().validate_candidate_count()
@@ -91,6 +100,14 @@ def validate_candidate_count_2008_primary():
 def validate_candidate_count_2008_general():
     """Check that there are the correct number of Candidate records for the 2008 general election"""
     Election2008General().validate_candidate_count()
+
+def validate_candidate_count_2010_primary():
+    """Check that there are the correct number of Candidate records for the 2010 primary"""
+    Election2010Primary().validate_candidate_count()
+
+def validate_candidate_count_2010_general():
+    """Check that there are the correct number of Candidate records for the 2010 general election"""
+    Election2010General().validate_candidate_count()
 
 def validate_result_count_2000_primary():
     """Should have results for every candidate and contest in 2000 primary"""
@@ -175,6 +192,18 @@ def validate_result_count_2008_general():
     # TODO: Include precincts if it's not too hard
     reporting_levels = ['county', 'state_legislative']
     Election2008General().validate_result_count(reporting_levels)
+
+def validate_result_count_2010_primary():
+    """Should have results for every candidate and contest in 2010 primary"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2010Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2010_general():
+    """Should have results for every candidate and contest in 2010 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2010General().validate_result_count(reporting_levels)
 
 def validate_result_count_2012_general_state_legislative():
     """Should be 5504 results for the 2012 general election at the state legislative district level""" 
