@@ -40,7 +40,7 @@ class WVBaseLoader(BaseLoader):
         'Secretary of State',
         'Auditor',
         'State Treasurer',
-        'Commissioner of Agriculture'
+        'Commissioner of Agriculture',
         'Attorney General',
         'State Senate',
         'House of Delegates',
@@ -170,8 +170,9 @@ class WVLoaderPre2008(WVBaseLoader):
             'district',
             'candidate',
             'county',
-            'votes'
-            'winner'
+            'votes',
+            'winner',
+            'total_votes'
         ]
         self._common_kwargs = self._build_common_election_kwargs()
         self._common_kwargs['reporting_level'] = 'county'
@@ -183,20 +184,25 @@ class WVLoaderPre2008(WVBaseLoader):
             for row in reader:
                 if self._skip_row(row):
                     continue
-                
-                rr_kwargs = self._common_kwargs.copy()
-                rr_kwargs['primary_party'] = row['party'].strip()
-                rr_kwargs.update(self._build_contest_kwargs(row))
-                rr_kwargs.update(self._build_candidate_kwargs(row))
-                rr_kwargs.update({
-                    'party': row['party'].strip(),
-                    'jurisdiction': row['county'].strip(),
-                    'office': row['office'].strip(),
-                    'district': row['district'].strip(),
-                    'votes': int(row['votes'].strip()),
-                    'winner': row['winner'].strip()
-                })
-                results.append(RawResult(**rr_kwargs))
+                if row['county'].strip() == 'Totals':
+                    total_votes = int(row['votes'].strip())
+                    contest_winner = row['winner'].strip()
+                else:
+                    rr_kwargs = self._common_kwargs.copy()
+                    rr_kwargs['primary_party'] = row['party'].strip()
+                    rr_kwargs.update(self._build_contest_kwargs(row))
+                    rr_kwargs.update(self._build_candidate_kwargs(row))
+                    rr_kwargs.update({
+                        'party': row['party'].strip(),
+                        'jurisdiction': row['county'].strip(),
+                        'office': row['office'].strip(),
+                        'district': row['district'].strip(),
+                        'votes': int(row['votes'].strip()),
+                        'winner': row['winner'].strip(),
+                        'total_votes': total_votes,
+                        'contest_winner': contest_winner
+                    })
+                    results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
