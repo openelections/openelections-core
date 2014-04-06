@@ -178,8 +178,7 @@ class Datasource(BaseDatasource):
                 office
             ]
         path = urlparse.urlparse(url).path
-        ext = os.path.splitext(path)[1]
-        name = "__".join(bits)+ ext
+        name = "__".join(bits)+'.csv'
         return name
     
     def _url_paths(self):
