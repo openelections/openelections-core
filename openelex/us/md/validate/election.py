@@ -13,7 +13,6 @@ class MDElection(object):
 
     Subclasses, should, at the very least, define ``election_id`` and
     ``candidate_counts`` attributes.
-   
 
     It will also likely be useful to define ``num_{{reporting_level}}_results``
     attributes that contain the known number of results for a particular
@@ -36,7 +35,14 @@ class MDElection(object):
     """
     Iterable of available reporting levels of results in this election.
     """
-  
+
+    counties = jurisdiction.counties
+    congressional_districts = jurisdiction.congressional_districts
+    state_senate_districts = jurisdiction.state_senate_districts
+    state_legislative_districts = jurisdiction.state_legislative_districts
+    state_senate_district_to_county = jurisdiction.state_senate_district_to_county
+    state_legislative_district_to_county = jurisdiction.state_legislative_district_to_county
+   
     @property
     def contests(self):
         """
@@ -160,24 +166,24 @@ class CountyCongressResultsMixin(object):
     @property
     def num_county_results_congress(self):
         return self._get_num_district_results('us-house-of-representatives',
-            jurisdiction.congressional_districts,
-            jurisdiction.congressional_district_to_county)
+            self.congressional_districts,
+            self.congressional_district_to_county)
 
 
 class CountyStateSenateResultsMixin(object):
     @property
     def num_county_results_state_senate(self):
         return self._get_num_district_results('state-senate',
-            jurisdiction.state_senate_districts,
-            jurisdiction.state_senate_district_to_county)
+            self.state_senate_districts,
+            self.state_senate_district_to_county)
 
 
 class CountyStateLegislatureResultsMixin(object):
     @property
     def num_county_results_state_legislature(self):
         return self._get_num_district_results('house-of-delegates',
-            jurisdiction.state_legislative_districts,
-            jurisdiction.state_legislative_district_to_county)
+            self.state_legislative_districts,
+            self.state_legislative_district_to_county)
 
 
 class StateLegislativeResultsMixin(object):
@@ -185,23 +191,22 @@ class StateLegislativeResultsMixin(object):
     def num_state_legislative_results(self):
         total_candidates = reduce(lambda x, y: x+y,
             self.candidate_counts.values())
-        return total_candidates * len(jurisdiction.state_legislative_districts)
+        return total_candidates * len(self.state_legislative_districts)
 
 
-class Election2000(MDElection):
+class Election2000(CountyCongressResultsMixin, MDElection):
+    congressional_district_to_county = jurisdiction.congressional_district_to_county_pre_2002
+   
     @property
     def num_county_results(self):
         num_results = 0
-        num_counties = len(jurisdiction.counties)
+        num_counties = len(self.counties)
         num_pres_candidates = self._get_candidate_count('president')
         num_senate_candidates = self._get_candidate_count('us-senate')
 
         num_results += num_pres_candidates * num_counties
         num_results += num_senate_candidates * num_counties
-        num_results += self._get_num_district_results(
-            'us-house-of-representatives',
-            jurisdiction.congressional_districts,
-            jurisdiction.congressional_district_to_county_pre_2002)
+        num_results += self.num_county_results_congress
 
         return num_results
 
@@ -242,13 +247,13 @@ class Election2000Primary(Election2000):
     @property
     def num_congressional_district_results(self):
         num_results = 0
-        num_congressional_districts = len(jurisdiction.congressional_districts)
+        num_congressional_districts = len(self.congressional_districts)
         num_pres_candidates = self._get_candidate_count('president')
 
         num_results += num_pres_candidates * num_congressional_districts
         num_results += self._get_num_district_results(
             'us-house-of-representatives',
-            jurisdiction.congressional_districts)
+            self.congressional_districts)
 
         return num_results
 
@@ -276,13 +281,15 @@ class Election2002(CountyCongressResultsMixin, CountyStateSenateResultsMixin,
         CountyStateLegislatureResultsMixin, MDElection):
     reporting_level = ['county']
 
+    congressional_district_to_county = jurisdiction.congressional_district_to_county_2002
+
     def __init__(self):
         self.load_candidate_counts()
 
     @property
     def num_county_results(self):
         num_results = 0
-        num_counties = len(jurisdiction.counties)
+        num_counties = len(self.counties)
         num_gov_candidates = self._get_candidate_count('governor')
         num_comptroller_candidates = self._get_candidate_count('comptroller')
         num_ag_candidates = self._get_candidate_count('attorney-general')
@@ -318,10 +325,12 @@ class Election2004(StateLegislativeResultsMixin, CountyCongressResultsMixin,
         MDElection):
     reporting_levels = ['county', 'precinct', 'state_legislative']
 
+    congressional_district_to_county = jurisdiction.congressional_district_to_county_2002
+
     @property
     def num_county_results(self):
         num_results = 0
-        num_counties = len(jurisdiction.counties)
+        num_counties = len(self.counties)
         num_pres_candidates = self._get_candidate_count('president')
         num_senate_candidates = self._get_candidate_count('us-senate')
 
@@ -387,13 +396,15 @@ class Election2006(StateLegislativeResultsMixin, CountyCongressResultsMixin,
         MDElection):
     reporting_levels = ['county', 'precinct', 'state_legislative']
 
+    congressional_district_to_county = jurisdiction.congressional_district_to_county_2002
+
     def __init__(self):
         self.load_candidate_counts()
 
     @property
     def num_county_results(self):
         num_results = 0
-        num_counties = len(jurisdiction.counties)
+        num_counties = len(self.counties)
         num_gov_candidates = self._get_candidate_count('governor')
         num_comptroller_candidates = self._get_candidate_count('comptroller')
         num_ag_candidates = self._get_candidate_count('attorney-general')
@@ -425,10 +436,12 @@ class Election2006General(Election2006):
 class Election2008(CountyCongressResultsMixin, StateLegislativeResultsMixin, MDElection):
     reporting_levels = ['county', 'precinct', 'state_legislative']
 
+    congressional_district_to_county = jurisdiction.congressional_district_to_county_2002
+
     @property
     def num_county_results(self):
         num_results = 0
-        num_counties = len(jurisdiction.counties)
+        num_counties = len(self.counties)
         num_pres_candidates = self._get_candidate_count('president')
 
         num_results += num_pres_candidates * num_counties
@@ -483,13 +496,15 @@ class Election2010(StateLegislativeResultsMixin, CountyCongressResultsMixin,
         MDElection):
     reporting_levels = ['county', 'precinct', 'state_legislative']
 
+    congressional_district_to_county = jurisdiction.congressional_district_to_county_2002
+
     def __init__(self):
         self.load_candidate_counts()
 
     @property
     def num_county_results(self):
         num_results = 0
-        num_counties = len(jurisdiction.counties)
+        num_counties = len(self.counties)
         num_gov_candidates = self._get_candidate_count('governor')
         num_comptroller_candidates = self._get_candidate_count('comptroller')
         num_ag_candidates = self._get_candidate_count('attorney-general')
@@ -518,3 +533,71 @@ class Election2010Primary(Election2010):
 class Election2010General(Election2010):
     election_id = 'md-2010-11-02-general'
     race_type = 'general'
+
+
+class Election2012(StateLegislativeResultsMixin, CountyCongressResultsMixin,
+        MDElection):
+    reporting_levels = ['county', 'precinct', 'state_legislative']
+
+    congressional_district_to_county = jurisdiction.congressional_districts_to_county_2011
+
+    @property
+    def num_county_results(self):
+        num_results = 0
+        num_counties = len(self.counties)
+        num_pres_candidates = self._get_candidate_count('president')
+        num_senate_candidates = self._get_candidate_count('us-senate')
+
+        num_results += num_pres_candidates * num_counties
+        num_results += num_senate_candidates * num_counties
+        num_results += self.num_county_results_congress
+
+        return num_results
+
+
+class Election2012Primary(Election2012):
+    election_id = 'md-2012-04-03-primary'
+    race_type = 'primary'
+    primary_type = 'closed'
+
+    candidate_counts = {
+      'president-d': 2,
+      'president-r': 8,
+      'us-senate-d': 9,
+      'us-senate-r': 10,
+      'us-house-of-representatives-1-d': 3,
+      'us-house-of-representatives-1-r': 1,
+      'us-house-of-representatives-2-d': 1,
+      'us-house-of-representatives-2-r': 6,
+      'us-house-of-representatives-3-d': 2,
+      'us-house-of-representatives-3-r': 4,
+      'us-house-of-representatives-4-d': 3,
+      'us-house-of-representatives-4-r': 4,
+      'us-house-of-representatives-5-d': 2,
+      'us-house-of-representatives-5-r': 3,
+      'us-house-of-representatives-6-d': 5,
+      'us-house-of-representatives-6-r': 8,
+      'us-house-of-representatives-7-d': 3,
+      'us-house-of-representatives-7-r': 2,
+      'us-house-of-representatives-8-d': 2,
+      'us-house-of-representatives-8-r': 4,
+    }
+
+
+class Election2012General(Election2012):
+    election_id = 'md-2012-11-06-general'
+    race_type = 'general'
+
+    candidate_counts = {
+      'president': 37,
+      'us-senate': 9,
+      'us-house-of-representatives-1': 7,
+      'us-house-of-representatives-2': 5,
+      'us-house-of-representatives-3': 4,
+      'us-house-of-representatives-4': 4,
+      'us-house-of-representatives-5': 5,
+      'us-house-of-representatives-6': 4,
+      'us-house-of-representatives-7': 6,
+      'us-house-of-representatives-8': 5,
+    }
+

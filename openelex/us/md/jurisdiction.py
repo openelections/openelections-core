@@ -154,7 +154,7 @@ congressional_district_to_county_pre_2002 = {
     ],
 }
 
-congressional_district_to_county = {
+congressional_district_to_county_2002 = {
     '1': [
         "Anne Arundel",
         "Baltimore",
@@ -212,6 +212,74 @@ congressional_district_to_county = {
         "Prince George's",
     ],
 }
+
+congressional_districts_to_county_2011 = {
+    '1': [
+        "Baltimore",
+        "Caroline",
+        "Carroll",
+        "Cecil",
+        "Dorchester",
+        "Harford",
+        "Kent",
+        "Queen Anne's",
+        "Somerset",
+        "Talbot",
+        "Wicomico",
+        "Worcester",
+    ],
+    '2': [
+        "Anne Arundel",
+        "Baltimore City",
+        "Baltimore",
+        "Harford",
+        "Howard",
+    ],
+    '3': [
+        "Anne Arundel",
+        "Baltimore City",
+        "Baltimore",
+        "Harford",
+        "Howard",
+    ],
+    '4': [
+        "Anne Arundel",
+        "Prince George's",
+    ],
+    '5': [
+        "Anne Arundel",
+        "Calvert",
+        "Charles",
+        "Prince George's",
+        "St. Mary's",
+    ],
+    '6': [
+        "Allegany",
+        "Frederick",
+        "Garrett",
+        "Montgomery",
+        "Washington",
+    ],
+    '7': [
+        "Baltimore City",
+        "Baltimore",
+        "Howard",
+    ],
+    '8': [
+        "Carroll",
+        "Frederick",
+        "Montgomery",
+    ]
+}
+"""
+Map of congressional districts to counties after the 2010 redistricting
+process.
+
+This was used as of October 20, 2011.
+
+Source: http://planning.maryland.gov/redistricting/2010/congDist.shtml
+
+"""
 
 state_senate_district_to_county = {
     '1': [
