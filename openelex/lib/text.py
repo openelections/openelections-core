@@ -45,7 +45,7 @@ def ocd_type_id(text, strip_leading_zeros=True):
     u_text = u_text.lower()
     # Convert spaces to underscores
     u_text = re.sub(r'\s', u'_', u_text)
-    u_text = re.sub(r'[^\w.-~]', u'~', u_text)
+    u_text = re.sub(r'[^\w.\-~]', u'~', u_text)
 
     if strip_leading_zeros:
         # Remove leading zeros
