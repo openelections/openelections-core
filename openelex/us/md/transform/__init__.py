@@ -395,13 +395,15 @@ class CreateResultsTransform(BaseTransform):
 
     def _parse_write_in(self, raw_result):
         """
-        Converts raw winner value into boolean
+        Converts raw write-in value into boolean
         """
         if raw_result.write_in == 'Y':
             # Write-in in post-2002 contest
             return True
         elif raw_result.family_name == 'zz998':
             # Write-in in 2002 contest
+            return True
+        elif "Write In" in raw_result.write_in:
             return True
         else:
             return False

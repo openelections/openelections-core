@@ -2,6 +2,8 @@ import re
 import csv
 import unicodecsv
 
+from bs4 import BeautifulSoup
+
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
 from openelex.lib.text import slugify
@@ -20,6 +22,8 @@ class LoadResults(object):
             loader = MDLoader2002()
         elif '2000' in election_id and 'primary' in election_id:
             loader = MDLoader2000Primary()
+        elif '2008' in election_id and 'special' in election_id:
+            loader = MDLoader2008Special()
         else:
             loader = MDLoader()
         loader.run(mapping)
@@ -464,3 +468,96 @@ class MDLoader2000Primary(MDBaseLoader):
             return "congressional_district_by_county"
         else:
             return "county"
+
+
+class MDLoader2008Special(BaseLoader):
+    """
+    Loader for the Maryland 2008 4th Congressional District Special election results
+    """
+    datasource = Datasource()
+
+    def load(self):
+        table = self._get_html_table()
+        rows = self._parse_html_table(table)
+        winner_name = self._parse_winner_name(table)
+        candidate_attrs = self._parse_candidates_and_parties(rows[0],
+            winner_name)
+        results = self._parse_results(rows[1:3], candidate_attrs)
+        RawResult.objects.insert(results)
+
+    def _get_html_table(self):
+        soup = BeautifulSoup(self._file_handle)
+        return soup.find(text=re.compile("Donna Edwards")).parent.parent.parent
+
+    def _parse_html_table(self, table):
+        rows = []
+        for tr in table.find_all('tr'):
+            rows.append(self._parse_html_table_row(tr))
+        return rows
+
+    def _parse_html_table_row(self, tr):
+        row = []
+        cells = tr.find_all('th') + tr.find_all('td')
+        for cell in cells:
+            row.append(cell.text.strip())
+        return row
+
+    def _parse_winner_name(self, table):
+        cell = table.select('th > img')[0].parent
+        return self._parse_name(cell.text.strip())
+
+    def _parse_candidates_and_parties(self, row, winner_name):
+        candidate_attrs = []
+        for cell in row[1:]: 
+            # Skip the first cell.  It's a header, "County"
+            attrs = {
+                'full_name': self._parse_name(cell),
+                'party': self._parse_party(cell),
+                'write_in': self._parse_write_in(cell),
+            }
+
+            if attrs['full_name'] == winner_name:
+                attrs['contest_winner'] = True
+
+            candidate_attrs.append(attrs) 
+
+        return candidate_attrs 
+
+    def _parse_name(self, s):
+        if s == "Other Write-Ins":
+            return s
+
+        # We know that all the candidate names are just first and last names
+        bits = re.split(r'\s', s)
+        return ' '.join(bits[:2])
+
+    def _parse_party(self, s):
+        if s == "Other Write-Ins":
+            return None
+        bits = re.split(r'\s', s)
+        return bits[2]
+
+    def _parse_write_in(self, s):
+        if s == "Other Write-Ins":
+            return s
+        elif "Write-In" in s:
+            return "Write-In"
+        else:
+            return "" 
+
+    def _parse_results(self, rows, candidate_attrs):
+        common_kwargs = self._build_common_election_kwargs()
+        results = []
+        for row in rows:
+            county = row[0]
+            for i in range(1, len(row)):
+                kwargs = common_kwargs.copy()
+                kwargs.update(candidate_attrs[i-1])
+                kwargs['reporting_level'] = 'County'
+                kwargs['jurisdiction'] = county
+                kwargs['votes'] = self._parse_votes(row[i]) 
+                results.append(RawResult(**kwargs))
+        return results
+
+    def _parse_votes(self, s):
+        return int(s.split(' ')[0].replace(',', ''))

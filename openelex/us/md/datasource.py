@@ -68,25 +68,38 @@ class Datasource(BaseDatasource):
     # PRIVATE METHODS
     def _races_by_type(self, elections):
         "Filter races by type and add election slug"
-        races = {}
+        races = {
+          'special': None,
+        }
         for elec in elections:
-            rtype = elec['race_type'].lower()
+            rtype = self._race_type(elec) 
             elec['slug'] = self._elec_slug(elec)
             races[rtype] = elec
-        return races['general'], races['primary']
+        return races['general'], races['primary'], races['special']
+
+    def _race_type(self, election):
+        if election['special']:
+            return 'special' 
+
+        return election['race_type'].lower()
 
     def _elec_slug(self, election):
         bits = [
             self.state,
             election['start_date'],
-            election['race_type'].lower()
         ]
+
+        if election['special']:
+            bits.append('special')
+
+        bits.append(election['race_type'].lower())
+            
         return "-".join(bits)
 
     def _build_metadata(self, year, elections):
         year_int = int(year)
         if year_int == 2002:
-            general, primary = self._races_by_type(elections)
+            general, primary, special = self._races_by_type(elections)
             meta = [
                 {
                     "generated_filename": "__".join((general['start_date'].replace('-',''), self.state, "general.txt")),
@@ -106,7 +119,7 @@ class Datasource(BaseDatasource):
         else:
             meta = self._state_leg_meta(year, elections) + self._county_meta(year, elections)
             if year_int == 2000:
-                general, primary = self._races_by_type(elections)
+                general, primary, special = self._races_by_type(elections)
                 meta.append({
                     "generated_filename": "__".join((primary['start_date'].replace('-',''), self.state, "primary.csv")),
                     "raw_url": 'http://www.elections.state.md.us/elections/2000/results/prepaa.csv',
@@ -114,6 +127,9 @@ class Datasource(BaseDatasource):
                     "name": 'Maryland',
                     "election": primary['slug']
                 })
+            elif year_int == 2008:
+                meta.append(self._special_meta_2008(elections))
+
         return meta
 
     def _state_leg_meta(self, year, elections):
@@ -123,7 +139,7 @@ class Datasource(BaseDatasource):
             'name': 'State Legislative Districts',
         }
 
-        general, primary = self._races_by_type(elections)
+        general, primary, special = self._races_by_type(elections)
 
         # Add General meta to payload
         general_url = self._build_state_leg_url(year)
@@ -190,7 +206,7 @@ class Datasource(BaseDatasource):
 
     def _county_meta(self, year, elections):
         payload = []
-        general, primary = self._races_by_type(elections)
+        general, primary, special = self._races_by_type(elections)
 
         for jurisdiction in self._jurisdictions():
 
@@ -312,3 +328,24 @@ class Datasource(BaseDatasource):
         m = self.jurisdiction_mappings()
         mappings = [x for x in m if x['url_name'] != ""]
         return mappings
+
+    def _special_meta_2008(self, elections):
+        """
+        Return metadata for 2008 Special 4th Congressional General Election.
+        """
+        general, primary, special = self._races_by_type(elections)
+        filename_bits = [
+            special['start_date'].replace('-', ''),
+            self.state,
+            'general',
+            'special',
+            'us_house_of_representatives_4',
+        ]
+        return {
+            "generated_filename": 
+            "__".join(filename_bits) + ".html",
+            "raw_url": special['direct_links'][0], 
+            "ocd_id": 'ocd-division/country:us/state:md',
+            "name": 'Maryland',
+            "election": special['slug']
+        }
