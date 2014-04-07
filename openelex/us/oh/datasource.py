@@ -75,14 +75,15 @@ class Datasource(BaseDatasource):
     # PRIVATE METHODS
 
     def _build_metadata(self, year, elections):
-        meta = []
         year_int = int(year)
         # if precinct-level files available, just grab those - general and primary only
         precinct_elections = [e for e in elections if e['precinct_level'] == True]
         other_elections = [e for e in elections if e['precinct_level'] == False]
         if precinct_elections:
-            meta.append(self._precinct_meta(year, precinct_elections))
+            meta = self._precinct_meta(year, precinct_elections)
         if other_elections:
+            if not meta:
+                meta = []
             for election in other_elections:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
@@ -177,8 +178,7 @@ class Datasource(BaseDatasource):
                 office
             ]
         path = urlparse.urlparse(url).path
-        ext = os.path.splitext(path)[1]
-        name = "__".join(bits)+ ext
+        name = "__".join(bits)+'.csv'
         return name
     
     def _url_paths(self):
