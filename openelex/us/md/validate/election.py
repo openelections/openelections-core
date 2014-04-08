@@ -497,7 +497,7 @@ class Election2008Special(CountyCongressResultsMixin, MDElection):
 
 
 class Election2008General(Election2008):
-    election_id = 'md-2008-06-17-general'
+    election_id = 'md-2008-11-04-general'
     race_type = 'general'
     candidate_counts = {
       'president': 24,
