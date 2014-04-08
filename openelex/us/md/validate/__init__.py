@@ -5,7 +5,7 @@ from .election import (Election2000Primary, Election2000General,
     Election2002Primary, Election2002General,
     Election2004Primary, Election2004General,
     Election2006Primary, Election2006General,
-    Election2008Primary, Election2008General,
+    Election2008Primary, Election2008Special, Election2008General,
     Election2010Primary, Election2010General,
     Election2012Primary, Election2012General)
 
@@ -50,6 +50,10 @@ def validate_contests_2008_primary():
     """Check that there are the correct number of Contest records for the 2008 primary"""
     Election2008Primary().validate_contests()
 
+def validate_contests_2008_special():
+    """Check that there are the correct number of Contest records for the 2008 special general election for the 4th Congressional District"""
+    Election2008Special().validate_contests()
+
 def validate_contests_2008_general():
     """Check that there are the correct number of Contest records for the 2008 general election"""
     Election2008General().validate_contests()
@@ -69,7 +73,6 @@ def validate_contests_2012_primary():
 def validate_contests_2012_general():
     """Check that there are the correct number of Contest records for the 2012 general election"""
     Election2012General().validate_contests()
-
 
 def validate_candidate_count_2000_primary():
     """Check that there are the correct number of Candidate records for the 2000 primary"""
@@ -106,6 +109,10 @@ def validate_candidate_count_2006_general():
 def validate_candidate_count_2008_primary():
     """Check that there are the correct number of Candidate records for the 2008 primary"""
     Election2008Primary().validate_candidate_count()
+
+def validate_candidate_count_2008_special():
+    """Check that there are the correct number of Contest records for the 2008 special general election for the 4th Congressional District"""
+    Election2008Special().validate_candidate_count()
 
 def validate_candidate_count_2008_general():
     """Check that there are the correct number of Candidate records for the 2008 general election"""
@@ -204,6 +211,50 @@ def validate_result_count_2008_primary():
     # TODO: Include precincts if it's not too hard
     reporting_levels = ['county', 'state_legislative']
     Election2008Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2008_special():
+    """Check that there are the correct number of Contest records for the 2008 special general election for the 4th Congressional District"""
+    Election2008Special().validate_result_count()
+
+def validate_results_2008_special():
+    candidates = {
+        'donna-edwards': {
+            'votes_montgomery': 6733,
+            'votes_prince_georges': 9748,
+        },
+        'peter-james':  {
+            'votes_montgomery': 2993,
+            'votes_prince_georges': 645,
+        },
+        'thibeaux-lincecum': {
+            'votes_montgomery': 148,
+            'votes_prince_georges': 68,
+        },
+        'adrian-petrus': {
+            'votes_montgomery': 0,
+            'votes_prince_georges': 1,
+        },
+        'steve-schulin': {
+            'votes_montgomery': 13,
+            'votes_prince_georges': 2,
+        },
+        'other-writeins':  {
+            'votes_montgomery': 60,
+            'votes_prince_georges': 51,
+        },
+    }
+
+    for candidate, props in candidates.items():
+        result = Result.objects.get(election_id='md-2008-06-17-special-general',
+            candidate_slug=candidate, jurisdiction="Montgomery County")
+        assert result.votes == props['votes_montgomery']
+        result = Result.objects.get(election_id='md-2008-06-17-special-general',
+            candidate_slug=candidate, jurisdiction="Prince George's County")
+        assert result.votes == props['votes_prince_georges']
+
+    for result in Result.objects.filter(election_id='md-2008-06-17-special-general',
+            candidate_slug__in=['adrian_petrus', 'steve-shulin', 'other_writeins']):
+        assert result.write_in
 
 def validate_result_count_2008_general():
     """Should have results for every candidate and contest in 2008 general election"""

@@ -546,14 +546,20 @@ class MDLoader2008Special(BaseLoader):
             return "" 
 
     def _parse_results(self, rows, candidate_attrs):
+        # These raw result attributes will be the same for every result.
         common_kwargs = self._build_common_election_kwargs()
+        common_kwargs.update({
+            'office': "Representative in Congress",
+            'district': '4', 
+            'reporting_level': "county",
+        })
+
         results = []
         for row in rows:
             county = row[0]
             for i in range(1, len(row)):
                 kwargs = common_kwargs.copy()
                 kwargs.update(candidate_attrs[i-1])
-                kwargs['reporting_level'] = 'County'
                 kwargs['jurisdiction'] = county
                 kwargs['votes'] = self._parse_votes(row[i]) 
                 results.append(RawResult(**kwargs))

@@ -403,7 +403,9 @@ class CreateResultsTransform(BaseTransform):
         elif raw_result.family_name == 'zz998':
             # Write-in in 2002 contest
             return True
-        elif "Write In" in raw_result.write_in:
+        elif raw_result.write_in == "Write-In":
+            return True
+        elif raw_result.full_name == "Other Write-Ins":
             return True
         else:
             return False

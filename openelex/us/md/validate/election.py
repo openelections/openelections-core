@@ -480,6 +480,22 @@ class Election2008Primary(Election2008):
     }
 
 
+class Election2008Special(CountyCongressResultsMixin, MDElection):
+    election_id = 'md-2008-06-17-special-general'
+    race_type = 'general'
+    reporting_levels = ['county',]
+
+    congressional_district_to_county = jurisdiction.congressional_district_to_county_2002
+
+    candidate_counts = {
+      'us-house-of-representatives-4': 6,
+    }
+
+    @property
+    def num_county_results(self):
+        return self.num_county_results_congress
+
+
 class Election2008General(Election2008):
     election_id = 'md-2008-06-17-general'
     race_type = 'general'
