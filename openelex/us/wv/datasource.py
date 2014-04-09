@@ -97,7 +97,7 @@ class Datasource(BaseDatasource):
     def _generate_statewide_filename(self, election):
         election_type = election['race_type']
         if election['special'] == True:
-            election_type = election_type + '__special'
+            election_type = 'special__' + election_type
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),
@@ -121,7 +121,7 @@ class Datasource(BaseDatasource):
         else:
             office = result['office'] + '__' + result['district']
         if result['special'] == '1':
-            election_type = election_type + '__special'
+            election_type = 'special__' + election_type
         bits = [
             start_date.replace('-',''),
             self.state.lower(),

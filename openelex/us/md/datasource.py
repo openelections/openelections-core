@@ -336,9 +336,9 @@ class Datasource(BaseDatasource):
         filename_bits = [
             special['start_date'].replace('-', ''),
             self.state,
-            'general',
             'special',
-            'us_house_of_representatives_4',
+            'general',
+            'us_house_of_representatives__4',
         ]
         return {
             "generated_filename": 

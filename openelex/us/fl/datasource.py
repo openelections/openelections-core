@@ -69,7 +69,7 @@ class Datasource(BaseDatasource):
         else:
             race_type = election['race_type']
         if election['special'] == True:
-            race_type = race_type + '__special'
+            race_type = 'special__' + race_type
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),

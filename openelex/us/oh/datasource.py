@@ -160,7 +160,7 @@ class Datasource(BaseDatasource):
         else:
             office = result['office'] + '__' + result['district']
         if result['special'] == '1':
-            election_type = election_type + '__special'
+            election_type = 'special__' + election_type
         if result['race_type'] == 'general':
             bits = [
                 start_date.replace('-',''),
