@@ -1,6 +1,5 @@
 """
-Standardize names of data files on Maryland State Board of Elections and 
-save to mappings/filenames.json
+Standardize names of data files on Maryland State Board of Elections.
 
 File-name convention on MD site (2004-2012):
 

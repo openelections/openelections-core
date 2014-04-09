@@ -1,6 +1,5 @@
 """
-Standardize names of data files on Ohio Secretary of State and 
-save to mappings/filenames.json
+Standardize names of data files on Ohio Secretary of State.
 
 File-name conventions on OH site vary widely according to election, but typically there is a single precinct file, a race-wide (county) file 
 and additional files for absentee and provisional ballots. Earlier election results are in HTML and have no precinct files. This example is from

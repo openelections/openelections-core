@@ -59,9 +59,6 @@ class BaseDatasource(StateBase):
         name = join(*bits)
         return name
 
-    def clear_filenames(self):
-        open(join(PROJECT_ROOT, self.mappings_dir, 'filenames.json'), 'w').close() 
-
     def jurisdiction_mappings(self):
         "Returns a JSON object of jurisdictional mappings based on OCD ids"
         filename = join(PROJECT_ROOT, self.mappings_dir, self.state + '.csv')
@@ -69,22 +66,3 @@ class BaseDatasource(StateBase):
             reader = unicodecsv.DictReader(csvfile)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
-
-    def filename_mappings(self):
-        filename = join(PROJECT_ROOT, self.mappings_dir, 'filenames.json')
-        with open(filename) as f:
-            try:
-                mappings = json.loads(f.read())
-            except:
-                mappings = {}
-            return mappings
-
-    def update_mappings(self, year, filenames):
-        mappings = self.filename_mappings()
-        try:
-            del mappings[str(year)]
-        except:
-            pass
-        mappings[str(year)] = filenames
-        with open(join(PROJECT_ROOT, self.mappings_dir, 'filenames.json'), 'w') as f:
-            json.dump(mappings, f, indent=2)
