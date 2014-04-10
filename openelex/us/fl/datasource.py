@@ -1,12 +1,11 @@
 """
-Standardize names of data files on Florida Department of State and 
-save to mappings/filenames.json
+Standardize names of data files on Florida Department of State.
 
 File-name conventions on FL site are very consistent: tab-delimited text files containing county-level results are retrieved by election date:
 
     https://doe.dos.state.fl.us/elections/resultsarchive/ResultsExtract.Asp?ElectionDate=1/26/2010&OfficialResults=N&DataMode=
 
-These are represented in the dashboard API as the `direct_link` attribute on elections.
+These are represented in the dashboard API as the `direct_links` attribute on elections.
 """
 
 from openelex.api import elections as elec_api
@@ -55,7 +54,7 @@ class Datasource(BaseDatasource):
         for election in elections:
             meta.append({
                 "generated_filename": self._generate_filename(election),
-                "raw_url": election['direct_link'],
+                "raw_url": election['direct_links'][0],
                 "ocd_id": 'ocd-division/country:us/state:fl',
                 "name": 'Florida',
                 "election": election['slug']

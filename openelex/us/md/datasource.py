@@ -17,7 +17,7 @@ File-name convention on MD site (2004-2012):
 
 To run mappings from invoke task:
 
-    invoke datasource.mappings -s md > us/md/mappings/filenames.json
+    invoke datasource.mappings -s md
 
 """
 import re

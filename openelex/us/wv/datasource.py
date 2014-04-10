@@ -1,12 +1,11 @@
 """
-Standardize names of data files on West Virginia Secretary of State and 
-save to mappings/filenames.json
+Standardize names of data files on West Virginia Secretary of State.
 
 The state offers CSV files containing precinct-level results for each county by election date from 2008 onwards:
 
     http://apps.sos.wv.gov/elections/results/readfile.aspx?path=NC80LVN0YXRlQ291bnR5VG90YWxzLmNzdg==
 
-These are represented in the dashboard API as the `direct_link` attribute on elections.
+These are represented in the dashboard API as the `direct_links` attribute on elections.
 
 Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
 https://github.com/openelections/openelections-data-wv repository.
@@ -70,7 +69,8 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     meta.append({
-                        "generated_filename": self._generate_office_filename(election['direct_link'], election['start_date'], election['race_type'], result),
+                        "generated_filename":
+                        self._generate_office_filename(election['direct_links'][0], election['start_date'], election['race_type'], result),
                         "raw_url": self._build_raw_url(year, result['path']),
                         "ocd_id": 'ocd-division/country:us/state:wv',
                         "name": 'West Virginia',
@@ -78,7 +78,7 @@ class Datasource(BaseDatasource):
                     })
         else:
             for election in elections:
-                csv_links = self._find_csv_links(election['direct_link'])
+                csv_links = self._find_csv_links(election['direct_links'][0])
                 counties = self._jurisdictions()
                 results = zip(counties, csv_links[1:])
                 for result in results:
