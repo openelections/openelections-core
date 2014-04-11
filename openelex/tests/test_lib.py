@@ -14,3 +14,9 @@ class TestText(TestCase):
         # Test that we can force keeping leading zeros
         self.assertEqual(ocd_type_id("03D", False),
             u"03d")
+        # Test that hyphens are not escaped
+        self.assertEqual(ocd_type_id("001-000-1"),
+            u"1-000-1")
+        # Test that leading zero stripping can be supressed.
+        self.assertEqual(ocd_type_id("001-000-1", False),
+            u"001-000-1")

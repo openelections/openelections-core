@@ -1,6 +1,5 @@
 """
-Standardize names of data files on Ohio Secretary of State and 
-save to mappings/filenames.json
+Standardize names of data files on Ohio Secretary of State.
 
 File-name conventions on OH site vary widely according to election, but typically there is a single precinct file, a race-wide (county) file 
 and additional files for absentee and provisional ballots. Earlier election results are in HTML and have no precinct files. This example is from
@@ -88,7 +87,8 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     meta.append({
-                        "generated_filename": self._generate_office_filename(election['direct_link'], election['start_date'], election['race_type'], result),
+                        "generated_filename":
+                        self._generate_office_filename(election['direct_links'][0], election['start_date'], election['race_type'], result),
                         "raw_url": self._build_raw_url(year, result['path']),
                         "ocd_id": 'ocd-division/country:us/state:oh',
                         "name": 'Ohio',
@@ -118,7 +118,7 @@ class Datasource(BaseDatasource):
             
         if general:
             # Add General meta to payload
-            general_url = general['direct_link']
+            general_url = general['direct_links'][0]
             general_filename = self._generate_precinct_filename(general_url, general['start_date'], 'general')
             gen_meta = meta.copy()
             gen_meta.update({
@@ -131,7 +131,7 @@ class Datasource(BaseDatasource):
         # Add Primary meta to payload
         if primary and int(year) > 2000:
             pri_meta = meta.copy()
-            primary_url = primary['direct_link']
+            primary_url = primary['direct_links'][0]
             primary_filename = self._generate_precinct_filename(primary_url, primary['start_date'], 'primary')
             pri_meta.update({
                 'raw_url': primary_url,
@@ -161,7 +161,7 @@ class Datasource(BaseDatasource):
         else:
             office = result['office'] + '__' + result['district']
         if result['special'] == '1':
-            election_type = election_type + '__special'
+            election_type = 'special__' + election_type
         if result['race_type'] == 'general':
             bits = [
                 start_date.replace('-',''),

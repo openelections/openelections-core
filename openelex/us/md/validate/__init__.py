@@ -4,10 +4,40 @@ from openelex.models import Contest, Candidate, Office, Result
 from .election import (Election2000Primary, Election2000General,
     Election2002Primary, Election2002General,
     Election2004Primary, Election2004General,
-    Election2006Primary)
+    Election2006Primary, Election2006General,
+    Election2008Primary, Election2008Special, Election2008General,
+    Election2010Primary, Election2010General,
+    Election2012Primary, Election2012General)
 
-#TODO: Add generic test for unique candidacies per contest
-#TODO: Add Result validations
+# Generic validation helpers
+
+def _validate_candidate_votes(election_id, reporting_level, contest_slug,
+        candidate_slug, expected_votes):
+    """Sum sub-contest level results and compare them to known totals"""
+    msg = "Expected {} votes for contest {} and candidate {}, found {}"
+    votes = Result.objects.filter(election_id=election_id,
+        contest_slug=contest_slug, candidate_slug=candidate_slug,
+        reporting_level=reporting_level).sum('votes')
+    assert votes == expected_votes, msg.format(expected_votes, contest_slug,
+            candidate_slug, votes)
+
+def _validate_many_candidate_votes(election_id, reporting_level,
+        candidates):
+    """
+    Sum sub-contest level results and compare them to known totals for 
+    multiple contests and candidates.
+
+    Arguments:
+
+    election_id - Election ID of the election of interest.
+    reporting_level - Reporting level to use to aggregate results.
+    candidates - Tuple of contests slug, candidate slug and expected votes.
+
+    """
+    for candidate_info in candidates:
+        contest, candidate, expected = candidate_info 
+        _validate_candidate_votes(election_id, reporting_level, 
+            contest, candidate, expected)
 
 # Election-specific Validators
 
@@ -39,6 +69,38 @@ def validate_contests_2006_primary():
     """Check that there are the correct number of Contest records for the 2006 primary"""
     Election2006Primary().validate_contests()
 
+def validate_contests_2006_general():
+    """Check that there are the correct number of Contest records for the 2006 general election"""
+    Election2006General().validate_contests()
+
+def validate_contests_2008_primary():
+    """Check that there are the correct number of Contest records for the 2008 primary"""
+    Election2008Primary().validate_contests()
+
+def validate_contests_2008_special():
+    """Check that there are the correct number of Contest records for the 2008 special general election for the 4th Congressional District"""
+    Election2008Special().validate_contests()
+
+def validate_contests_2008_general():
+    """Check that there are the correct number of Contest records for the 2008 general election"""
+    Election2008General().validate_contests()
+
+def validate_contests_2010_primary():
+    """Check that there are the correct number of Contest records for the 2010 primary"""
+    Election2010Primary().validate_contests()
+
+def validate_contests_2010_general():
+    """Check that there are the correct number of Contest records for the 2010 general election"""
+    Election2010General().validate_contests()
+
+def validate_contests_2012_primary():
+    """Check that there are the correct number of Contest records for the 2012 primary"""
+    Election2012Primary().validate_contests()
+
+def validate_contests_2012_general():
+    """Check that there are the correct number of Contest records for the 2012 general election"""
+    Election2012General().validate_contests()
+
 def validate_candidate_count_2000_primary():
     """Check that there are the correct number of Candidate records for the 2000 primary"""
     Election2000Primary().validate_candidate_count()
@@ -66,6 +128,38 @@ def validate_candidate_count_2004_general():
 def validate_candidate_count_2006_primary():
     """Check that there are the correct number of Candidate records for the 2006 primary"""
     Election2006Primary().validate_candidate_count()
+
+def validate_candidate_count_2006_general():
+    """Check that there are the correct number of Candidate records for the 2006 general election"""
+    Election2006General().validate_candidate_count()
+
+def validate_candidate_count_2008_primary():
+    """Check that there are the correct number of Candidate records for the 2008 primary"""
+    Election2008Primary().validate_candidate_count()
+
+def validate_candidate_count_2008_special():
+    """Check that there are the correct number of Contest records for the 2008 special general election for the 4th Congressional District"""
+    Election2008Special().validate_candidate_count()
+
+def validate_candidate_count_2008_general():
+    """Check that there are the correct number of Candidate records for the 2008 general election"""
+    Election2008General().validate_candidate_count()
+
+def validate_candidate_count_2010_primary():
+    """Check that there are the correct number of Candidate records for the 2010 primary"""
+    Election2010Primary().validate_candidate_count()
+
+def validate_candidate_count_2010_general():
+    """Check that there are the correct number of Candidate records for the 2010 general election"""
+    Election2010General().validate_candidate_count()
+
+def validate_candidate_count_2012_primary():
+    """Check that there are the correct number of Candidate records for the 2012 primary"""
+    Election2012Primary().validate_candidate_count()
+
+def validate_candidate_count_2012_general():
+    """Check that there are the correct number of Candidate records for the 2012 general election"""
+    Election2012General().validate_candidate_count()
 
 def validate_result_count_2000_primary():
     """Should have results for every candidate and contest in 2000 primary"""
@@ -101,6 +195,17 @@ def validate_2000_primary_congress_county_results():
     assert result.votes == 35472, ("Constance A. Morella should have 35472 "
         "votes in Montgomery county.  Instead has %d" % result.votes)
 
+def validate_results_2000_primary():
+    """Sum some county-level results for 2000 primary and compare with known totals"""
+    election_id = 'md-2000-03-07-primary'
+    known_results = [
+        ('president-d', 'al-gore', 341630),
+        ('president-r', 'orrin-hatch', 588), 
+        ('us-house-of-representatives-1-d', 'bennett-bozman', 14842),
+        ('us-house-of-representatives-1-r', 'wayne-t-gilchrest', 49232),
+    ]
+    _validate_many_candidate_votes(election_id, 'county', known_results)
+
 def validate_result_count_2000_general():
     """Should have results for every candidate and contest in 2000 general election"""
     # TODO: Include precincts if it's not too hard
@@ -114,6 +219,18 @@ def validate_result_count_2002_primary():
 def validate_result_count_2002_general():
     """Should have results for every candidate and contest in 2002 general"""
     Election2002General().validate_result_count()
+
+def validate_results_2002_general():
+    """Sum some county-level results for 2002 general election and compare with known totals"""
+    election_id = 'md-2002-11-05-general'
+    known_results = [
+        ('governor', 'robert-l-ehrlich', 879592),
+        ('governor', 'james-t-lynch', 61),
+        ('comptroller', 'william-donald-schaefer', 1125279),
+        ('comptroller', 'other-writeins', 3333),
+        ('house-of-delegates-1a', 'george-c-edwards', 10303), 
+    ]
+    _validate_many_candidate_votes(election_id, 'county', known_results)
 
 def validate_result_count_2004_primary():
     """Should have results for every candidate and contest in 2004 primary"""
@@ -133,15 +250,114 @@ def validate_result_count_2006_primary():
     reporting_levels = ['county', 'state_legislative']
     Election2006Primary().validate_result_count(reporting_levels)
 
-def validate_result_count_2012_general_state_legislative():
-    """Should be 5504 results for the 2012 general election at the state legislative district level""" 
-    filter_kwargs = {
-        'state': 'MD',
-        'election_id': 'md-2012-11-06-general',
-        'reporting_level': 'state_legislative',
+def validate_result_count_2006_general():
+    """Should have results for every candidate and contest in 2006 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2006General().validate_result_count(reporting_levels)
+
+def validate_result_count_2008_primary():
+    """Should have results for every candidate and contest in 2008 primary"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2008Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2008_special():
+    """Check that there are the correct number of Contest records for the 2008 special general election for the 4th Congressional District"""
+    Election2008Special().validate_result_count()
+
+def validate_results_2008_special():
+    candidates = {
+        'donna-edwards': {
+            'votes_montgomery': 6733,
+            'votes_prince_georges': 9748,
+        },
+        'peter-james':  {
+            'votes_montgomery': 2993,
+            'votes_prince_georges': 645,
+        },
+        'thibeaux-lincecum': {
+            'votes_montgomery': 148,
+            'votes_prince_georges': 68,
+        },
+        'adrian-petrus': {
+            'votes_montgomery': 0,
+            'votes_prince_georges': 1,
+        },
+        'steve-schulin': {
+            'votes_montgomery': 13,
+            'votes_prince_georges': 2,
+        },
+        'other-writeins':  {
+            'votes_montgomery': 60,
+            'votes_prince_georges': 51,
+        },
     }
-    # TODO: Do this in election description based way
-    assert Result.objects.filter(**filter_kwargs).count() == 5504
+
+    for candidate, props in candidates.items():
+        result = Result.objects.get(election_id='md-2008-06-17-special-general',
+            candidate_slug=candidate, jurisdiction="Montgomery County")
+        assert result.votes == props['votes_montgomery']
+        result = Result.objects.get(election_id='md-2008-06-17-special-general',
+            candidate_slug=candidate, jurisdiction="Prince George's County")
+        assert result.votes == props['votes_prince_georges']
+
+    for result in Result.objects.filter(election_id='md-2008-06-17-special-general',
+            candidate_slug__in=['adrian_petrus', 'steve-shulin', 'other_writeins']):
+        assert result.write_in
+
+def validate_result_count_2008_general():
+    """Should have results for every candidate and contest in 2008 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2008General().validate_result_count(reporting_levels)
+
+def validate_results_2008_general():
+    """Sum some county-level results for 2008 general election and compare with known totals"""
+    # TODO: Figure out why this doesn't pass
+    election_id = 'md-2008-11-04-general'
+    known_results = [
+        ('president', 'barack-obama', 1629467),
+        ('president', 'john-mccain', 959862),
+        ('us-house-of-representatives-1', 'frank-m-kratovil-jr', 177065),
+        ('us-house-of-representatives-1', 'richard-james-davis', 8873),
+    ]
+    _validate_many_candidate_votes(election_id, 'county', known_results)
+    _validate_many_candidate_votes(election_id, 'precinct', known_results)
+
+def validate_result_count_2010_primary():
+    """Should have results for every candidate and contest in 2010 primary"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2010Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2010_general():
+    """Should have results for every candidate and contest in 2010 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2010General().validate_result_count(reporting_levels)
+
+def validate_results_2010_general():
+    """Sum some county-level results for 2010 general election and compare with known totals"""
+    election_id = 'md-2010-11-02-general'
+    known_results = [
+        ('governor', 'martin-omalley', 1044961),
+        ('governor', 'ralph-jaffe', 319),
+    ]
+    _validate_many_candidate_votes(election_id, 'county', known_results)
+    _validate_many_candidate_votes(election_id, 'precinct', known_results)
+
+def validate_result_count_2012_primary():
+    """Should have results for every candidate and contest in 2012 primary"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2012Primary().validate_result_count(reporting_levels)
+
+def validate_result_count_2012_general():
+    """Should have results for every candidate and contest in 2012 general election"""
+    # TODO: Include precincts if it's not too hard
+    reporting_levels = ['county', 'state_legislative']
+    Election2012General().validate_result_count(reporting_levels)
 
 def validate_unique_prez_2012_general():
     """Should only be a single contest for 2012 prez general"""
@@ -276,6 +492,19 @@ def validate_unique_contests():
             raise AssertionError("%s contests expected for elec_id '%s', but %s found" % (expected, elec_id, count))
     print "PASS: unique contests counts found for all elections"
 
+def validate_unique_candidates():
+    """Should have a unique set of candidates for all contests"""
+    msg = "%s candidates expected for election {} and contest {}, but {} found"
+    for contest in Contest.objects.all():
+        election_id = contest.election_id
+        candidates = Candidate.objects.filter(election_id=election_id,
+            contest_slug=contest.slug)
+        expected = len(candidates.distinct('slug'))
+        count = candidates.count()
+        assert count == expected, msg.format(expected, election_id,
+            contest.slug, count) 
+    print "PASS: unique candidates found for all elections"
+
 def validate_no_baltimore_city_comptroller():
     """Should not have contest, candidates or results for a Baltimore City comptroller"""
     election_id = 'md-2004-11-02-general'
@@ -291,6 +520,16 @@ def validate_no_baltimore_city_comptroller():
         contest_slug='comptroller').count()
     msg = "There should be no comptroller results for election {0}"
     assert count == 0, msg.format(election_id)
+
+def validate_uncommitted_primary_state_legislative_results():
+    """Should only have one uncommitted result per legislative district"""
+    results = Result.objects.filter(election_id='md-2008-02-12-primary',
+        reporting_level='state_legislative',
+        contest_slug='president-d',
+        candidate_slug='uncommitted-to-any-presidential-candidate')
+    count = results.count()
+    assert count == 65, ("There should be only one result per "
+        "state legislative district, instead there are {0}".format(count))
 
 #def validate_name_parsing():
     #Check assortment of names
