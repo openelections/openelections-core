@@ -337,6 +337,16 @@ def validate_result_count_2010_general():
     reporting_levels = ['county', 'state_legislative']
     Election2010General().validate_result_count(reporting_levels)
 
+def validate_results_2010_general():
+    """Sum some county-level results for 2010 general election and compare with known totals"""
+    election_id = 'md-2010-11-02-general'
+    known_results = [
+        ('governor', 'martin-omalley', 1044961),
+        ('governor', 'ralph-jaffe', 319),
+    ]
+    _validate_many_candidate_votes(election_id, 'county', known_results)
+    _validate_many_candidate_votes(election_id, 'precinct', known_results)
+
 def validate_result_count_2012_primary():
     """Should have results for every candidate and contest in 2012 primary"""
     # TODO: Include precincts if it's not too hard
