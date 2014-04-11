@@ -1,15 +1,14 @@
 """
-Standardize names of data files on West Virginia Secretary of State and 
-save to mappings/filenames.json
+Standardize names of data files on West Virginia Secretary of State.
 
-The state offers CSV files containing county-level results by election date from 2008 onwards:
+The state offers CSV files containing precinct-level results for each county by election date from 2008 onwards:
 
     http://apps.sos.wv.gov/elections/results/readfile.aspx?path=NC80LVN0YXRlQ291bnR5VG90YWxzLmNzdg==
 
-These are represented in the dashboard API as the `direct_link` attribute on elections.
+These are represented in the dashboard API as the `direct_links` attribute on elections.
 
-Results files for elections prior to 2008 are consistently (and readably) named, but they come in multiple files for each election, one per office contested,
-and are PDF files. Converted CSV versions of them are in the local cache directory for now.
+Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
+https://github.com/openelections/openelections-data-wv repository.
 """
 import os
 from os.path import join
@@ -70,7 +69,8 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     meta.append({
-                        "generated_filename": self._generate_office_filename(election['direct_link'], election['start_date'], election['race_type'], result),
+                        "generated_filename":
+                        self._generate_office_filename(election['direct_links'][0], election['start_date'], election['race_type'], result),
                         "raw_url": self._build_raw_url(year, result['path']),
                         "ocd_id": 'ocd-division/country:us/state:wv',
                         "name": 'West Virginia',
@@ -78,15 +78,7 @@ class Datasource(BaseDatasource):
                     })
         else:
             for election in elections:
-                csv_links = self._find_csv_links(election['direct_link'])
-                statewide_link = csv_links[0]
-                meta.append({
-                    "generated_filename": self._generate_statewide_filename(election),
-                    "raw_url": statewide_link,
-                    "ocd_id": 'ocd-division/country:us/state:wv',
-                    "name": 'West Virginia',
-                    "election": election['slug']
-                })
+                csv_links = self._find_csv_links(election['direct_links'][0])
                 counties = self._jurisdictions()
                 results = zip(counties, csv_links[1:])
                 for result in results:
@@ -105,7 +97,7 @@ class Datasource(BaseDatasource):
     def _generate_statewide_filename(self, election):
         election_type = election['race_type']
         if election['special'] == True:
-            election_type = election_type + '__special'
+            election_type = 'special__' + election_type
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),
@@ -129,7 +121,7 @@ class Datasource(BaseDatasource):
         else:
             office = result['office'] + '__' + result['district']
         if result['special'] == '1':
-            election_type = election_type + '__special'
+            election_type = 'special__' + election_type
         bits = [
             start_date.replace('-',''),
             self.state.lower(),

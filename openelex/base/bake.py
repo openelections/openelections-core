@@ -103,7 +103,6 @@ class Roller(object):
     first_name = FieldNameTransform(Candidate, 'given_name')
     last_name = FieldNameTransform(Candidate, 'family_name')
     middle_name = FieldNameTransform(Candidate, 'additional_name')
-    name_raw = FieldNameTransform(Candidate, 'raw_full_name')
     votes = FieldNameTransform(Result, 'total_votes')
     division = FieldNameTransform(Result, 'ocd_id')
     updated_at = FieldNameTransform(Contest, 'updated')
@@ -117,7 +116,7 @@ class Roller(object):
     year = CalculatedField(lambda d: d['start_date'].year)
 
     excluded_fields = {
-        'result': ['candidate_slug', 'contest_slug',],
+        'result': ['candidate_slug', 'contest_slug', 'raw_result',],
         'candidate': [
             'contest',
             'contest_slug',
@@ -126,7 +125,7 @@ class Roller(object):
             'source',
             'slug',
         ],
-        'contest': ['election_id', 'party', 'raw_party', 'source', 'slug',],
+        'contest': ['election_id', 'party', 'source', 'slug',],
     }
     """
     Mongodb fields that should be excluded from output data. 

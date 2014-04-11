@@ -1,9 +1,33 @@
-"name","abbrev","description"
-"Democrat","DEM",
-"Republican","REP",
-"Constitution","CON",
-"Green","GRN",
-"Libertarian","LIB",
-"Independent","IND","Candidate explicitly declared themselves as a member of no party."
-"Other","OTH","Catch-all for parties that a candidate has declared, but are not officially recognized by the state."
-"Unaffiliated","UNF",
+"name","state_name","abbrev","fec_abbrev","state_abbrev","state","description"
+"Democrat",,"D","D",,"US",
+"Republican",,"R","R",,"US",
+"Constitution",,"CON","CON",,"US",
+"Green",,"GRE","GRE",,"US",
+"Libertarian",,"LIB","LIB",,"US",
+"Reform",,"REF","REF",,"US",
+"Unaffiliated",,"UN","UN","UNF","MD",
+"Independent",,"IND","IND","IND","MD","Candidate explicitly declared themselves as a member of no party."
+"Other",,"OTH","OTH","OTH","MD","Catch-all for parties that a candidate has declared, but are not officially recognized by the state."
+"Populist",,"POP","POP","POP","MD",
+"Both Parties",,"BOT",,"BOT","MD",
+"Constitution Party of Florida",,"CPF","CPF","CPF","FL",
+"Tea Party",,"TEA","TEA","TEA","FL",
+"Florida Whig Party",,"FWP","FWP","FWP","FL",
+"Independence","The Independence Party of Florida","IDP","IDP","IDP","FL",
+"Party for Socialism and Liberation - Florida",,"SLF","SLF","PSL","FL",
+"Prohibition Party",,"P","P","PRO","FL",
+"Objectivist Party of Florida",,"OBF","OBF","OBJ","FL",
+"Florida Socialist Workers",,"FSW","FSW","SWP","FL",
+"American Independent","America's Independent Party of Florida","AIP","AIP","AIP","FL",
+"Ecology Party of Florida",,"ECO","ECO","ECO","FL",
+"Socialist Party of Florida",,"SFL","SFL","SPF","FL","State results use both the abbreviation 'SOC' and 'SPF', but FEC results only use the abbreviation 'SFL'"
+"Boston Tea Party","Boston Tea Party of Florida","BTP","BTP","BTP","FL",
+"Term Limits for the United States Congress Party",,"TLP","TLP","TLP","FL",
+"British Reformed Sectarian Party",,"BRS",,"BRS","FL",
+"Veterans Party","Veterans Party of America","V","VET","VET","FL",
+"Peace and Freedom Party of Florida","Peace & Freedom Party of Florida","PFF","PFF","PFP","FL",
+"Justice Party of Florida",,"JPF","JPF","JPF","FL",
+"Independent Party",,"IP","IP","INT","FL",
+"Natural Law Party of Florida","Natural Law Party","NLF","NLF","LAW","FL",
+"Workers World","Workers World Party","WW","WW","WWP","FL",
+"Christian Party",,"CHR",,"CHR","FL",

@@ -13,4 +13,4 @@ wsgiref==0.1.2
 nameparser==0.2.7
 unicodecsv==0.9.4
 us==0.7
-BeautifulSoup
+beautifulsoup4

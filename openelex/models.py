@@ -6,6 +6,7 @@ from mongoengine.fields import (
     DateTimeField,
     DictField,
     IntField,
+    ListField,
     StringField,
     ReferenceField,
 )
@@ -28,11 +29,37 @@ PRIMARY_TYPE_CHOICES = (
 REPORTING_LEVEL_CHOICES = (
     'state',
     'congressional_district',
+    # Some Maryland primary results return results for a congressional
+    # district, but split by county, without giving a congressional district
+    # total in the raw data.  We need to be able to identify this case
+    # when storing RawResults so it can be detected by transforms.
+    #
+    # See https://github.com/openelections/core/issues/80
+    'congressional_district_by_county',
     'state_legislative',
     'county',
     'precinct',
     'parish',
 )
+
+CANDIDATE_FLAG_CHOICES = (
+    'aggregate',
+    'none_of_above',
+)
+"""
+Flags to unambiguously identify candidate records that represent special
+cases of candidates.  In most cases these are used to identify a candidate
+that is not a human but represents a consistent candidate-like entity that
+is used in results.
+
+* aggregate - Results for this Candidate record represents aggregate vote 
+              totals for multiple people, such as "Other Write-Ins" in
+              Maryland.
+* none_of_above - Results for this Candidate record represents aggregate
+                  vote totals for an explicit vote for no person.
+
+
+"""
 
 # Model mixins
 
@@ -81,6 +108,7 @@ class RawResult(TimestampMixin, DynamicDocument):
     office = StringField(required=True)
     district = StringField(help_text="Only populate this if district is a distinct field in raw data already."
             "If it requires parsing, perform this as a transform step")
+    contest_winner = BooleanField(default=False, help_text="Flag, if provided in raw results.")
 
     ### Candidate fields ###
     #TODO: Add validation to require full_name or family_name
@@ -88,6 +116,8 @@ class RawResult(TimestampMixin, DynamicDocument):
     family_name = StringField(max_length=200, help_text="Only if present in raw results.")
     given_name = StringField(max_length=200, help_text="Only if present in raw results.")
     suffix = StringField(max_length=200, help_text="Only if present in raw results.")
+    additional_name = StringField(max_length=200, help_text="Middle name, "
+        "nickname, etc.  Only if provided in raw results.")
 
     ### Result fields ###
     reporting_level = StringField(required=True, choices=REPORTING_LEVEL_CHOICES)
@@ -127,11 +157,11 @@ class RawResult(TimestampMixin, DynamicDocument):
 
         This will not neccesarily match the slug on canonical Contest records.
         """
-        slug = "%s" % self.office.lower().replace(' ', '-')
+        slug = "%s" % slugify(self.office)
         if self.district:
-            slug += "%s" % self.district.lower().replace(' ', '-')
+            slug += "-%s" % slugify(self.district.lstrip('0'))
         if self.primary_party:
-            slug += "%s" % self.primary_party.replace(' ', '-')
+            slug += "-%s" % slugify(self.primary_party)
         return slug
 
     @property
@@ -151,7 +181,7 @@ class RawResult(TimestampMixin, DynamicDocument):
                 name += " %s" % self.additional_name
             if self.suffix:
                 name +=  " %s" % self.suffix
-        return name.replace(' ', '-')
+        return slugify(name)
     
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=RawResult)
 
@@ -197,9 +227,22 @@ class Office(Document):
 
 
 class Party(Document):
-    name = StringField(required=True)
-    abbrev = StringField(required=True)
-    description = StringField()
+    # We use 'US' as a fake state for national parties such as Democrat and
+    # Republican
+    PARTY_STATES = STATE_POSTALS + ['US',]
+
+    name = StringField(required=True, help_text="Name of the party, "
+        "preferring the one in FEC results if available.")
+    state_name = StringField(help_text="Name of the party as it appears in "
+        "state results, if it differs from the value in the name field.")
+    state = StringField(required=True, choices=PARTY_STATES)
+    abbrev = StringField(required=True, help_text="Abbreviation of the party, "
+        "preferring the one in FEC results if available.")
+    fec_abbrev = StringField(help_text="FEC Abbreviation of the party.")
+    state_abbrev = StringField(help_text="Abbreviation of the party as it "
+        "appears in state results.")
+    description = StringField(help_text="Notes to disambiguate party names or "
+        "meanings that change over time.")
 
     def __unicode__(self):
         return u'%s (%s)' % (self.name, self.abbrev)
@@ -283,22 +326,27 @@ class Contest(TimestampMixin, DynamicDocument):
     def key(self):
         return (self.election_id, self.slug)
 
-    def _make_slug(self):
+    @classmethod
+    def make_slug(cls, **kwargs):
         """
         Returns a slug suitable for setting self.slug
         """
         # TODO: Confirm that it's ok that we'll possible have dupes here
         # across elections since this is only based on office and primary
-        # party. This is the way it's done traditionally at least
-        slug = self.office.slug
-        if self.primary_party:
-            slug += "-%s" % self.primary_party.slug 
+        # party. This is the way it was done in older code.
+        slug = kwargs.get('office').slug
+        primary_party = kwargs.get('primary_party')
+        if primary_party: 
+            slug += "-%s" % primary_party.slug 
         return slug
 
     @classmethod
     def post_init(cls, sender, document, **kwargs):
         if not document.slug:
-            document.slug = document._make_slug()
+            document.slug = document.make_slug(
+                office=document.office,
+                primary_party=document.primary_party
+            )
 
 signals.post_init.connect(Contest.post_init, sender=Contest)
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Contest)
@@ -335,6 +383,9 @@ class Candidate(TimestampMixin, DynamicDocument):
     identifiers = DictField(help_text="Unique identifiers for candidate in other data sets, such as FEC Cand number. "
             "This should store IDs relevant to just this candidacy, such as FEC Cand number(s) for a particular election "
             "cycle. The Person model will store the full history of all FEC Cand Numbers")
+    flags = ListField(StringField(choices=CANDIDATE_FLAG_CHOICES,
+                      help_text="Flags to unambiguously identify candidate "
+                          "records that represent special non-person candidates."))
 
     meta = {
         'indexes': ['election_id',],
@@ -364,15 +415,19 @@ class Candidate(TimestampMixin, DynamicDocument):
         return (self.election_id, self.contest_slug, self.slug)
 
     @classmethod
-    def pre_save(cls, sender, document, **kwargs):
+    def post_init(cls, sender, document, **kwargs):
         if not document.contest_slug:
             document.contest_slug = document.contest.slug
 
         if not document.slug:
-            document.slug = slugify(document.full_name, '-')
+            document.slug = cls.make_slug(full_name=document.full_name) 
+
+    @classmethod
+    def make_slug(cls, **kwargs):
+        return slugify(kwargs.get('full_name'), '-')
 
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Candidate)
-signals.pre_save.connect(Candidate.pre_save, sender=Candidate)
+signals.post_init.connect(Candidate.post_init, sender=Candidate)
 
 
 class Result(TimestampMixin, DynamicDocument):
@@ -426,12 +481,24 @@ class Result(TimestampMixin, DynamicDocument):
         return u'%s-%s-%s-%s-%s (%s)' % bits
 
     @classmethod
-    def pre_save(cls, sender, document, **kwargs):
+    def post_init(cls, sender, document, **kwargs):
         if not document.contest_slug:
             document.contest_slug = document.contest.slug
 
         if not document.candidate_slug:
             document.candidate_slug = document.candidate.slug
 
+    @classmethod
+    def make_slug(cls, **kwargs):
+        bits = (
+            kwargs['election_id'],
+            kwargs['contest_slug'],
+            kwargs['candidate_slug'],
+            kwargs['reporting_level'],
+            slugify(kwargs['jurisdiction']),
+        )
+        return u'%s-%s-%s-%s-%s' % bits
+
+
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Result)
-signals.pre_save.connect(Result.pre_save, sender=Result)
+signals.post_init.connect(Result.post_init, sender=Result)

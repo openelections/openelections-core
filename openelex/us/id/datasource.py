@@ -1,6 +1,5 @@
 """
-Standardize names of data files on Idaho Department of State and 
-save to mappings/filenames.json
+Standardize names of data files on Idaho Department of State.
 
 File-name conventions on ID site are fairly consistent: Excel files containing county-level and precinct-level results:
 
