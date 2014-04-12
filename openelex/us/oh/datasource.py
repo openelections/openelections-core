@@ -178,7 +178,7 @@ class Datasource(BaseDatasource):
                 office
             ]
         path = urlparse.urlparse(url).path
-        name = "__".join(bits)+'.csv'
+        name = "__".join(bits)+'.html'
         return name
     
     def _url_paths(self):
