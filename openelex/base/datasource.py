@@ -1,14 +1,12 @@
-from os.path import dirname, exists, join
-from urllib import urlretrieve
-import inspect
+from os.path import  join
 import json
-import os
 import urlparse
 
-import requests
 import unicodecsv
 
 from openelex import PROJECT_ROOT
+from openelex.api import elections as elec_api
+from openelex.lib.text import election_slug
 from .state import StateBase
 
 
@@ -23,7 +21,19 @@ class BaseDatasource(StateBase):
 
     """
     def elections(self, year=None):
-        raise NotImplementedError()
+        # Fetch all elections initially and stash on instance
+        if not hasattr(self, '_elections'):
+            # Store elections by year
+            self._elections = {}
+            for elec in elec_api.find(self.state):
+                yr = int(elec['start_date'][:4])
+                # Add elec slug
+                elec['slug'] = self._election_slug(elec)
+                self._elections.setdefault(yr, []).append(elec)
+        if year:
+            year_int = int(year)
+            return {year_int: self._elections[year_int]}
+        return self._elections
 
     def mappings(self, year=None):
         raise NotImplementedError()
@@ -66,3 +76,26 @@ class BaseDatasource(StateBase):
             reader = unicodecsv.DictReader(csvfile)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
+
+
+    def _election_slug(self, election):
+        """
+        Generate a slug for an election.
+
+        Arguments:
+
+        * election - Dictionary of election attributes as returned by the
+                     metadata API.
+
+        """
+        # Delete the 'state' key in the election attrs, because its a
+        # dict with multiple values we don't care about and we want
+        # to just pass the value of self.state to election_slug.  
+        # We can probably delete the key from argument without consequence, 
+        # but to be safe and avoid side effects,copy the argument first.
+        election_attrs = election.copy()
+        try:
+            del election_attrs['state']
+        except  KeyError:
+            pass
+        return election_slug(self.state, **election_attrs)

@@ -52,3 +52,36 @@ def ocd_type_id(text, strip_leading_zeros=True):
         u_text = u_text.lstrip('0')
 
     return u_text
+
+
+def election_slug(state, start_date, race_type, special=False, **kwargs):
+    """
+    Return a slug for an election.
+
+    Slugs have the format:
+    
+    ``{state_abbrev}-YYYY-MM-DD-(special)-{race_type}``
+
+    Examples slugs:
+
+    TODO: Add election slugs.
+
+    Positional arguments:
+
+    * state - Lowercase state postal abbreviation.  For example, "md".
+    * start_date - Start date of election, in the form YYYY-MM-DD. Required.
+    * race_type - Race type, for example "general" or "primary".  Required.
+    * special - Boolean indicating whether the election is a special election.
+                Default is False.
+    """
+    bits = [
+        state.lower(),
+        start_date,
+    ]
+
+    if special:
+        bits.append('special')
+
+    bits.append(race_type.lower())
+        
+    return "-".join(bits)
