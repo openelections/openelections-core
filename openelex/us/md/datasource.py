@@ -22,9 +22,7 @@ To run mappings from invoke task:
 """
 import re
 
-from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
-
 
 class Datasource(BaseDatasource):
 
@@ -49,20 +47,6 @@ class Datasource(BaseDatasource):
         return [(item['generated_filename'], item['raw_url']) 
                 for item in self.mappings(year)]
 
-    def elections(self, year=None):
-        # Fetch all elections initially and stash on instance
-        if not hasattr(self, '_elections'):
-            # Store elections by year
-            self._elections = {}
-            for elec in elec_api.find(self.state):
-                yr = int(elec['start_date'][:4])
-                # Add elec slug
-                elec['slug'] = self._elec_slug(elec)
-                self._elections.setdefault(yr, []).append(elec)
-        if year:
-            year_int = int(year)
-            return {year_int: self._elections[year_int]}
-        return self._elections
 
     # PRIVATE METHODS
     def _races_by_type(self, elections):
@@ -72,7 +56,7 @@ class Datasource(BaseDatasource):
         }
         for elec in elections:
             rtype = self._race_type(elec) 
-            elec['slug'] = self._elec_slug(elec)
+            elec['slug'] = self._election_slug(elec)
             races[rtype] = elec
         return races['general'], races['primary'], races['special']
 
@@ -81,19 +65,6 @@ class Datasource(BaseDatasource):
             return 'special' 
 
         return election['race_type'].lower()
-
-    def _elec_slug(self, election):
-        bits = [
-            self.state,
-            election['start_date'],
-        ]
-
-        if election['special']:
-            bits.append('special')
-
-        bits.append(election['race_type'].lower())
-            
-        return "-".join(bits)
 
     def _build_metadata(self, year, elections):
         year_int = int(year)

@@ -343,6 +343,16 @@ def validate_results_2010_general():
     known_results = [
         ('governor', 'martin-omalley', 1044961),
         ('governor', 'ralph-jaffe', 319),
+        ('comptroller', 'peter-franchot', 1087836),
+        ('comptroller', 'william-henry-campbell', 691461),
+        ('attorney-general', 'douglas-f-gansler', 1349962),
+        ('us-senate', 'barbara-a-mikulski', 1140531),
+        ('us-senate', 'richard-shawver', 14746),
+        ('us-house-of-representatives-1', 'andy-harris', 155118),
+        ('us-house-of-representatives-1', 'richard-james-davis', 10876),
+        ('state-senate-47', 'victor-ramirez', 15548),
+        ('house-of-delegates-1a', 'wendell-r-beitzel', 8866),
+        ('house-of-delegates-1a', 'james-r-smokey-stanton', 3333),
     ]
     _validate_many_candidate_votes(election_id, 'county', known_results)
     _validate_many_candidate_votes(election_id, 'precinct', known_results)

@@ -10,9 +10,7 @@ These are represented in the dashboard API as the `direct_links` attribute on el
 Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
 https://github.com/openelections/openelections-data-wv repository.
 """
-import os
 from os.path import join
-import re
 import json
 import unicodecsv
 import urlparse
@@ -20,7 +18,6 @@ import requests
 from bs4 import BeautifulSoup
 
 from openelex import PROJECT_ROOT
-from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
@@ -43,21 +40,6 @@ class Datasource(BaseDatasource):
     def filename_url_pairs(self, year=None):
         return [(item['generated_filename'], item['raw_url']) 
                 for item in self.mappings(year)]
-
-    def elections(self, year=None):
-        # Fetch all elections initially and stash on instance
-        if not hasattr(self, '_elections'):
-            # Store elections by year
-            self._elections = {}
-            for elec in elec_api.find(self.state):
-                rtype = elec['race_type'].lower()
-                elec['slug'] = "-".join((self.state, elec['start_date'], rtype))
-                yr = int(elec['start_date'][:4])
-                self._elections.setdefault(yr, []).append(elec)
-        if year:
-            year_int = int(year)
-            return {year_int: self._elections[year_int]}
-        return self._elections
 
     # PRIVATE METHODS
 
