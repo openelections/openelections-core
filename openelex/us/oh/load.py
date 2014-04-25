@@ -1,6 +1,7 @@
 import re
 import csv
 import unicodecsv
+import xlrd
 
 from bs4 import BeautifulSoup
 
@@ -18,14 +19,14 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if '2002' in election_id:
-            loader = OHLoader2002()
+        if 'precincts' in election_id:
+            loader = OHPrecinctLoader()
         elif '2000' in election_id and 'primary' in election_id:
             loader = OHLoader2000Primary()
         elif '2008' in election_id and 'special' in election_id:
             loader = OHLoader2008Special()
         else:
-            loader = OHLoader()
+            loader = OHHTMLoader()
         loader.run(mapping)
 
 
@@ -35,14 +36,16 @@ class OHBaseLoader(BaseLoader):
     target_offices = set([
         'President - Vice Pres',
         'President and Vice President of the United States',
-        'U.S. Senator',
-        'U.S. Congress',
+        'U.S. Senate',
+        'U.S. Representative',
         'Representative in Congress',
-        'Governor / Lt. Governor',
-        'Comptroller',
+        'Governor/Lieutenant Governor',
         'Attorney General',
-        'State Senator',
-        'House of Delegates',
+        'Auditor of State',
+        'Secretary of State',
+        'Treasurer of State',
+        'State Senate',
+        'State Representative',
     ])
 
     district_offices = set([
@@ -61,16 +64,43 @@ class OHBaseLoader(BaseLoader):
         return False
 
 
-class OHLoader(MDBaseLoader):
+class OH2012PrecinctLoader(OHBaseLoader):
     """
-    Parse Maryland election results for the 2000 general election and
-    all elections after 2002.
-
+    Parse Ohio election results for 2012 precinct-level results files.
     """
     def load(self):
-        with self._file_handle as csvfile:
+        with self._file_handle as xlsfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            workbook = xlrd.open_workbook(xlsfile)
+            worksheet = workbook.sheet_by_name('AllCounties')
+            headers = worksheet.row(1)
+
+            for row in reader:
+                # Skip non-target offices
+                if self._skip_row(row): 
+                    continue
+                elif 'state_legislative' in self.source:
+                    results.extend(self._prep_state_leg_results(row))
+                elif 'precinct' in self.source:
+                    results.append(self._prep_precinct_result(row))
+                else:
+                    results.append(self._prep_county_result(row))
+            RawResult.objects.insert(results)
+
+           
+
+class OH2010PrecinctLoader(OHBaseLoader):
+    """
+    Parse Ohio election results for 2010 precinct-level results (general
+    and primary) contained in xlsx/xls files.
+    """
+    def load(self):
+        with self._file_handle as xlsfile:
+            results = []
+            workbook = xlrd.open_workbook(xlsfile)
+            worksheet = workbook.sheet_by_name('AllCounties')
+            headers = worksheet.row(1)
+
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row): 
@@ -470,19 +500,19 @@ class MDLoader2000Primary(MDBaseLoader):
             return "county"
 
 
-class OHLoaderSpecial(BaseLoader):
+class OHHTMLLoader(BaseLoader):
     """
-    Loader for the Maryland 2008 4th Congressional District Special election results
+    Loader for Ohio .aspx results files
     """
     datasource = Datasource()
 
     def load(self):
         table = self._get_html_table()
         rows = self._parse_html_table(table)
-        winner_name = self._parse_winner_name(table)
+        winner_name = self._parse_winner_name(rows[0])
         candidate_attrs = self._parse_candidates_and_parties(rows[0],
             winner_name)
-        results = self._parse_results(rows[1:3], candidate_attrs)
+        results = self._parse_results(rows[1:88], candidate_attrs)
         RawResult.objects.insert(results)
 
     def _get_html_table(self):
@@ -502,18 +532,17 @@ class OHLoaderSpecial(BaseLoader):
             row.append(cell.text.strip())
         return row
 
-    def _parse_winner_name(self, table):
-        cell = table.select('th > img')[0].parent
-        return self._parse_name(cell.text.strip())
+    def _parse_winner_name(self, row):
+        # winner is prefaced by an *
+        name = [x for x in row if x[0] == '*'][0]
+        return self._parse_name(name[1:])
 
     def _parse_candidates_and_parties(self, row, winner_name):
         candidate_attrs = []
         for cell in row[1:]: 
             # Skip the first cell.  It's a header, "County"
             attrs = {
-                'full_name': self._parse_name(cell),
-                'party': self._parse_party(cell),
-                'write_in': self._parse_write_in(cell),
+                'full_name': self._parse_name(cell)
             }
 
             if attrs['full_name'] == winner_name:
