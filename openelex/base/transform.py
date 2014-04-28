@@ -73,10 +73,11 @@ class Registry(StateBase):
             self._registry[state] = OrderedDict()
             state_xforms = self._registry[state]
 
-        if issubclass(transform, Transform):
-            # Transform is a class. Instantiate it.
-            transform_obj = transform()
-        else:
+        try:
+            if issubclass(transform, Transform):
+                # Transform is a class. Instantiate it.
+                transform_obj = transform()
+        except TypeError:
             # Transform is a function. Wrap it in a class instance.
             transform_obj = FunctionWrappingTransform(transform)
 
