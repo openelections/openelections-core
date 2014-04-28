@@ -464,6 +464,9 @@ class Result(TimestampMixin, DynamicDocument):
     winner = BooleanField(help_text="Winner of jurisdiction, *not* contest winner. Some data flags lower-level results "
         "as winner if candidate won contest-wide. In such case, this field should blank")
     write_in = BooleanField()
+    notes = StringField(help_text="Human-readable notes to describe confusing or "
+        "exceptional situations in the results data.")
+        
 
     meta = {
         'indexes': ['election_id',],

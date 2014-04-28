@@ -313,17 +313,29 @@ def validate_result_count_2008_general():
     Election2008General().validate_result_count(reporting_levels)
 
 def validate_results_2008_general():
-    """Sum some county-level results for 2008 general election and compare with known totals"""
-    # TODO: Figure out why this doesn't pass
+    """
+    Sum some county-level results for 2008 general election and compare with known totals
+
+    Comparison values come from
+    http://www.elections.state.md.us/elections/2008/results/general/index.html
+    """
     election_id = 'md-2008-11-04-general'
-    known_results = [
+    # Precinct-level results only reflect election night totals, so we have to
+    # compare against expected tallies.
+    known_county_results = [
         ('president', 'barack-obama', 1629467),
         ('president', 'john-mccain', 959862),
         ('us-house-of-representatives-1', 'frank-m-kratovil-jr', 177065),
         ('us-house-of-representatives-1', 'richard-james-davis', 8873),
     ]
-    _validate_many_candidate_votes(election_id, 'county', known_results)
-    _validate_many_candidate_votes(election_id, 'precinct', known_results)
+    known_precinct_results = [
+        ('president', 'barack-obama', 1470995),
+        ('president', 'john-mccain', 882106),
+        ('us-house-of-representatives-1', 'frank-m-kratovil-jr', 160915),
+        ('us-house-of-representatives-1', 'richard-james-davis', 7924),
+    ]
+    _validate_many_candidate_votes(election_id, 'county', known_county_results)
+    _validate_many_candidate_votes(election_id, 'precinct', known_precinct_results)
 
 def validate_result_count_2010_primary():
     """Should have results for every candidate and contest in 2010 primary"""
@@ -338,9 +350,14 @@ def validate_result_count_2010_general():
     Election2010General().validate_result_count(reporting_levels)
 
 def validate_results_2010_general():
-    """Sum some county-level results for 2010 general election and compare with known totals"""
+    """
+    Sum some county-level results for 2010 general election and compare with known totals
+    
+    Comparison results from
+    http://www.elections.state.md.us/elections/2010/results/General/index.html
+    """
     election_id = 'md-2010-11-02-general'
-    known_results = [
+    known_county_results = [
         ('governor', 'martin-omalley', 1044961),
         ('governor', 'ralph-jaffe', 319),
         ('comptroller', 'peter-franchot', 1087836),
@@ -354,8 +371,22 @@ def validate_results_2010_general():
         ('house-of-delegates-1a', 'wendell-r-beitzel', 8866),
         ('house-of-delegates-1a', 'james-r-smokey-stanton', 3333),
     ]
-    _validate_many_candidate_votes(election_id, 'county', known_results)
-    _validate_many_candidate_votes(election_id, 'precinct', known_results)
+    known_precinct_results = [
+        ('governor', 'martin-omalley', 832683),
+        ('governor', 'ralph-jaffe', 270),
+        ('comptroller', 'peter-franchot', 868388),
+        ('comptroller', 'william-henry-campbell', 586269),
+        ('attorney-general', 'douglas-f-gansler', 1097931),
+        ('us-senate', 'barbara-a-mikulski', 912899),
+        ('us-senate', 'richard-shawver', 12605),
+        ('us-house-of-representatives-1', 'andy-harris',  125773),
+        ('us-house-of-representatives-1', 'richard-james-davis', 8941),
+        ('state-senate-47', 'victor-ramirez', 13131),
+        ('house-of-delegates-1a', 'wendell-r-beitzel', 7781),
+        ('house-of-delegates-1a', 'james-r-smokey-stanton', 2740),
+    ]
+    _validate_many_candidate_votes(election_id, 'county', known_county_results)
+    _validate_many_candidate_votes(election_id, 'precinct', known_precinct_results)
 
 def validate_result_count_2012_primary():
     """Should have results for every candidate and contest in 2012 primary"""
