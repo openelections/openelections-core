@@ -681,7 +681,7 @@ def add_precinct_result_note():
     night totals.
     """
     note = "Value of votes field contains only election night vote totals."
-    Result.objects.filter(reporting_level='precinct').update(notes=note)
+    Result.objects.filter(reporting_level='precinct').update(set__notes=note)
 
 
 # TODO: When should we create a Person
