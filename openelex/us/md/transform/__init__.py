@@ -675,6 +675,15 @@ class CombineUncommittedPresStateLegislativeResults(BaseTransform):
             district_results.filter(id__ne=first_result.id).delete()
 
 
+def add_precinct_result_note():
+    """
+    Add a note explaining that precinct-level results only contain election
+    night totals.
+    """
+    note = "Value of votes field contains only election night vote totals."
+    Result.objects.filter(reporting_level='precinct').update(notes=note)
+
+
 # TODO: When should we create a Person
 
 #def standardize_office_and_district():
@@ -694,5 +703,6 @@ registry.register('md', RemoveBaltimoreCityComptroller,
     [validate_no_baltimore_city_comptroller])
 registry.register('md', CombineUncommittedPresStateLegislativeResults,
     [validate_uncommitted_primary_state_legislative_results])
+registry.register('md', add_precinct_result_note)
 #registry.register('md', standardize_office_and_district)
 #registry.register('md', clean_vote_counts)
