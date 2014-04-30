@@ -1,0 +1,12 @@
+date,office,district,race_type,party,special,url,raw_extracted_filename,reporting_level,jurisdiction
+2000-11-07,"House of Representatives",12,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec12.zip,spec122000c.txt,county,
+2000-11-07,"House of Representatives",12,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec12.zip,spec12ctyjohnson.txt,precinct,Johnson
+2000-11-07,"House of Representatives",12,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec12.zip,spec12ctyloganco.txt,precinct,Logan
+2000-11-07,"House of Representatives",12,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec12.zip,spec12ctypopecou.txt,precinct,Pope
+2000-11-07,"House of Representatives",12,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec12.zip,spec12ctywashing.txt,precinct,Washington
+2000-11-07,"House of Representatives",12,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec12.zip,spec12ctyyellcou.txt,precinct,Yell
+2000-11-07,"House of Representatives",27,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec27.zip,spec272000c.txt,county,
+2000-11-07,"House of Representatives",27,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec27.zip,spec27ctycrawfor.txt,precinct,Crawford
+2000-11-07,"House of Representatives",27,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec27.zip,spec27ctyfrankli.txt,precinct,Franklin
+2000-11-07,"House of Representatives",27,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec27.zip,spec27ctysebasti.txt,precinct,Sebastian
+2000-11-07,"House of Representatives",27,general,,True,http://www.sos.arkansas.gov/elections/historicalElectionResults/Documents/2000spec27.zip,spec27ctywashing.txt,precinct,Washington
