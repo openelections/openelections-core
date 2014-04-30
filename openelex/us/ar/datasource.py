@@ -48,8 +48,11 @@ class Datasource(BaseDatasource):
 
         if slug == 'ar-2000-11-07-general':
             return self._build_election_metadata_2000_general(election)
-        elif slug == 'ar-2000-11-07-special-general':
-            return self._build_election_metadata_2000_special_general(election)
+        elif slug in ('ar-2000-11-07-special-general',
+                'ar-2001-09-25-special-primary',
+                'ar-2001-10-16-special-primary-runoff',
+                'ar-2001-11-20-special-general'):
+            return self._build_election_metadata_zipped_special(election)
         else:
             return [{
                     "generated_filename": self._standardized_filename(election), 
@@ -77,7 +80,7 @@ class Datasource(BaseDatasource):
             })
         return meta_entries
 
-    def _build_election_metadata_2000_special_general(self, election):
+    def _build_election_metadata_zipped_special(self, election):
         meta_entries = []
         url_paths = self._url_paths_for_election(election['slug'])
         for path in url_paths:
@@ -168,7 +171,7 @@ class Datasource(BaseDatasource):
 
     def _parse_url_path(self, row):
         clean_row = row.copy()
-        clean_row['special'] = row['special'] == 'True'
+        clean_row['special'] = row['special'].lower() == 'true'
         clean_row['election_slug'] = election_slug('ar', clean_row['date'],
             clean_row['race_type'], clean_row['special']) 
         return clean_row
