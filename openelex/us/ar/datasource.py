@@ -10,6 +10,8 @@ from openelex.lib.text import slugify, election_slug, ocd_type_id
 
 
 class Datasource(BaseDatasource):
+    RESULTS_PORTAL_URL = "http://www.sos.arkansas.gov/electionresults/index.php"
+    
     def mappings(self, year=None):
         mappings = []
         for yr, elecs in self.elections(year).items():
@@ -27,14 +29,6 @@ class Datasource(BaseDatasource):
         return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
 
     def _build_metadata(self, year, elections):
-        # BOOKMARK
-
-        # TODO: Properly set name and ocd_id when dealing with a wide variety of
-        # reporting levels
-
-        # TODO: Figure out the best way to handle zip files.  Right now, I
-        # feel like each of the extracted files should have a mapping, but
-        # I'll need to figure out how to handle the duplicate raw_urls
         meta_entries = []
         for election in elections:
             meta_entries.extend(self._build_election_metadata(election))
@@ -54,13 +48,25 @@ class Datasource(BaseDatasource):
                 'ar-2001-11-20-special-general'):
             return self._build_election_metadata_zipped_special(election)
         else:
-            return [{
-                    "generated_filename": self._standardized_filename(election), 
-                    "raw_url": election['direct_links'][0], 
-                    "ocd_id": 'ocd-division/country:us/state:ar',
-                    "name": 'Arkansas',
-                    "election": election['slug']
-            }]
+            return self._build_election_metadata_default(election)
+
+    def _build_election_metadata_default(self, election):
+        link = election['direct_links'][0]
+        filename_kwargs = {}
+
+        if link.startswith(self.RESULTS_PORTAL_URL):
+            # Report portal results are precinct-level
+            filename_kwargs['reporting_level'] = 'precinct'
+            # And the format is tab-delimited text
+            filename_kwargs['extension'] = '.tsv'
+        
+        return [{
+            "generated_filename": self._standardized_filename(election, **filename_kwargs),
+            "raw_url": link, 
+            "ocd_id": 'ocd-division/country:us/state:ar',
+            "name": 'Arkansas',
+            "election": election['slug']
+        }]
 
     def _build_election_metadata_2000_general(self, election):
         meta_entries = [] 
