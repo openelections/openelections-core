@@ -171,8 +171,7 @@ class WVLoaderPre2008(WVBaseLoader):
             'candidate',
             'county',
             'votes',
-            'winner',
-            'total_votes'
+            'winner'
         ]
         self._common_kwargs = self._build_common_election_kwargs()
         self._common_kwargs['reporting_level'] = 'county'
