@@ -15,6 +15,14 @@ class Datasource(BaseDatasource):
     RESULTS_PORTAL_URL = "http://www.sos.arkansas.gov/electionresults/index.php"
     CLARITY_PORTAL_URL = "http://results.enr.clarityelections.com/AR/"
 
+    # There aren't precinct-level results for these, just a CSV file with
+    # summary data for the county.
+    no_precinct_urls = [
+        "http://results.enr.clarityelections.com/AR/Columbia/42858/111213/",
+        "http://results.enr.clarityelections.com/AR/Ouachita/42896/112694/",
+        "http://results.enr.clarityelections.com/AR/Union/42914/112664/",
+    ]
+
     def __init__(self, state=''):
         super(Datasource, self).__init__(state)
         self._cached_url_paths = {}
@@ -241,16 +249,17 @@ class Datasource(BaseDatasource):
         url_paths = []
         for url, county in self._clarity_county_urls(election):
             base_url = self._clarity_election_base_url(url)
-            url_paths.append({
-                'date': election['start_date'],
-                'office': '',
-                'race_type': election['race_type'],
-                'party': '',
-                'special': election['special'],
-                'url': self._clarity_results_url(base_url, fmt),
-                'reporting_level': 'precinct',
-                'jurisdiction': county,
-            })
+            if base_url not in self.no_precinct_urls: 
+                url_paths.append({
+                    'date': election['start_date'],
+                    'office': '',
+                    'race_type': election['race_type'],
+                    'party': '',
+                    'special': election['special'],
+                    'url': self._clarity_results_url(base_url, fmt),
+                    'reporting_level': 'precinct',
+                    'jurisdiction': county,
+                })
 
         with open(url_paths_filename, 'wb') as f:
             fieldnames = ['date', 'office', 'race_type', 'party',
