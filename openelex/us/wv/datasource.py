@@ -50,10 +50,10 @@ class Datasource(BaseDatasource):
             for election in elections:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
+                    generated_filename = self._generate_office_filename(election['direct_links'][0], election['start_date'], election['race_type'], result)
                     meta.append({
-                        "generated_filename":
-                        self._generate_office_filename(election['direct_links'][0], election['start_date'], election['race_type'], result),
-                        "raw_url": self._build_raw_url(year, result['path']),
+                        "generated_filename": generated_filename,
+                        "raw_url": self._build_github_url(generated_filename),
                         "ocd_id": 'ocd-division/country:us/state:wv',
                         "name": 'West Virginia',
                         "election": election['slug']
@@ -75,6 +75,9 @@ class Datasource(BaseDatasource):
     
     def _build_raw_url(self, year, path):
         return "http://www.sos.wv.gov/elections/history/electionreturns/Documents/%s/%s" % (year, path)
+
+    def _build_github_url(self, generated_filename):
+        return "https://raw.githubusercontent.com/openelections/openelections-data-wv/master/%s" % generated_filename
     
     def _generate_statewide_filename(self, election):
         election_type = election['race_type']
