@@ -38,8 +38,13 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url']) 
+        return [(item['generated_filename'], self._url_for_fetch(item)) 
                 for item in self.mappings(year)]
+
+    def unprocessed_filename_url_pairs(self, year=None):
+        return [(item['generated_filename'].replace(".csv", ".pdf"), item['raw_url'])
+                for item in self.mappings(year)
+                if item['pre_processed_url']]
 
     # PRIVATE METHODS
 
@@ -138,3 +143,9 @@ class Datasource(BaseDatasource):
         m = self.jurisdiction_mappings()
         mappings = [x for x in m if x['county'] != ""]
         return mappings
+
+    def _url_for_fetch(self, mapping):
+        if mapping['pre_processed_url']:
+            return mapping['pre_processed_url']
+        else:
+            return mapping['raw_url']
