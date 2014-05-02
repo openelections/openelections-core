@@ -169,12 +169,17 @@ class Datasource(BaseDatasource):
         root, ext = os.path.splitext(parts.path)
         return ext
 
-    def _build_election_metadata_clarity(self, election, fmt="xls"):
+    def _build_election_metadata_clarity(self, election, fmt="xml"):
         """
         Return metadata entries for election results provided by the Clarity
         system.
 
         These results seem to be for elections starting in 2012.
+
+        Keyword Arguments:
+
+        * fmt - Format of results file.  Can be "xls", "txt" or "xml".
+                Default is "xml".
         """
         return self._build_election_metadata_clarity_county(election, fmt) +\
             self._build_election_metadata_clarity_precinct(election, fmt)
