@@ -53,7 +53,8 @@ class Datasource(BaseDatasource):
                     generated_filename = self._generate_office_filename(election['direct_links'][0], election['start_date'], election['race_type'], result)
                     meta.append({
                         "generated_filename": generated_filename,
-                        "raw_url": self._build_github_url(generated_filename),
+                        "raw_url": self._build_raw_url(year, result['path']),
+                        "pre_processed_url": self._build_github_url(generated_filename),
                         "ocd_id": 'ocd-division/country:us/state:wv',
                         "name": 'West Virginia',
                         "election": election['slug']
@@ -66,6 +67,7 @@ class Datasource(BaseDatasource):
                 for result in results:
                     meta.append({
                         "generated_filename": self._generate_county_filename(result[0]['county'], election),
+                        "pre_processed_url": None,
                         "raw_url": result[1],
                         "ocd_id": result[0]['ocd_id'],
                         "name": result[0]['county'],
