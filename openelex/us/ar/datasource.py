@@ -124,13 +124,16 @@ class Datasource(BaseDatasource):
             })
         return meta_entries
 
-    def _standardized_filename(self, election, bits=[], **kwargs):
+    def _standardized_filename(self, election, bits=None, **kwargs):
         reporting_level = kwargs.get('reporting_level', None)
         jurisdiction = kwargs.get('jurisdiction', None)
         office = kwargs.get('office', None)
         office_district = kwargs.get('office_district', None)
         extension = kwargs.get('extension',
             self._filename_extension(election))
+
+        if bits is None:
+            bits = []
 
         bits.extend([
             election['start_date'].replace('-', ''),
@@ -182,6 +185,7 @@ class Datasource(BaseDatasource):
         return [{
             "generated_filename": self._standardized_filename(election,
                 reporting_level='county', extension='.'+fmt),
+            "raw_extracted_filename": "detail.{}".format(fmt),
             "raw_url": self._clarity_results_url(base_url, fmt), 
             "ocd_id": 'ocd-division/country:us/state:ar',
             "name": 'Arkansas',
@@ -198,6 +202,7 @@ class Datasource(BaseDatasource):
                 extension='.'+fmt)
             meta_entries.append({
                 "generated_filename": filename,
+                "raw_extracted_filename": "detail.{}".format(fmt),
                 "raw_url": path['url'],
                 "ocd_id": ocd_id, 
                 "name": jurisdiction, 
@@ -206,10 +211,17 @@ class Datasource(BaseDatasource):
         return meta_entries
             
     def _clarity_election_base_url(self, url):
-        return url.split('/en/')[0] + '/'
+        if "/en/" in url:
+            return url.split('/en/')[0] + '/'
+
+        parsed = urlparse.urlsplit(url)
+        newpath = '/'.join(parsed.path.split('/')[:-1]) + '/'
+        parts = (parsed.scheme, parsed.netloc, newpath, parsed.query,
+                 parsed.fragment)
+        return urlparse.urlunsplit(parts)
 
     def _clarity_results_url(self, base_url, fmt):
-        return "{}/reports/detail{}.zip".format(base_url, fmt)
+        return "{}reports/detail{}.zip".format(base_url, fmt)
 
     def _clarity_precinct_url_paths_filename(self, election):
         filename = self._standardized_filename(election, ['url_paths'],
@@ -223,13 +235,14 @@ class Datasource(BaseDatasource):
 
         url_paths = []
         for url, county in self._clarity_county_urls(election):
+            base_url = self._clarity_election_base_url(url)
             url_paths.append({
                 'date': election['start_date'],
                 'office': '',
                 'race_type': election['race_type'],
                 'party': '',
                 'special': election['special'],
-                'url': self._clarity_results_url(url, fmt),
+                'url': self._clarity_results_url(base_url, fmt),
                 'reporting_level': 'precinct',
                 'jurisdiction': county,
             })
@@ -238,6 +251,7 @@ class Datasource(BaseDatasource):
             fieldnames = ['date', 'office', 'race_type', 'party',
                 'special', 'url', 'reporting_level', 'jurisdiction']
             writer = unicodecsv.DictWriter(f, fieldnames)
+            writer.writeheader()
             writer.writerows(url_paths)
 
         return url_paths
@@ -255,7 +269,8 @@ class Datasource(BaseDatasource):
         return [(o['value'], o.get_text()) for o in soup.select("table li a")]
 
     def _clarity_county_url(self, path):
-        url = self.CLARITY_PORTAL_URL + path.lstrip('/')
+        url = self._clarity_election_base_url(self.CLARITY_PORTAL_URL +
+            path.lstrip('/'))
         r = requests.get(url)
         r.raise_for_status()
         redirect_path = self._scrape_county_redirect_path(r.text)
