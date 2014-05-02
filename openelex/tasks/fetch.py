@@ -8,9 +8,9 @@ from .utils import load_module
 @task(help={
     'state':'Two-letter state-abbreviation, e.g. NY',
     'datefilter': 'Any portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc.',
-    'raw': "Fetch unprocessed data files only.",
+    'unprocessed': "Fetch unprocessed data files only.",
 })
-def fetch(state, datefilter='', raw=False):
+def fetch(state, datefilter='', unprocessed=False):
     """
     Scrape data files and store in local file cache
     under standardized name.
@@ -25,12 +25,12 @@ def fetch(state, datefilter='', raw=False):
     else:
         fetcher = BaseFetcher(state)
 
-    if raw:
+    if unprocessed:
         try:
-            filename_url_pairs = datasrc.raw_filename_url_pairs(datefilter)
+            filename_url_pairs = datasrc.unprocessed_filename_url_pairs(datefilter)
         except NotImplementedError:
             sys.exit("No unprocessed data files are available. Try running this "
-                    "task without the --raw option.")
+                    "task without the --unprocessed option.")
     else:
         filename_url_pairs = datasrc.filename_url_pairs(datefilter)
 

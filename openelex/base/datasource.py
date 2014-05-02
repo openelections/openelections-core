@@ -49,7 +49,7 @@ class BaseDatasource(StateBase):
         """Return an array of tuples of standardized filename, source url pairs"""
         raise NotImplementedError()
 
-    def raw_filename_url_pairs(self, year=None):
+    def unprocessed_filename_url_pairs(self, year=None):
         """
         Return an array of tuples of standardized filename, source URL pairs
         for unprocessed files.
