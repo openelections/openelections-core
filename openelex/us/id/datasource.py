@@ -17,12 +17,9 @@ structured like so:
     {'primary_statewide':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_fed_prec.xls', 'primary_state_legislature':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_leg_prec.xls'}
 
 """
-import os
-from os.path import join
 import requests
 from bs4 import BeautifulSoup
 
-from openelex.api import elections as elec_api
 from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
@@ -46,21 +43,6 @@ class Datasource(BaseDatasource):
         return [(item['generated_filename'], item['raw_url']) 
                 for item in self.mappings(year)]
 
-    def elections(self, year=None):
-        # Fetch all elections initially and stash on instance
-        if not hasattr(self, '_elections'):
-            # Store elections by year
-            self._elections = {}
-            for elec in elec_api.find(self.state):
-                rtype = elec['race_type'].lower()
-                elec['slug'] = "-".join((self.state, elec['start_date'], rtype))
-                yr = int(elec['start_date'][:4])
-                self._elections.setdefault(yr, []).append(elec)
-        if year:
-            year_int = int(year)
-            return {year_int: self._elections[year_int]}
-        return self._elections
-    
     def results_links(self, year):
         if not hasattr(self, '_results_links'):
             url = "http://www.sos.idaho.gov/elect/results.htm"
