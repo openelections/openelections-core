@@ -117,7 +117,7 @@ class FetchResults(BaseFetcher):
         fname = parsed.path.split('/')[-1]
         return os.path.join(self.cache.abspath, fname)
 
-    def _extract_zip(self, url, zip_fname=None, overwrite=False):
+    def _extract_zip(self, url, zip_fname=None, overwrite=False, remove=True):
         if zip_fname is None:
             zip_fname =  self._local_zip_file_name(url)
 
@@ -134,3 +134,6 @@ class FetchResults(BaseFetcher):
                     print "Added to cache: %s" % local_file_name
                 else:
                     print "File is cached: %s" % local_file_name
+
+        if remove:
+            os.remove(zip_fname)
