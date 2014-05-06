@@ -36,13 +36,24 @@ class BaseDatasource(StateBase):
         return self._elections
 
     def mappings(self, year=None):
+        """
+        Return an array of dicts, each containing source url and standardized
+        filenames for results file, along with other pieces of metadata.
+        """
         raise NotImplementedError()
 
     def target_urls(self, year=None):
         raise NotImplementedError()
 
     def filename_url_pairs(self, year=None):
-        "Returns array of tuples of standardized filename, source url pairs"
+        """Return an array of tuples of standardized filename, source url pairs"""
+        raise NotImplementedError()
+
+    def unprocessed_filename_url_pairs(self, year=None):
+        """
+        Return an array of tuples of standardized filename, source URL pairs
+        for unprocessed files.
+        """
         raise NotImplementedError()
 
     def standardized_filename(self, url, fname):

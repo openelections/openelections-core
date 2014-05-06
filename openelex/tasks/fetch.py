@@ -1,3 +1,5 @@
+import sys
+
 from invoke import task
 
 from openelex.base.fetch import BaseFetcher
@@ -6,10 +8,11 @@ from .utils import load_module
 @task(help={
     'state':'Two-letter state-abbreviation, e.g. NY',
     'datefilter': 'Any portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc.',
+    'unprocessed': "Fetch unprocessed data files only.",
 })
-def fetch(state, datefilter=''):
+def fetch(state, datefilter='', unprocessed=False):
     """
-    Scrape raw data files and store in local file cache
+    Scrape data files and store in local file cache
     under standardized name.
 
     State is required. Optionally provide 'datefilter' 
@@ -22,5 +25,14 @@ def fetch(state, datefilter=''):
     else:
         fetcher = BaseFetcher(state)
 
-    for std_filename, url in datasrc.filename_url_pairs(datefilter):
+    if unprocessed:
+        try:
+            filename_url_pairs = datasrc.unprocessed_filename_url_pairs(datefilter)
+        except NotImplementedError:
+            sys.exit("No unprocessed data files are available. Try running this "
+                    "task without the --unprocessed option.")
+    else:
+        filename_url_pairs = datasrc.filename_url_pairs(datefilter)
+
+    for std_filename, url in filename_url_pairs:
         fetcher.fetch(url, std_filename)
