@@ -8,6 +8,7 @@ import unicodecsv
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
+from openelex.lib import build_github_url
 from openelex.lib.text import slugify, election_slug, ocd_type_id
 
 
@@ -37,8 +38,13 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url']) 
+        return [(item['generated_filename'], self._url_for_fetch(item)) 
                 for item in self.mappings(year)]
+
+    def unprocessed_filename_url_pairs(self, year=None):
+        return [(item['generated_filename'].replace(".csv", ".pdf"), item['raw_url'])
+                for item in self.mappings(year)
+                if 'pre_processed_url' in item]
 
     def mappings_for_url(self, url):
         return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
@@ -77,14 +83,23 @@ class Datasource(BaseDatasource):
             filename_kwargs['reporting_level'] = 'precinct'
             # And the format is tab-delimited text
             filename_kwargs['extension'] = '.tsv'
-        
-        return [{
-            "generated_filename": self._standardized_filename(election, **filename_kwargs),
+
+        generated_filename = self._standardized_filename(election, **filename_kwargs)
+        mapping = {
+            "generated_filename": generated_filename, 
             "raw_url": link, 
             "ocd_id": 'ocd-division/country:us/state:ar',
             "name": 'Arkansas',
             "election": election['slug']
-        }]
+        }
+
+        if "2002" in election['slug']:
+            generated_filename = generated_filename.replace('.pdf', '.csv')
+            mapping['pre_processed_url'] = build_github_url(self.state,
+                generated_filename)
+            mapping['generated_filename'] = generated_filename
+        
+        return [mapping]
 
     def _build_election_metadata_2000_general(self, election):
         meta_entries = [] 
@@ -325,3 +340,9 @@ class Datasource(BaseDatasource):
 
     def _url_paths_for_election(self, slug):
         return [p for p in self._url_paths() if p['election_slug'] == slug]
+
+    def _url_for_fetch(self, mapping):
+        if 'pre_processed_url' in mapping:
+            return mapping['pre_processed_url']
+        else:
+            return mapping['raw_url']
