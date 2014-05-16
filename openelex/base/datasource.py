@@ -199,12 +199,13 @@ class BaseDatasource(StateBase):
                     Defaults to extension of first file in elections
                     'direct-links'.
         """
-        reporting_level = kwargs.get('reporting_level', None)
-        jurisdiction = kwargs.get('jurisdiction', None)
-        office = kwargs.get('office', None)
-        office_district = kwargs.get('office_district', None)
-        extension = kwargs.get('extension',
-            self._filename_extension(election))
+        reporting_level = kwargs.get('reporting_level')
+        jurisdiction = kwargs.get('jurisdiction')
+        office = kwargs.get('office')
+        office_district = kwargs.get('office_district')
+        extension = kwargs.get('extension')
+        if extension is None:
+            extension =  self._filename_extension(election)
 
         if bits is None:
             bits = []
