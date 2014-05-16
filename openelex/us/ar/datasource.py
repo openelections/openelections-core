@@ -8,7 +8,7 @@ import unicodecsv
 
 from openelex.base.datasource import BaseDatasource
 from openelex.lib import build_github_url
-from openelex.lib.text import slugify, ocd_type_id
+from openelex.lib.text import ocd_type_id
 
 
 class Datasource(BaseDatasource):
@@ -142,50 +142,12 @@ class Datasource(BaseDatasource):
             })
         return meta_entries
 
-    def _standardized_filename(self, election, bits=None, **kwargs):
-        reporting_level = kwargs.get('reporting_level', None)
-        jurisdiction = kwargs.get('jurisdiction', None)
-        office = kwargs.get('office', None)
-        office_district = kwargs.get('office_district', None)
-        extension = kwargs.get('extension',
-            self._filename_extension(election))
-
-        if bits is None:
-            bits = []
-
-        bits.extend([
-            election['start_date'].replace('-', ''),
-            self.state,
-        ])
-
-        if election['special']:
-            bits.append('special')
-
-        bits.append(election['race_type'].replace('-', '_'))
-
-        if jurisdiction:
-            bits.append(slugify(jurisdiction))
-
-        if office:
-            bits.append(slugify(office))
-
-        if office_district:
-            bits.append(slugify(office_district))
-
-        if reporting_level:
-            bits.append(reporting_level)
-
-        return "__".join(bits) + extension 
 
     def _raw_extracted_filename_2000_general(self, county_name):
         county_part = county_name + " County"
         county_part = county_part.upper().replace(' ', '') 
         return "cty{}.txt".format(county_part[:7])
 
-    def _filename_extension(self, election):
-        parts = urlparse.urlparse(election['direct_links'][0])
-        root, ext = os.path.splitext(parts.path)
-        return ext
 
     def _build_election_metadata_clarity(self, election, fmt="xml"):
         """

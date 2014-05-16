@@ -1,11 +1,11 @@
-from os.path import  join
+from os.path import join, splitext
 import re
 import urlparse
 
 import unicodecsv
 
 from openelex.api import elections as elec_api
-from openelex.lib.text import election_slug
+from openelex.lib.text import election_slug, slugify
 from .state import StateBase
 
 
@@ -177,3 +177,63 @@ class BaseDatasource(StateBase):
     def _url_paths_for_election(self, slug, filename=None):
         """Return URL metadata entries for a single election"""
         return [p for p in self._url_paths(filename) if p['election_slug'] == slug]
+
+    def _standardized_filename(self, election, bits=None, **kwargs):
+        """
+        Standardize a result filename for an election.
+
+        Arguments:
+
+        election - Dictionary containing election metadata as returned by
+                   the elections API. Required.
+        bits - List of filename elements.  These will be prepended to the
+               filename.  List items will be separated by "__".
+
+        Keyword arguments:
+
+        reporting_level
+        jurisdiction
+        office
+        office_district
+        extension - Filename extension, including the leading '.'. 
+                    Defaults to extension of first file in elections
+                    'direct-links'.
+        """
+        reporting_level = kwargs.get('reporting_level', None)
+        jurisdiction = kwargs.get('jurisdiction', None)
+        office = kwargs.get('office', None)
+        office_district = kwargs.get('office_district', None)
+        extension = kwargs.get('extension',
+            self._filename_extension(election))
+
+        if bits is None:
+            bits = []
+
+        bits.extend([
+            election['start_date'].replace('-', ''),
+            self.state,
+        ])
+
+        if election['special']:
+            bits.append('special')
+
+        bits.append(election['race_type'].replace('-', '_'))
+
+        if jurisdiction:
+            bits.append(slugify(jurisdiction))
+
+        if office:
+            bits.append(slugify(office))
+
+        if office_district:
+            bits.append(slugify(office_district))
+
+        if reporting_level:
+            bits.append(reporting_level)
+
+        return "__".join(bits) + extension 
+
+    def _filename_extension(self, election):
+        parts = urlparse.urlparse(election['direct_links'][0])
+        root, ext = splitext(parts.path)
+        return ext
