@@ -306,11 +306,6 @@ class Datasource(BaseDatasource):
         match = re.search(r'\./(\d+)/.*', script_src)
         return match.group(1) + '/summary.html'
 
-    def _counties(self):
-        county_ocd_re = re.compile(r'ocd-division/country:us/state:ar/county:[^/]+$')
-        return [m for m in self.jurisdiction_mappings()
-                if county_ocd_re.match(m['ocd_id'])]
-
     def _url_for_fetch(self, mapping):
         if 'pre_processed_url' in mapping:
             return mapping['pre_processed_url']

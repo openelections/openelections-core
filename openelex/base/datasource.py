@@ -1,5 +1,5 @@
 from os.path import  join
-import json
+import re
 import urlparse
 
 import unicodecsv
@@ -83,14 +83,29 @@ class BaseDatasource(StateBase):
         name = join(*bits)
         return name
 
-    def jurisdiction_mappings(self):
-        "Returns a JSON object of jurisdictional mappings based on OCD ids"
-        filename = join(self.mappings_dir, self.state + '.csv')
-        with open(filename, 'rU') as csvfile:
-            reader = unicodecsv.DictReader(csvfile)
-            mappings = json.dumps([row for row in reader])
-        return json.loads(mappings)
+    def jurisdiction_mappings(self, filename=None):
+        """Return a list of jurisdictional mappings based on OCD ids"""
+        try:
+            return self._cached_jurisdiction_mappings
+        except AttributeError:
+            if filename is None:
+                filename = join(self.mappings_dir, self.state + '.csv')
 
+            with open(filename, 'rU') as csvfile:
+                reader = unicodecsv.DictReader(csvfile)
+                self._cached_jurisdiction_mappings = [row for row in reader]
+
+            return self._cached_jurisdiction_mappings
+
+    def _counties(self):
+        try:
+            return self._cached_counties
+        except AttributeError:
+            county_ocd_re = re.compile(r'ocd-division/country:us/state:' +
+                    self.state.lower() + r'/county:[^/]+$')
+            self._cached_counties = [m for m in self.jurisdiction_mappings()
+                if county_ocd_re.match(m['ocd_id'])]
+            return self._cached_counties
 
     def _election_slug(self, election):
         """
