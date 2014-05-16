@@ -6,10 +6,9 @@ from bs4 import BeautifulSoup
 import requests
 import unicodecsv
 
-from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
 from openelex.lib import build_github_url
-from openelex.lib.text import slugify, election_slug, ocd_type_id
+from openelex.lib.text import slugify, ocd_type_id
 
 
 class Datasource(BaseDatasource):
@@ -23,10 +22,6 @@ class Datasource(BaseDatasource):
         "http://results.enr.clarityelections.com/AR/Ouachita/42896/112694/",
         "http://results.enr.clarityelections.com/AR/Union/42914/112664/",
     ]
-
-    def __init__(self, state=''):
-        super(Datasource, self).__init__(state)
-        self._cached_url_paths = {}
 
     def mappings(self, year=None):
         mappings = []
@@ -254,7 +249,7 @@ class Datasource(BaseDatasource):
     def _clarity_precinct_url_paths_filename(self, election):
         filename = self._standardized_filename(election, ['url_paths'],
             reporting_level='precinct', extension='.csv')
-        return os.path.join(PROJECT_ROOT, self.mappings_dir, filename)
+        return os.path.join(self.mappings_dir, filename)
 
     def _clarity_precinct_url_paths(self, election, fmt):
         url_paths_filename = self._clarity_precinct_url_paths_filename(election)
@@ -315,31 +310,6 @@ class Datasource(BaseDatasource):
         county_ocd_re = re.compile(r'ocd-division/country:us/state:ar/county:[^/]+$')
         return [m for m in self.jurisdiction_mappings()
                 if county_ocd_re.match(m['ocd_id'])]
-
-    def _url_paths(self, filename=None):
-        # TODO: Make this align with other state modules, perhaps move to
-        # BaseDatasource
-        try:
-            return self._cached_url_paths[filename]
-        except KeyError:
-            if filename is None:
-                filename = os.path.join(PROJECT_ROOT, self.mappings_dir, 'url_paths.csv')
-            cached = self._cached_url_paths[filename] = []
-            with open(filename, 'rU') as csvfile:
-                reader = unicodecsv.DictReader(csvfile)
-                for row in reader:
-                    cached.append(self._parse_url_path(row))
-            return cached 
-
-    def _parse_url_path(self, row):
-        clean_row = row.copy()
-        clean_row['special'] = row['special'].lower() == 'true'
-        clean_row['election_slug'] = election_slug('ar', clean_row['date'],
-            clean_row['race_type'], clean_row['special']) 
-        return clean_row
-
-    def _url_paths_for_election(self, slug):
-        return [p for p in self._url_paths() if p['election_slug'] == slug]
 
     def _url_for_fetch(self, mapping):
         if 'pre_processed_url' in mapping:
