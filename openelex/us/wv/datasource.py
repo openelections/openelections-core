@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
+from openelex.lib import build_github_url
 
 class Datasource(BaseDatasource):
     
@@ -59,7 +60,7 @@ class Datasource(BaseDatasource):
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": self._build_raw_url(year, result['path']),
-                        "pre_processed_url": self._build_github_url(generated_filename),
+                        "pre_processed_url": build_github_url(self.state, generated_filename),
                         "ocd_id": 'ocd-division/country:us/state:wv',
                         "name": 'West Virginia',
                         "election": election['slug']
@@ -83,9 +84,6 @@ class Datasource(BaseDatasource):
     def _build_raw_url(self, year, path):
         return "http://www.sos.wv.gov/elections/history/electionreturns/Documents/%s/%s" % (year, path)
 
-    def _build_github_url(self, generated_filename):
-        return "https://raw.githubusercontent.com/openelections/openelections-data-wv/master/%s" % generated_filename
-    
     def _generate_statewide_filename(self, election):
         election_type = election['race_type']
         if election['special']:
@@ -130,14 +128,6 @@ class Datasource(BaseDatasource):
         soup = BeautifulSoup(r.text)
         return ['http://apps.sos.wv.gov/elections/results/'+x['href'] for x in soup.find_all('a') if x.text == 'Download Comma Separated Values (CSV)']
 
-    def _url_paths(self):
-        "Returns a JSON array of url path mappings"
-        filename = join(PROJECT_ROOT, self.mappings_dir, 'url_paths.csv')
-        with open(filename, 'rU') as csvfile:
-            reader = unicodecsv.DictReader(csvfile)
-            mappings = json.dumps([row for row in reader])
-        return json.loads(mappings)
-    
     def _jurisdictions(self):
         """West Virginia counties"""
         m = self.jurisdiction_mappings()

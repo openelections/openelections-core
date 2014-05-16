@@ -164,14 +164,6 @@ class Datasource(BaseDatasource):
         name = "__".join(bits)+'.html'
         return name
     
-    def _url_paths(self):
-        "Returns a JSON array of url path mappings"
-        filename = join(PROJECT_ROOT, self.mappings_dir, 'url_paths.csv')
-        with open(filename, 'rU') as csvfile:
-            reader = unicodecsv.DictReader(csvfile)
-            mappings = json.dumps([row for row in reader])
-        return json.loads(mappings)
-    
     def _jurisdictions(self):
         """Ohio counties"""
         m = self.jurisdiction_mappings()
