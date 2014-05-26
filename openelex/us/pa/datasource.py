@@ -50,7 +50,7 @@ class Datasource(BaseDatasource):
                 if election['direct_links']:
                     raw_url = election['direct_links'][0]
                 else:
-                    raw_url = ''
+                    raw_url = None
                 generated_filename = self._generate_filename(election['start_date'], election['race_type'], result)
                 meta.append({
                     "generated_filename": generated_filename,
@@ -63,19 +63,22 @@ class Datasource(BaseDatasource):
         return meta
     
     def _generate_filename(self, start_date, election_type, result):
-        # example: 20120508__wv__primary__wirt.csv
         if result['district'] == '':
             office = result['office']
         else:
             office = result['office'] + '__' + result['district']
         if result['special']:
             election_type = 'special__' + election_type
+        else:
+            election_type = election_type+'__precinct'
         bits = [
             start_date.replace('-',''),
             self.state.lower(),
             election_type,
             office
         ]
+        if office == '':
+            bits.remove(office)
         name = "__".join(bits) + '.csv'
         return name
     
