@@ -5,9 +5,6 @@ Core repo for election results data acquisition, transformation and output.
 OpenElections core is developed and tested using Python 2.7.*. The package
 might not work with older or newer Python distributions.
 
-Getting started as a developer
-------------------------------
-=======
 ### Getting started as a developer
 
 You'll:
