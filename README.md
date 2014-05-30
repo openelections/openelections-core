@@ -127,10 +127,14 @@ AWS_ACCESS_KEY_ID = ''
 AWS_SECRET_ACCESS_KEY =''
 ```
 
-(Optional) [Install mongo](http://docs.mongodb.org/manual/installation/)
-You only need to install mongo if you plan to write data loaders.
+#### Install MongoDB (optional)
 
-(Optional) Load party and office metadata into mongo.
+You only need to install MongoDB if you plan to write data loaders.
+
+To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
+
+#### Load party and office metadata (optional)
+
 You only need to do this if you plan to write data loaders or transforms.
 
 ```bash
