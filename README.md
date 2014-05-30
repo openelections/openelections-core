@@ -2,13 +2,9 @@
 
 Core repo for election results data acquisition, transformation and output.
 
-<<<<<<< HEAD
-OpenElections core is developed and tested using Python 2.7.*. The package
+OpenElections core is developed and tested using Python 2.7.\*. The package
 might not work with older or newer Python distributions.
 
-Getting started as a developer
-------------------------------
-=======
 ### Getting started as a developer
 
 You'll:
@@ -22,7 +18,6 @@ You'll:
 You should use [virtualenv](http://www.virtualenv.org/en/latest/) and [virtualenvwrapper](http://virtualenvwrapper.readthedocs.org/) to work on Open Elections inside a virtualized development environment.
 
 The easiest way is to install these tools system-wide with `pip` (you may need to use `sudo`):
->>>>>>> d9e6d18b0cdf024c491815d88496dc17e7bb7a57
 
 ```bash
 $ pip install virtualenv
@@ -132,11 +127,14 @@ AWS_ACCESS_KEY_ID = ''
 AWS_SECRET_ACCESS_KEY =''
 ```
 
-<<<<<<< HEAD
-(Optional) [Install mongo](http://docs.mongodb.org/manual/installation/)
-You only need to install mongo if you plan to write data loaders.
+#### Install MongoDB (optional)
 
-(Optional) Load party and office metadata into mongo.
+You only need to install MongoDB if you plan to write data loaders.
+
+To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
+
+#### Load party and office metadata (optional)
+
 You only need to do this if you plan to write data loaders or transforms.
 
 ```bash
@@ -144,6 +142,3 @@ $ cd openelex
 $ invoke load_metadata.run --collection=office
 $ invoke load_metadata.run --collection=party
 ```
-=======
-To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
->>>>>>> d9e6d18b0cdf024c491815d88496dc17e7bb7a57
