@@ -13,10 +13,12 @@ class BaseDatasource(StateBase):
     """
     Wrapper for interacting with source data.
 
-    Primary use serving as an interface to a state's source data, such as URLs
-    of raw data files, and for standardizing names of result files.
+    Its primary use is serving as an interface to a state's source data,
+    such as URLs of raw data files, and for standardizing names of result
+    files.
 
-    Intended to be subclassed in state-specific datasource.py modules.
+    It should be subclassed in state-specific modules as
+    ``openelex.us.{state_abbrev}.datasource.Datasource``.
 
     """
     def __init__(self, state=''):
@@ -24,6 +26,23 @@ class BaseDatasource(StateBase):
         self._cached_url_paths = {}
 
     def elections(self, year=None):
+        """
+        Retrieve election metadata for this state.
+
+        Args:
+            year: Only return metadata for elections from the specified year,
+            provided as an integer.  Defaults to returning elections
+            for all years.
+
+        Returns:
+            A list of dicts, each representing an election and its
+            metadata.  The dictionary matches the output of the
+            Metadata API (http://docs.openelections.net/metadata-api/).
+
+            The election dictionaries have an additional ``slug`` key that
+            can be used as an election identifier.
+
+        """
         # Fetch all elections initially and stash on instance
         if not hasattr(self, '_elections'):
             # Store elections by year
@@ -40,51 +59,143 @@ class BaseDatasource(StateBase):
 
     def mappings(self, year=None):
         """
-        Return an array of dicts, each containing source url and standardized
-        filenames for results file, along with other pieces of metadata.
+        Retrieve source URL, standardized filename and other metadata for a results file.
+
+        This must be implemented in the state-specific class.
+
+        Args:
+            year: Only return mappings for elections from the specified year,
+                provided as an integer.  Defaults to returning mappings for
+                all elections.
+
+        Returns:
+            A list of dicts, each containing source URL and standardized
+            filenames for a results file, along with other pieces of metadata.
+
+            For a state with one results file per election, the returned list
+            will contain only a single mapping dictionary.  For states that split results
+            across multiple data files by county, congressional district or
+            precinct, there will be one dictionary per result file.
+
+            The return dictionary should include the following keys:
+
+            * **ocd_id**: The Open Civic Data identifier for the jurisdiction
+                that the data file covers.
+            * **election**: An identifier string for the election.  You
+                should use the ``slug`` value from the dictionaries returned by
+                the ``elections()`` method.
+            * **raw_url**: The full URL to the raw data file.
+            * **generated_filename**: The standardized filename that will be
+                used for the locally cached copy of the data.  For more on
+                filename standardization, see
+                http://docs.openelections.net/archive-standardization/
+            * **name**: The name of the jurisdiction that the data file covers.
+
+            **Example mapping dictionary:**
+
+            ```
+            {
+              "ocd_id": "ocd-division/country:us/state:md/place:baltimore",
+              "election": "md-2012-04-03-primary",
+              "raw_url": "http://www.elections.state.md.us/elections/2012/election_data/Baltimore_City_By_Precinct_Republican_2012_Primary.csv",
+              "generated_name": "20120403__md__republican__primary__baltimore_city__precinct.csv",
+              "name": "Baltimore City"
+            }
+            ```
+
+            The ``ocd_id`` and ``name`` values in the returned dictionary
+            should reflect the jurisdiction that the data covers.  For
+            example, a file containing results for all of Delaware would have
+            an ocd_id of ``ocd-division/country:us/state:de`` and a name of
+            "Delaware".
+
+            A file containing results for Worcester County, Maryland would
+            have an ocd_id of 
+            ``ocd-division/country:us/state:md/county:worcester`` and a name
+            of "Worcester".
+
         """
         raise NotImplementedError()
 
     def target_urls(self, year=None):
+        """
+        Retrieve source data URLs.
+
+        This must be implemented in the state-specific class.
+
+        Args:
+            year: Only return URLs for elections from the specified year,
+                provided as an integer.  Default is to return URLs for all
+                elections.
+
+        Returns:
+             A list of source data URLs.
+
+        """
         raise NotImplementedError()
 
     def filename_url_pairs(self, year=None):
-        """Return an array of tuples of standardized filename, source url pairs"""
+        """
+        Retrieve standardized filename, source url pairs.
+
+        This must be implemented in the state-specific class.
+
+        Args:
+            year: Only return URLs for elections from the specified year.
+                 Default is to return URL and filename pairs for all elections.
+
+        Returns:
+            A list of standardized filename, source url pairs.
+
+        """
         raise NotImplementedError()
 
     def unprocessed_filename_url_pairs(self, year=None):
         """
-        Return an array of tuples of standardized filename, source URL pairs
-        for unprocessed files.
+        Retrieve standardized filename, source URL pairs for unprocessed files.
+
+        This should be implemented in some state-specific classes.
+
+        It is only needed for states where we have to preprocess the raw data
+        from the state, for example, to convert PDFs to CSV.  In most cases,
+        you won't have to implement this.
+
+        Args: 
+            year: Only return URLs for elections from the specified year.
+                 Default is to return URL and filename pairs for all elections.
+
+        Returns:
+            An array of tuples of standardized filename, source URL pairs.
+
         """
-        raise NotImplementedError()
-
-    def standardized_filename(self, url, fname):
-        """A standardized, fully qualified path name"""
-        #TODO:apply filename standardization logic
-        # non-result pages/files use default urllib name conventions
-        # result files need standardization logic (TBD)
-        if fname:
-            filename = join(self.cache_dir, fname)
-        else:
-            filename = self.filename_from_url(url)
-        return filename
-
-    def filename_from_url(self, url):
-        #TODO: this is quick and dirty
-        # see urlretrieve code for more robust conversion of
-        # url to local filepath
-        result = urlparse.urlsplit(url)
-        bits = [
-            self.cache_dir,
-            result.netloc + '_' +
-            result.path.strip('/'),
-        ]
-        name = join(*bits)
-        return name
+        return []
 
     def jurisdiction_mappings(self, filename=None):
-        """Return a list of jurisdictional mappings based on OCD ids"""
+        """
+        Retrieve jurisdictional mappings based on OCD IDs.
+
+        Args:
+            filename: Filename of the CSV file containing jurisdictional
+            mappings.  Default is 
+            openelex/us/{state_abbrev}/mappings/{state_abbrev}.csv.
+
+        Returns:
+            A list of dictionaries containing jurisdiction Open Civic Data
+            identifiers, jurisdiction names and other metadata about
+            the jurisdiction.  The return dictionaries include a
+            value for each column in the input CSV.
+
+            Example jurisdiction mapping dictionary:
+
+            ```
+            {
+                'ocd_id': 'ocd-division/country:us/state:ar/county:washington',
+                'fips': '05143',
+                'name': 'Washington'
+            }
+            ```
+
+        """
         try:
             return self._cached_jurisdiction_mappings
         except AttributeError:
@@ -98,6 +209,14 @@ class BaseDatasource(StateBase):
             return self._cached_jurisdiction_mappings
 
     def _counties(self):
+        """
+        Retrieve jurisdictional mappings for a state's counties.
+
+        Returns:
+            A list of dictionaries containing jurisdiction metadata, as
+            returned by ``jurisdictional_mappings()``.
+
+        """
         try:
             return self._cached_counties
         except AttributeError:
@@ -111,10 +230,13 @@ class BaseDatasource(StateBase):
         """
         Generate a slug for an election.
 
-        Arguments:
+        Args:
+            election: Dictionary of election attributes as returned by the
+                 metadata API.
 
-        * election - Dictionary of election attributes as returned by the
-                     metadata API.
+        Returns:
+            A string containing a unique identifier for an election.  For
+            example, "ar-2012-05-22-primary".
 
         """
         # Delete the 'state' key in the election attrs, because its a
@@ -133,16 +255,17 @@ class BaseDatasource(StateBase):
         """
         Load URL metadata from a CSV file.
 
-        Return a list of dictionaries, with each dict corresponding to a row
-        in the CSV file.
-
-        This file should follow the conventsions described at
+        The CSV file should follow the conventsions described at
         http://docs.openelections.net/guide/#populating-urlpathscsv
 
-        Arguments:
+        Args:
+            filename: Path to a URL paths CSV file.  Default is
+                 openelex/{state_abbrev}/mappings/url_paths.csv
 
-        * filename - Path to a URL paths CSV file.  Default is
-                     openelex/<state>/mappings/url_paths.csv
+        Returns:
+            A list of dictionaries, with each dict corresponding to a row
+            in the CSV file.
+
         """
         if filename is None:
             filename = join(self.mappings_dir, 'url_paths.csv')
@@ -164,6 +287,16 @@ class BaseDatasource(StateBase):
     def _parse_url_path(self, row):
         """
         Perform data cleaning and type conversion on a URL path file entry.
+
+        Args:
+            row: Dictionary representing a single row of data in the CSV file.
+
+        Returns:
+            A dictionary with cleaned and transformed values.  The
+            ``special`` value is converted from a string to a boolean
+            and an ``election_slug`` value is added if not already
+            present.
+
         """
         clean_row = row.copy()
         # Convert the special flag from string to boolean
@@ -174,30 +307,55 @@ class BaseDatasource(StateBase):
                 clean_row['date'], clean_row['race_type'], clean_row['special']) 
         return clean_row
 
-    def _url_paths_for_election(self, slug, filename=None):
-        """Return URL metadata entries for a single election"""
+    def _url_paths_for_election(self, election, filename=None):
+        """
+        Retrieve URL metadata entries for a single election.
+
+        Args:
+            election: Election metadata dictionary as returned by the
+            elections() method or string containing an election slug.
+
+        Returns:
+            A list of dictionaries, like the return value of
+            ``_url_paths()``.
+
+        """
+        try:
+            slug = election['slug']
+        except TypeError:
+            slug = election
+
         return [p for p in self._url_paths(filename) if p['election_slug'] == slug]
 
     def _standardized_filename(self, election, bits=None, **kwargs):
         """
         Standardize a result filename for an election.
 
-        Arguments:
+        For more on filename standardization conventsions, see
+        http://docs.openelections.net/archive-standardization/.
 
-        election - Dictionary containing election metadata as returned by
-                   the elections API. Required.
-        bits - List of filename elements.  These will be prepended to the
-               filename.  List items will be separated by "__".
+        Args:
+            election: Dictionary containing election metadata as returned by
+            the elections API. Required.
+            bits: List of filename elements.  These will be prepended to the
+                filename.  List items will be separated by "__".
+            reporting_level: Slug string representing the reporting level of
+                the data file.  This could be something like 'county' or
+                'precinct'.
+            jurisdiction: String representing the jurisdiction of the data
+                covered in the file.
+            office: String representing the office if results are for a single
+                office.
+            office_district: String representing the office district numver if
+               the results in the file are for a single office.
+            extension: Filename extension, including the leading '.'. 
+                  Defaults to extension of first file in election's
+                  ``direct_links``.
 
-        Keyword arguments:
+        Returns:
+            A string representing the standardized filename for
+            an election's data file.
 
-        reporting_level
-        jurisdiction
-        office
-        office_district
-        extension - Filename extension, including the leading '.'. 
-                    Defaults to extension of first file in elections
-                    'direct-links'.
         """
         reporting_level = kwargs.get('reporting_level')
         jurisdiction = kwargs.get('jurisdiction')
