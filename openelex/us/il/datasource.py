@@ -77,7 +77,7 @@ class Datasource(BaseDatasource):
         return meta
 
     def _generate_filename(self, election):
-        extension = self._filename_extension(election) 
+        extension = self._filename_extension_for_election(election) 
         if election['race_type'] == 'primary-runoff':
             race_type = 'primary__runoff'
         else:
@@ -106,7 +106,7 @@ class Datasource(BaseDatasource):
 
         return name
 
-    def _filename_extension(self, election):
+    def _filename_extension_for_election(self, election):
         if election['special']:
             return ".html"
         else:

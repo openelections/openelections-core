@@ -363,7 +363,7 @@ class BaseDatasource(StateBase):
         office_district = kwargs.get('office_district')
         extension = kwargs.get('extension')
         if extension is None:
-            extension =  self._filename_extension(election)
+            extension =  self._filename_extension(election['direct_links'][0])
 
         if bits is None:
             bits = []
@@ -392,7 +392,7 @@ class BaseDatasource(StateBase):
 
         return "__".join(bits) + extension 
 
-    def _filename_extension(self, election):
-        parts = urlparse.urlparse(election['direct_links'][0])
+    def _filename_extension(self, url):
+        parts = urlparse.urlparse(url)
         root, ext = splitext(parts.path)
         return ext
