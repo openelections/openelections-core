@@ -20,9 +20,19 @@ class Datasource(BaseDatasource):
                 for mapping in self.mappings(year)]
 
     def unprocessed_filename_url_pairs(self, year=None):
-        return [(mapping['generated_filename'].replace(".csv", ".pdf"), mapping['raw_url'])
+        return [(mapping['generated_filename'].replace(".csv",
+                 self._unprocessed_filename_extension(mapping)),
+                 mapping['raw_url'])
                 for mapping in self.mappings(year)
                 if 'pre_processed_url' in mapping]
+
+    def _unprocessed_filename_extension(self, mapping):
+        if mapping['raw_url'].endswith(".pdf"):
+            return ".pdf"
+        elif mapping['raw_extracted_filename'].endswith(".mdb"):
+            return ".mdb"
+        else:
+            raise Exception
 
     def _url_for_fetch(self, mapping):
         try:
@@ -187,14 +197,14 @@ class Datasource(BaseDatasource):
                      if not url_path['skip']]
 
         for url_path in url_paths:
-            pdf_result = False
+            preprocessed_result = False
             filename_ext = self._filename_extension_for_url_path(url_path)
             # We'll eventually preprocess PDFs and convert them to CSVs.
             # So, the downloaded file will be a CSV.  Set the filename
             # extension accordingly.
-            if filename_ext == ".pdf":
+            if filename_ext == ".pdf" or filename_ext == ".mdb":
                 filename_ext = ".csv"
-                pdf_result = True
+                preprocessed_result = True
 
             filename_kwargs = {
                 'extension': filename_ext, 
@@ -215,7 +225,7 @@ class Datasource(BaseDatasource):
                 'parent_zipfile': url_path['parent_zipfile'],
             }
 
-            if pdf_result:
+            if preprocessed_result:
                 mapping['pre_processed_url'] = build_github_url(self.state,
                     generated_filename)
 
