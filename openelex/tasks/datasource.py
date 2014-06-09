@@ -1,11 +1,12 @@
+import csv
 from pprint import pprint
 import inspect
-import os
 import sys
 
 from invoke import task
 
 from .utils import load_module
+from openelex.base.datasource import MAPPING_FIELDNAMES
 
 
 def handle_task(task, state, datefilter):
@@ -30,6 +31,22 @@ def pprint_results(func_name, results):
         pprint(result)
     print "\n%s returned %s results" % (func_name, len(results))
 
+def csv_results(results):
+    fieldname_set = set()
+    # Since mappings can have extra fields needed  by a particular state,
+    # iterate through the items and record all seen fields.
+    for r in results:
+        for f in r.keys():
+            fieldname_set.add(f)
+    # Put known fieldnames first in CSV header output
+    fieldnames = [] 
+    fieldnames.extend(MAPPING_FIELDNAMES)
+    fieldnames.extend(fieldname_set.difference(set(MAPPING_FIELDNAMES)))
+    writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
+    writer.writeheader()
+    for r in results:
+        writer.writerow(r)
+
 HELP = {
     'state':'Two-letter state-abbreviation, e.g. NY',
     'datefilter': 'Any portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc.',
@@ -47,7 +64,7 @@ def target_urls(state, datefilter=''):
     pprint_results(func_name, results)
 
 @task(help=HELP)
-def mappings(state, datefilter=''):
+def mappings(state, datefilter='', csvout=False):
     """
     List metadata mappings for a state.
 
@@ -55,7 +72,10 @@ def mappings(state, datefilter=''):
     """
     func_name = inspect.stack()[0][3]
     results = handle_task(func_name, state, datefilter)
-    pprint_results(func_name, results)
+    if csvout:
+        csv_results(results)
+    else:
+        pprint_results(func_name, results)
 
 @task(help=HELP)
 def elections(state, datefilter=''):

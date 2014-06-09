@@ -9,6 +9,16 @@ from openelex.lib.text import election_slug, slugify
 from .state import StateBase
 
 
+MAPPING_FIELDNAMES = [
+    'election',
+    'raw_url',
+    'generated_filename',
+    'pre_processed_url',
+    'ocd_id',
+    'name',
+]
+"""Base fields in mapping dictionaries""" 
+
 class BaseDatasource(StateBase):
     """
     Wrapper for interacting with source data.
