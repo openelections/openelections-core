@@ -15,7 +15,7 @@ import urlparse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
-from openelex.lib import build_github_url
+from openelex.lib import build_raw_github_url
 
 class Datasource(BaseDatasource):
     
@@ -48,11 +48,23 @@ class Datasource(BaseDatasource):
     def _build_metadata(self, year, elections):
         meta = []
         year_int = int(year)
+        if year == 2000:
+            for election in elections:
+                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+                for result in results:
+                    county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
+                    generated_filename = self._generate_county_filename(result, election)
+                    meta.append({
+                        "generated_filename": generated_filename,
+                        'raw_url': build_raw_github_url(self.state, generated_filename),
+                        "ocd_id": county['ocd_id'],
+                        "name": county['county'],
+                        "election": election['slug']
+                    })
         if year != 2006:
             for election in elections:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    print result['county']
                     county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
                     generated_filename = self._generate_county_filename(result, election)
                     meta.append({
@@ -98,7 +110,7 @@ class Datasource(BaseDatasource):
             bits = [
                 election['start_date'].replace('-',''),
                 self.state.lower(),
-                result['party'],
+                result['party'].lower(),
                 election['race_type'],
                 result['county'].lower().replace(' ','_')
             ]
