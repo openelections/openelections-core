@@ -1,9 +1,9 @@
 """
-Standardize names of data files on Wyoming Secretary of State.
-
-The state offers XLS files containing precinct-level results for each county for all years except 2006.
-
-These are represented in the dashboard API as the `direct_links` attribute on elections.
+Wyoming offers XLS files containing precinct-level results for each county for all years except 2006.
+Elections in 2012 and 2010 are contained in zip files on the SoS site and These are represented in the dashboard API
+as the `direct_links` attribute on elections. Zip files for 2000, 2002, 2004 and 2008 elections were sent by the SoS 
+and are stored in the https://github.com/openelections/openelections-data-wy repository in the `raw` directory. 2000
+files have been converted from the original Quattro Pro source to XLS files.
 
 For 2006, precinct-level results are contained in county-specific PDF files. The CSV versions of those are contained in the 
 https://github.com/openelections/openelections-data-wy repository.
@@ -11,10 +11,7 @@ https://github.com/openelections/openelections-data-wy repository.
 from os.path import join
 import json
 import datetime
-import unicodecsv
 import urlparse
-import requests
-from bs4 import BeautifulSoup
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
@@ -55,13 +52,15 @@ class Datasource(BaseDatasource):
             for election in elections:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    generated_filename = self._generate_office_filename(election['direct_links'][0], election['start_date'], election['race_type'], result)
+                    print result['county']
+                    county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
+                    generated_filename = self._generate_county_filename(result, election)
                     meta.append({
                         "generated_filename": generated_filename,
-                        "raw_url": self._build_raw_url(year, result['path']),
-                        "pre_processed_url": build_github_url(self.state, generated_filename),
-                        "ocd_id": 'ocd-division/country:us/state:wy',
-                        "name": 'Wyoming',
+                        'raw_url': result['url'],
+                        'raw_extracted_filename': result['raw_extracted_filename'],
+                        "ocd_id": county['ocd_id'],
+                        "name": county['county'],
                         "election": election['slug']
                     })
         else:
@@ -79,53 +78,31 @@ class Datasource(BaseDatasource):
                         "election": election['slug']
                     })
         return meta
-    
-    def _build_raw_url(self, year, path):
-        return "http://www.sos.wv.gov/elections/history/electionreturns/Documents/%s/%s" % (year, path)
-
-    def _generate_statewide_filename(self, election):
-        election_type = election['race_type']
-        if election['special']:
-            election_type = 'special__' + election_type
-        bits = [
-            election['start_date'].replace('-',''),
-            self.state.lower(),
-            election_type
-        ]
-        return "__".join(bits) + '.csv'
         
-    def _generate_county_filename(self, county, election):
-        bits = [
-            election['start_date'].replace('-',''),
-            self.state.lower(),
-            election['race_type'],
-            county.lower()
-        ]
-        return "__".join(bits) + '.csv'
-
-    def _generate_office_filename(self, url, start_date, election_type, result):
-        # example: 20120508__wv__primary__wirt.csv
-        if result['district'] == '':
-            office = result['office']
+    def _generate_county_filename(self, result, election):
+        if election['race_type'] == 'general':
+            bits = [
+                election['start_date'].replace('-',''),
+                self.state.lower(),
+                election['race_type'],
+                result['county'].lower().replace(' ','_')
+            ]
+        elif result['party'] == '':
+            bits = [
+                election['start_date'].replace('-',''),
+                self.state.lower(),
+                election['race_type'],
+                result['county'].lower().replace(' ','_')
+            ]
         else:
-            office = result['office'] + '__' + result['district']
-        if result['special']:
-            election_type = 'special__' + election_type
-        bits = [
-            start_date.replace('-',''),
-            self.state.lower(),
-            election_type,
-            office
-        ]
-        path = urlparse.urlparse(url).path
-        name = "__".join(bits) + '.csv'
-        return name
-
-    def _generate_raw_file_paths(self, date):
-        """Given an election date, return xls files from github repository"""
-        string_date = date.strftime("%Y%m%d")
-        
-
+            bits = [
+                election['start_date'].replace('-',''),
+                self.state.lower(),
+                result['party'],
+                election['race_type'],
+                result['county'].lower().replace(' ','_')
+            ]
+        return "__".join(bits) + '.csv'
 
     def _jurisdictions(self):
         """Wyoming counties"""
