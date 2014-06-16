@@ -1,24 +1,36 @@
 import os
-from datetime import datetime
+from datetime import date, datetime
 from unittest import TestCase
 
-#from mongoengine.context_managers import query_counter
 from mongoengine import Q
 
 from openelex.exceptions import UnsupportedFormatError
 from openelex.tests.mongo_test_case import MongoTestCase
 from openelex.tests.factories import (ContestFactory, CandidateFactory,
-    ResultFactory)
+    OfficeFactory, RawResultFactory, ResultFactory)
 
-from openelex.models import Contest, Candidate, Result
-from openelex.base.bake import Roller, Baker
+from openelex.models import Candidate, RawResult, Result
+from openelex.base.bake import (FlattenFieldTransform, RawResultRoller, ResultRoller,
+    Baker, RawBaker)
 
 
-class TestRoller(MongoTestCase):
-    """
-    Data-bound tests for the Roller class.
-    """
-    
+class FieldTransformTestCase(TestCase):
+    def test_flatten_field_transform(self):
+        transform = FlattenFieldTransform(RawResult, 'vote_breakdowns')
+        test_data = {
+            'vote_breakdowns': {
+                'election_night_total': 15,
+                'absentee_total': 2,
+                'provisional_total': 3,
+                'second_absentee_total': 4,
+            }
+        }
+        data = transform.transform(test_data.copy())
+        self.assertNotIn('vote_breakdowns', data)
+        for k, v in test_data['vote_breakdowns'].items():
+            self.assertEqual(data[k], v)
+
+class RollerTestCase(MongoTestCase):
     OUTPUT_FIELDS = [
         # From Election spec
         'id',
@@ -47,7 +59,8 @@ class TestRoller(MongoTestCase):
         'middle_name',
         'last_name',
         'suffix',
-        'name_raw',
+        # TODO: Renable this, but it requires wiring RawResult into the ResultRoller
+        #'name_raw',
         'party',
         'winner',
         'votes',
@@ -64,22 +77,28 @@ class TestRoller(MongoTestCase):
     https://github.com/openelections/specs/  
     """
 
+class TestResultRoller(RollerTestCase):
+    """
+    Data-bound tests for the ResultRoller class.
+    """
+
     def _create_models(self, start_date, state="MD", election_type="general"):
         """Create some election models for a given date"""
+        office = OfficeFactory()
         contest = ContestFactory(start_date=start_date,
-            election_type=election_type)
+            election_type=election_type, office=office)
         candidate = CandidateFactory(contest=contest)
-        result = ResultFactory(candidate=candidate, contest=contest)
+        ResultFactory(candidate=candidate, contest=contest)
 
     def setUp(self):
         # Call super to select the test database
-        super(TestRoller, self).setUp()
+        super(TestResultRoller, self).setUp()
 
         # Create some test models 
         self._create_models(datetime(2012, 11, 6), election_type="general")
         self._create_models(datetime(2012, 4, 3), election_type="primary")
 
-        self.roller = Roller()
+        self.roller = ResultRoller()
 
     def test_primary_collection_name(self):
         self.assertEqual(self.roller.primary_collection_name, "result")
@@ -147,6 +166,43 @@ class TestRoller(MongoTestCase):
             self.assertIn(field, fields)
 
 
+class TestRawResultRoller(RollerTestCase):
+    def setUp(self):
+        # Call super to select the test database
+        super(TestRawResultRoller, self).setUp()
+
+        state = 'MD'
+        start_date = date(2000, 3, 7)
+        RawResultFactory(state=state, start_date=start_date)
+
+        self.roller = RawResultRoller()
+
+    def test_get_list_has_fields(self):
+        data = self.roller.get_list(state='md', datefilter='20000307')
+        row = data[0]
+        for field in self.OUTPUT_FIELDS:
+            self.assertIn(field, row)
+
+        # vote_breakdowns shouldn't be in the output dict
+        self.assertNotIn('vote_breakdowns', row)
+        # But the keys in vote_breakdowns should be
+        self.assertIn('election_night_total', row)
+        self.assertIn('absentee_total', row)
+        self.assertIn('provisional_total', row)
+        self.assertIn('second_absentee_total', row)
+
+    def test_get_fields_has_fields(self):
+        data = self.roller.get_list(state='md', datefilter='20000307')
+        fields = self.roller.get_fields()
+        # vote_breakdowns shouldn't be in the output fields 
+        self.assertNotIn('vote_breakdowns', fields)
+        # But the keys in vote_breakdowns should be
+        self.assertIn('election_night_total', fields)
+        self.assertIn('absentee_total', fields)
+        self.assertIn('provisional_total', fields)
+        self.assertIn('second_absentee_total', fields)
+
+
 class TestBaker(TestCase):
     def test_filename(self):
         baker = Baker(state='md')
@@ -170,3 +226,28 @@ class TestBaker(TestCase):
         path = os.path.join(os.path.join('openelex', 'us', 'bakery'))
         outputdir = baker.default_outputdir()
         self.assertTrue(outputdir.endswith(path))
+
+
+class TestRawBaker(MongoTestCase):
+    def test_filename(self):
+        state = 'md'
+        baker = RawBaker(state=state)
+        fmt = 'csv'
+        filename = baker.filename(fmt, state=state, datefilter='20000307',
+            election_type='primary')
+        self.assertEqual(filename, "20000307__md__primary__raw.csv")
+
+    def test_collect_items(self):
+        state = 'MD'
+        start_date = date(2000, 3, 7)
+        RawResultFactory(state=state, start_date=start_date)
+        RawResultFactory(state=state, start_date=date(2014, 4, 3))
+        baker = RawBaker(state=state, datefilter=start_date.strftime("%Y%m%d"))
+        items = baker.get_items()
+        self.assertEqual(len(items), 0)
+        baker.collect_items()
+        items = baker.get_items()
+        self.assertEqual(len(items),
+            RawResult.objects.filter(start_date=start_date).count())
+        # TODO: Test dates of filtered items
+        # BOOKMARK

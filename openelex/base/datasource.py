@@ -45,8 +45,10 @@ class BaseDatasource(StateBase):
             for all years.
 
         Returns:
-            A list of dicts, each representing an election and its
-            metadata.  The dictionary matches the output of the
+            A dictionary, keyed by year.  Each value is a list of dictonariess, 
+            each representing an election and its metadata for that year.  
+
+            The election dictionaries match the output of the
             Metadata API (http://docs.openelections.net/metadata-api/).
 
             The election dictionaries have an additional ``slug`` key that
@@ -367,6 +369,8 @@ class BaseDatasource(StateBase):
             an election's data file.
 
         """
+        # TODO(geoffhing@gmail.com) Delegate to
+        # openelex.lib.standardized_filename()
         reporting_level = kwargs.get('reporting_level')
         jurisdiction = kwargs.get('jurisdiction')
         office = kwargs.get('office')
