@@ -30,6 +30,12 @@ Then, to make a virtual environment called `openelex` for open elections work:
 $ mkvirtualenv openelex
 ```
 
+If your terminal is unable to find `mkvirtualenv`, you may need to add the `virtualenvwrapper.sh` script to your `.bashrc` (probably in `/usr/bin/` or `/usr/local/bin`):
+
+```bash
+$ echo 'source "/usr/bin/virtualenvwrapper.sh"' >> ~/.bashrc
+```
+
 This will automatically activate the `openelex` environment. To turn it on for future sessions:
 
 ```bash
