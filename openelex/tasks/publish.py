@@ -1,3 +1,6 @@
+import getpass
+
+from blinker import signal
 from invoke import task
 
 from openelex.base.publish import GitHubPublisher
@@ -10,6 +13,14 @@ publish_help = {
     'raw': ("Publish raw result filess.  Default is to publish cleaned/standardized "
         "result files."),
 }
+
+def log_publish_started(sender, **kwargs):
+    filename = kwargs.get('filename')
+    print("Publishing {}".format(filename))
+
+def log_publish_finished(sender, **kwargs):
+    filename = kwargs.get('filename')
+    print("Finished publishing {}".format(filename))
 
 @task(help=publish_help)
 def publish(state, datefilter=None, raw=False):
@@ -26,7 +37,11 @@ def publish(state, datefilter=None, raw=False):
             cleaned/standardized result files.
         
     """
-    publisher = GitHubPublisher()
-    print(publisher.get_filenames(state, datefilter=datefilter, raw=raw))
-    #publisher.publish(state, datefilter=datefilter, raw=raw)
-    # BOOKMARK
+    pre_publish = signal('pre_publish')
+    pre_publish.connect(log_publish_started)
+    post_publish = signal('post_publish')
+    post_publish.connect(log_publish_finished)
+    username = raw_input("GitHub username: ")
+    password = getpass.getpass("GitHub password: ")
+    publisher = GitHubPublisher(username, password)
+    publisher.publish(state, datefilter=datefilter, raw=raw)

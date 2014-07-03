@@ -1,7 +1,14 @@
 import glob
 import os.path
+import posixpath
+
+from blinker import signal
+import github3
 
 from openelex import COUNTRY_DIR
+
+RAW_PREFIX = 'raw'
+CLEAN_PREFIX = 'clean'
 
 class ResultFileFinder(object):
     """Discover result files"""
@@ -42,10 +49,10 @@ class ResultFileFinder(object):
         extensions = (".csv", ".json")
 
         if search_dir is None:
-            search_dir = self.results_dir()
+            search_dir = cls.results_dir()
 
         for ext in extensions: 
-            glob_s = self.build_glob(state, ext=ext, search_dir=search_dir,
+            glob_s = cls.build_glob(state, ext=ext, search_dir=search_dir,
                 datefilter=datefilter, raw=raw)
             filenames.extend(glob.glob(glob_s))
 
@@ -87,7 +94,7 @@ class ResultFileFinder(object):
         filename_bits.append('*')
 
         if raw:
-            filename_bits.append('raw')
+            filename_bits.append(RAW_PREFIX)
 
         filename_glob = "{}".format("__".join(filename_bits)) + ext 
         pathname = os.path.join(search_dir, filename_glob)
@@ -99,6 +106,12 @@ class BasePublisher(object):
     """
     Publishes result files to a remote location
     """
+    @classmethod
+    def get_filenames(cls, state, datefilter=None, raw=False,
+            search_dir=None):
+        return ResultFileFinder.get_filenames(state=state, datefilter=datefilter,
+            raw=raw, search_dir=search_dir)
+
     def publish(self, state, datefilter=None, raw=False):
         """
         Publish baked result files
@@ -116,9 +129,101 @@ class BasePublisher(object):
         raise NotImplemented("You must implement this method in a subclass")
 
 
-
-
 class GitHubPublisher(BasePublisher):
     """
     Publisher that pushes files to GitHub pages
     """
+
+    def __init__(self, username, password):
+        self._username = username
+        self._password = password
+
+    @classmethod
+    def results_repo_name(cls, state):
+        """
+        Get the GitHub repository name for a state's results rep.
+
+        Args:
+            state: Two-letter state-abbreviation, e.g. NY
+
+        Returns:
+            String containing the name of the results repository.
+
+        """
+        return "openelections-results-{}".format(state.lower())
+        
+    def publish(self, state, datefilter=None, raw=False):
+        gh = github3.login(self._username, self._password)
+        repo = gh.repository("openelections", self.results_repo_name(state))
+        for filename in self.get_filenames(state, datefilter, raw):
+            self.publish_file(repo, filename)
+        # Merge 'master' branch into 'gh-pages'
+        repo.merge('gh-pages', 'master')
+
+    def get_path(self, filename):
+        """
+        Get the path within a repository for a file.
+
+        Args:
+            filename (string): Local filename of a results file.
+
+        Returns:
+            String containing path within the repository of the resutls file.
+            
+        """
+        base, ext = os.path.splitext(filename)
+        without_dir = os.path.basename(filename)
+        if base.endswith("raw"):
+            return posixpath.join(RAW_PREFIX, without_dir)
+        else:
+            return posixpath.join(CLEAN_PREFIX, without_dir)
+
+    def publish_file(self, repo, filename, branch='master'):
+        """
+        Publish a single file to GitHub.
+
+        Args:
+            repo (github3.repos.repo.Repository): Repository object for the
+                GitHub repository that contains the state's files.
+            filename (string): Local filename of results file to be published.
+            branch (string): Name of git branch where the files will be
+                published.
+        """
+        pre_publish = signal('pre_publish')
+        post_publish = signal('post_publish')
+        pre_publish.send(self.__class__, filename=filename)
+        path = self.get_path(filename)
+        with open(filename, 'r') as f:
+            content = f.read()
+            sha = self.get_sha(repo, path, branch)
+            if sha:
+                # Update file
+                msg = "Update file {}".format(path)
+                result = repo.update_file(path, msg, content, sha)
+            else:
+                # Create file
+                msg = "Create file {}".format(path)
+                result = repo.create_file(path, msg, content)
+
+        post_publish.send(self.__class__, filename=filename)
+
+    def get_sha(self, repo, path, branch):
+        """
+        Get the sha for a file in a GitHub repo.
+
+        Arguments:
+            repo (github3.repos.repo.Repository): Repository object for the
+                GitHub repository that contains the file.
+            path (string): path within the repository of the resutls file.
+
+        Returns:
+            String containing sha for the file or None if the file does not
+            exist in the repo.
+
+        """
+        tree = repo.tree(branch).recurse()
+        for hsh in tree.tree:
+            if hsh.path == path:
+                return hsh.sha
+        else:
+            return None
