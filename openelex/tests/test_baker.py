@@ -11,7 +11,8 @@ from openelex.tests.factories import (ContestFactory, CandidateFactory,
 
 from openelex.models import Candidate, RawResult, Result
 from openelex.base.bake import (FlattenFieldTransform, RawResultRoller, ResultRoller,
-    Baker, RawBaker)
+    Baker, RawBaker,
+    format_date, reporting_levels_for_election)
 
 
 class FieldTransformTestCase(TestCase):
@@ -236,6 +237,9 @@ class TestRawBaker(MongoTestCase):
         filename = baker.filename(fmt, state=state, datefilter='20000307',
             election_type='primary')
         self.assertEqual(filename, "20000307__md__primary__raw.csv")
+        filename = baker.filename(fmt, state=state, datefilter='20000307',
+            election_type='primary', reporting_level='precinct')
+        self.assertEqual(filename, "20000307__md__primary__precinct__raw.csv")
 
     def test_collect_items(self):
         state = 'MD'
@@ -250,4 +254,31 @@ class TestRawBaker(MongoTestCase):
         self.assertEqual(len(items),
             RawResult.objects.filter(start_date=start_date).count())
         # TODO: Test dates of filtered items
-        # BOOKMARK
+
+
+class TestUtilities(TestCase):
+    def test_format_date(self):
+        test_values = [
+            ("20101106", "2010-11-06"),
+            ("201011", "2010-11"),
+            ("2010", "2010"),
+        ]
+        for input_date, expected in test_values:
+            self.assertEqual(format_date(input_date), expected)
+
+        self.assertRaises(ValueError, format_date, "201011-06")
+
+
+class TestUtilitiesWithDatabase(MongoTestCase):
+    def test_reporting_levels_for_election(self):
+        start_date = date(2000, 3, 7)
+        state = 'MD'
+        expected_levels = ['precinct', 'county']
+        for level in expected_levels:
+            RawResultFactory(state=state, start_date=start_date,
+                reporting_level=level, election_type='general')
+        levels = reporting_levels_for_election(start_date.strftime("%Y%m%d"),
+           'general', raw=True)
+        self.assertEqual(len(levels), len(expected_levels))
+        for level in expected_levels:
+            self.assertIn(level, levels)

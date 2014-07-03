@@ -99,17 +99,6 @@ class Roller(object):
     """
     __metaclass__ = RollerMeta
     
-    datefilter_formats = {
-        "%Y": "%Y",
-        "%Y%m": "%Y-%m",
-        "%Y%m%d": "%Y-%m-%d",
-    }
-    """
-    Map of filter formats as they're specified from calling code, likely
-    an invoke task, to how the date should be formatted within a searchable
-    data field.
-    """
-
     def __init__(self):
         self._querysets = {}
         self._relationships = {}
@@ -202,6 +191,11 @@ class Roller(object):
         except KeyError:
             pass
 
+        try:
+            q_kwargs['reporting_level'] = filter_kwargs['reporting_level']
+        except KeyError:
+            pass
+
         common_q = Q(**q_kwargs)
 
         # Merge in the date filters
@@ -237,23 +231,13 @@ class Roller(object):
         filters = {}
 
         if not datefilter:
-            return Q() 
+            return Q()
 
-        # Iterate through the map of supported date formats, try parsing the
-        # date filter, and convert it to a mapper filter
-        for infmt, outfmt in cls.datefilter_formats.items():
-            try:
-                # For now we filter on the date string in the election IDs
-                # under the assumption that this will be faster than filtering
-                # across a reference.
-                filters['election_id__contains'] = datetime.strptime(
-                    datefilter, infmt).strftime(outfmt)
-                break
-            except ValueError:
-                pass
-        else:
-            raise ValueError("Invalid date format '%s'" % datefilter)
-        
+        # For now we filter on the date string in the election IDs
+        # under the assumption that this will be faster than filtering
+        # across a reference.
+        filters['election_id__contains'] = format_date(datefilter) 
+
         # Return a Q object rather than just a dict because the non-date
         # filters might also filter with a ``election_id__contains`` keyword
         # argument, clobbering the date filter, or vice-versa
@@ -496,7 +480,18 @@ class RawResultRoller(Roller):
     year = CalculatedField(lambda d: d['start_date'].year)
 
     excluded_fields = {
-        'raw_result': ['reporting_district', 'contest_winner'],
+        'raw_result': [
+            'contest_winner',
+            'county_ocd_id',
+            'created',
+            'name_slug',
+            'primary_party',
+            'primary_type',
+            'reporting_district',
+            'reporting_level',
+            'source',
+            'state',
+        ],
     }
 
     def build_fields(self, **filter_kwargs):
@@ -643,23 +638,30 @@ class BaseBaker(object):
 
         return fmt_method(outputdir, timestamp)
 
-    def write_csv(self, outputdir, timestamp):
+    def write_csv(self, outputdir, timestamp, items=None):
         path = os.path.join(outputdir,
             self.filename('csv', timestamp, **self.filter_kwargs))
+
+        if items is None:
+            items = self.get_items()
             
         with open(path, 'w') as csvfile:
             writer = DictWriter(csvfile, self.get_fields())
             writer.writeheader()
-            for row in self.get_items():
+            for row in items:
                 writer.writerow(row)
 
         return self
 
-    def write_json(self, outputdir, timestamp):
+    def write_json(self, outputdir, timestamp, items=None):
         path = os.path.join(outputdir,
             self.filename('json', timestamp, **self.filter_kwargs))
+
+        if items is None:
+            items = self.get_items()
+
         with open(path, 'w') as f:
-            f.write(json.dumps(self.get_items(), default=json_util.default))
+            f.write(json.dumps(items, default=json_util.default))
 
         return self
 
@@ -707,8 +709,9 @@ class RawBaker(BaseBaker):
         start_date_s = start_date.replace('-', '')
         suffix_bits = ['raw']
         race_type = filter_kwargs.get('election_type')
+        reporting_level = filter_kwargs.get('reporting_level')
         return standardized_filename(state=state, start_date=start_date_s,
-            race_type=race_type,
+            race_type=race_type, reporting_level=reporting_level,
             extension="."+fmt, suffix_bits=suffix_bits)
 
     def write_manifest(self, outputdir=None, timestamp=None):
@@ -723,3 +726,59 @@ class Baker(BaseBaker):
         self._items = roller.get_list(**self.filter_kwargs)
         self._fields = roller.get_fields()
         return self
+
+def format_date(datestr):
+    """
+    Convert date string into a format used within a searchable data field.
+
+    This is needed because calling code, likely an invoke task uses dates
+    in "%Y%m%d" format and the data store uses dates in "%Y-%m-%d" format.
+
+    Args:
+        datestr (string): Date string in "%Y%m%d" format. 
+
+    Returns:
+        Date string in "%Y-%m-%d" format.
+
+    Raises:
+        ValueError if date string is not in an expected format.
+
+    """
+    datefilter_formats = {
+        "%Y": "%Y",
+        "%Y%m": "%Y-%m",
+        "%Y%m%d": "%Y-%m-%d",
+    }
+
+    for infmt, outfmt in datefilter_formats.items():
+        try:
+            return datetime.strptime(datestr, infmt).strftime(outfmt)
+        except ValueError:
+            pass
+    else:
+        raise ValueError("Invalid date format '{}'".format(datestr))
+
+def reporting_levels_for_election(election_date, election_type, raw=False):
+    """
+    Retrieve available reporting levels for an election.
+
+    Args:
+        election_date (string): String representing election start date in
+            format "YYYYMMDD".
+        election_type: Election type. For example, general, primary, etc. 
+        raw: Consider available reporting levels for raw results.  The default
+            is to consider standardized/cleaned results. 
+
+    Returns:
+        A  list of available reporting levels.
+
+    """
+    if raw:
+        result_class = RawResult
+    else:
+        result_class = Result
+
+    q = (Q(election_id__contains=format_date(election_date)) &
+         Q(election_id__contains=election_type))
+
+    return result_class.objects.filter(q).distinct('reporting_level')

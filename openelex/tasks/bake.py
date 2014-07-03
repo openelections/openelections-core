@@ -4,7 +4,7 @@ import sys
 
 from invoke import task
 
-from openelex.base.bake import Baker, RawBaker
+from openelex.base.bake import Baker, RawBaker, reporting_levels_for_election
 from .utils import load_module
 
 BASE_HELP = {
@@ -15,6 +15,9 @@ BASE_HELP = {
     'electiontype': ("Only bake results for election of this type. "
         "Can be 'primary' or 'general'. Default is to bake results for all "
         "types of election"),
+    'level': ("Only bake results aggregated at this reporting level. "
+        "Values can be things like 'precinct' or 'county'.  "
+        "Default is to bake results for all reporting levels."),
     'raw': "Bake raw results.  Default is to bake cleaned/standardized results",
 }
 
@@ -23,9 +26,6 @@ STATE_FILE_HELP.update({
     'datefilter': ("Portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc. "
         "Results will only be baked for elections with a start date matching "
         "the date string."),
-    'level': ("Only bake results aggregated at this reporting level. "
-        "Values can be things like 'precinct' or 'county'.  "
-        "Default is to bake results for all reporting levels.")
 })
 
 @task(help=STATE_FILE_HELP)
@@ -105,7 +105,7 @@ ELECTION_FILE_HELP.update({
 
 @task(help=ELECTION_FILE_HELP)
 def election_file(state, fmt='csv', outputdir=None, datefilter=None,
-                  electiontype=None, raw=False):
+                  electiontype=None, level=None, raw=False):
     """
     Write election and candidate data with one election per file.
     """
@@ -127,13 +127,21 @@ def election_file(state, fmt='csv', outputdir=None, datefilter=None,
             sys.exit(msg)
         elections = [(datefilter, electiontype)]
 
-    for election_date, election_type in elections:
-        msg = "Baking results for {} election on {}\n".format(
-            election_type, election_date)
-        sys.stdout.write(msg)
-        baker = baker_cls(state=state, datefilter=election_date,
-                          election_type=election_type)
 
-        baker.collect_items() \
-             .write(fmt, outputdir=outputdir, timestamp=timestamp) \
-             .write_manifest(outputdir=outputdir, timestamp=timestamp)
+    for election_date, election_type in elections:
+        if level is not None:
+            reporting_levels = [level]
+        else:
+            reporting_levels = reporting_levels_for_election(election_date,
+                election_type, raw)
+
+        for reporting_level in reporting_levels:
+            msg = "Baking {} level results for {} election on {}\n".format(
+                reporting_level, election_type, election_date)
+            sys.stdout.write(msg)
+            baker = baker_cls(state=state, datefilter=election_date,
+                  election_type=election_type, reporting_level=reporting_level)
+
+            baker.collect_items()\
+                 .write(fmt, outputdir=outputdir, timestamp=timestamp) \
+                 .write_manifest(outputdir=outputdir, timestamp=timestamp)
