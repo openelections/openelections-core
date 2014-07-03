@@ -12,7 +12,7 @@ def build_github_url(state, generated_filename):
     tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/{}"
     return tpl.format(state.lower(), generated_filename)
 
-def build_raw_github_url(state, raw_filename):
+def build_raw_github_url(state, datestring, raw_filename):
     """
     Generate a URL to a raw result file hosted on GitHub
 
@@ -23,5 +23,6 @@ def build_raw_github_url(state, raw_filename):
         String containing a URL to the raw result file on GitHub.
     
     """
-    tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/raw/{}"
-    return tpl.format(state.lower(), raw_filename)	
+    tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/raw/{}/{}"
+    return tpl.format(state.lower(), datestring, raw_filename)
+
