@@ -81,11 +81,16 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
-                    generated_filename = self._generate_county_filename(result, election, '.xls')
+                    if result['special']:
+                        generated_filename = result['path']
+                        raw_url = result['url']
+                    else:
+                        generated_filename = self._generate_county_filename(result, election, '.xls')
+                        raw_url = build_raw_github_url(self.state, election['start_date'].replace('-',''), result['raw_extracted_filename'])
                     meta.append({
                         "generated_filename": generated_filename,
-                        "pre_processed_url": '',
-                        "raw_url": build_raw_github_url(self.state, election['start_date'].replace('-',''), result['raw_extracted_filename']),
+                        "pre_processed_url": build_github_url(self.state, generated_filename),
+                        "raw_url": raw_url,
                         "ocd_id": county['ocd_id'],
                         "name": county['county'],
                         "election": election['slug']
