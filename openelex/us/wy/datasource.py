@@ -81,15 +81,21 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
-                    if result['special']:
+                    if result['special'] and result['raw_extracted_filename']:
+                        generated_filename = '20021126__wy__special__general__natrona__state_house__36__precinct.xls'
+                        raw_url = build_raw_github_url(self.state, election['start_date'].replace('-',''), result['raw_extracted_filename'])
+                        pre_processed_url = ''
+                    elif result['special']:
                         generated_filename = result['path']
                         raw_url = result['url']
+                        pre_processed_url = ''
                     else:
                         generated_filename = self._generate_county_filename(result, election, '.xls')
                         raw_url = build_raw_github_url(self.state, election['start_date'].replace('-',''), result['raw_extracted_filename'])
+                        pre_processed_url = ''
                     meta.append({
                         "generated_filename": generated_filename,
-                        "pre_processed_url": build_github_url(self.state, generated_filename),
+                        "pre_processed_url": pre_processed_url,
                         "raw_url": raw_url,
                         "ocd_id": county['ocd_id'],
                         "name": county['county'],
