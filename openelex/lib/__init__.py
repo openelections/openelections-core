@@ -14,6 +14,20 @@ def build_github_url(state, generated_filename):
     tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/{}"
     return tpl.format(state.lower(), generated_filename)
 
+def build_raw_github_url(state, datestring, raw_filename):
+    """
+    Generate a URL to a raw result file hosted on GitHub
+
+    Args:
+        raw_filename: Raw filename of an election result file.
+
+    Returns:
+        String containing a URL to the raw result file on GitHub.
+    
+    """
+    tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/raw/{}/{}"
+    return tpl.format(state.lower(), datestring, raw_filename)
+
 def standardized_filename(state, start_date, extension,
     party=None, special=False, race_type=None, reporting_level=None,
     jurisdiction=None, office=None, office_district=None,
