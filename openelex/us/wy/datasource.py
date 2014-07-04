@@ -43,6 +43,9 @@ class Datasource(BaseDatasource):
                 for item in self.mappings(year)
                 if item['pre_processed_url']]
 
+    def mappings_for_url(self, url):
+        return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
+
     # PRIVATE METHODS
 
     def _build_metadata(self, year, elections):
@@ -138,7 +141,7 @@ class Datasource(BaseDatasource):
         return mappings
 
     def _url_for_fetch(self, mapping):
-        if mapping['pre_processed_url']:
-            return mapping['pre_processed_url']
-        else:
+        if mapping['raw_url']:
             return mapping['raw_url']
+        else:
+            return mapping['pre_processed_url']
