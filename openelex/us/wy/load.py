@@ -193,8 +193,6 @@ class WYLoaderCSV(WYBaseLoader):
                     rr_kwargs.update({
                         'party': row['party'].strip(),
                         'jurisdiction': row['precinct'].strip(),
-                        'office': row['office'].strip(),
-                        'district': row['district'].strip(),
                         'votes': int(row['votes'].strip()),
                         'winner': row['winner'].strip(),
                         'county_ocd_id': self.mapping['ocd_id'],
