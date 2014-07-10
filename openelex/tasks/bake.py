@@ -189,6 +189,12 @@ def results_status_json(state):
             'race_type': election['race_type'],
             'results': result_urls(election),
             'results_raw': result_urls(election, raw=True),
+            'prez': election['prez'],
+            'senate': election['senate'],
+            'house': election['house'],
+            'gov': election['gov'],
+            'state_officers': election['state_officers'],
+            'state_leg': election['state_leg'],
         }
         statuses.append(status)
     print json.dumps(statuses)
