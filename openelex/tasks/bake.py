@@ -1,10 +1,12 @@
 from datetime import datetime
+import json
 import re
 import sys
 
 from invoke import task
 
 from openelex.base.bake import Baker, RawBaker, reporting_levels_for_election
+from openelex.base.publish import published_url
 from .utils import load_module
 
 BASE_HELP = {
@@ -77,7 +79,7 @@ def state_file(state, fmt='csv', outputdir=None, datefilter=None,
          .write_manifest(outputdir=outputdir, timestamp=timestamp)
 
 def get_elections(state, datefilter=None):
-    """Get all election dates and types for a state"""
+    """Get all elections"""
     state_mod_name = "openelex.us.%s" % state
     err_msg = "{} module could not be imported. Does it exist?"
     try:
@@ -90,11 +92,16 @@ def get_elections(state, datefilter=None):
         elections = []
         for yr, yr_elections in datasrc.elections(datefilter).items():
             for election in yr_elections:
-                elections.append((election['start_date'].replace('-', ''), election['race_type']))
+                elections.append(election)
         return elections
     except AttributeError:
         state_mod_name += ".datasource"
         sys.exit(err_msg.format(state_mod_name))
+
+def get_election_dates_types(state, datefilter=None):
+    """Get all election dates and types for a state"""
+    return [(elec['start_date'].replace('-', ''), elec['race_type'])
+            for elec in get_elections(state, datefilter)]
 
 ELECTION_FILE_HELP = BASE_HELP.copy()
 ELECTION_FILE_HELP.update({
@@ -119,7 +126,7 @@ def election_file(state, fmt='csv', outputdir=None, datefilter=None,
     if datefilter is None or re.match( r'\d{4}', datefilter):
         # No date specfied, so bake all elections or date filter
         # represents a single year, so bake all elections for that year.
-        elections = get_elections(state, datefilter)
+        elections = get_election_dates_types(state, datefilter)
     else:
         # Date filter is for a day, grab that election specifically
         if electiontype is None:
@@ -127,12 +134,11 @@ def election_file(state, fmt='csv', outputdir=None, datefilter=None,
             sys.exit(msg)
         elections = [(datefilter, electiontype)]
 
-
     for election_date, election_type in elections:
         if level is not None:
             reporting_levels = [level]
         else:
-            reporting_levels = reporting_levels_for_election(election_date,
+            reporting_levels = reporting_levels_for_election(state, election_date,
                 election_type, raw)
 
         for reporting_level in reporting_levels:
@@ -145,3 +151,44 @@ def election_file(state, fmt='csv', outputdir=None, datefilter=None,
             baker.collect_items()\
                  .write(fmt, outputdir=outputdir, timestamp=timestamp) \
                  .write_manifest(outputdir=outputdir, timestamp=timestamp)
+
+def result_urls(election, raw=False):
+    urls = {}
+    state = election['state']['postal']
+    datefilter = election['start_date'].replace('-', '')
+    if raw:
+        baker_cls = RawBaker
+    else:
+        baker_cls = Baker
+
+    for level in reporting_levels_for_election(state, datefilter,
+            election['race_type'], raw):
+        filename = baker_cls.filename("csv", state=state, datefilter=datefilter,
+            election_type=election['race_type'], reporting_level=level)
+        urls[level] = published_url(state, filename, raw)
+
+    return urls
+
+@task
+def results_status_json(state):
+    """
+    Output a JSON file describing available results for each election.
+
+    The JSON is intended to be consumed by the results front-end website.
+
+    Args:
+        state (string): State abbreviation.
+    """
+    statuses = []
+    for election in get_elections(state):
+        status = {
+            'state': election['state']['postal'],
+            'start_date': election['start_date'],
+            'special': election['special'],
+            'year': datetime.strptime(election['start_date'], "%Y-%m-%d").year,
+            'race_type': election['race_type'],
+            'results': result_urls(election),
+            'results_raw': result_urls(election, raw=True),
+        }
+        statuses.append(status)
+    print json.dumps(statuses)

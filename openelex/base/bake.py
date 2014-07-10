@@ -524,7 +524,8 @@ class BaseBaker(object):
         """
         return os.path.join(COUNTRY_DIR, 'bakery')
 
-    def filename(self, fmt, timestamp=None, **filter_kwargs):
+    @classmethod
+    def filename(cls, fmt, timestamp=None, **filter_kwargs):
         """
         Generate a filename for the output file.
 
@@ -543,17 +544,18 @@ class BaseBaker(object):
         if timestamp is None:
             timestamp = datetime.now()
 
-        state = self.filter_kwargs.get('state')
+        state = filter_kwargs.get('state')
         return "%s_%s.%s" % (state.lower(),
-            timestamp.strftime(self.timestamp_format), fmt) 
+            timestamp.strftime(cls.timestamp_format), fmt) 
 
-    def manifest_filename(self, timestamp, **filter_kwargs):
+    @classmethod
+    def manifest_filename(cls, timestamp, **filter_kwargs):
         """
         Returns the filename string for the manifest output file.
         """
-        state = self.filter_kwargs.get('state')
+        state = filter_kwargs.get('state')
         return "%s_%s_manifest.txt" % (state.lower(),
-            timestamp.strftime(self.timestamp_format)) 
+            timestamp.strftime(cls.timestamp_format)) 
 
     def collect_items(self):
         """
@@ -701,7 +703,8 @@ class RawBaker(BaseBaker):
         self._fields = roller.get_fields()
         return self
 
-    def filename(self, fmt, timestamp=None, **filter_kwargs):
+    @classmethod
+    def filename(cls, fmt, timestamp=None, **filter_kwargs):
         state = filter_kwargs.get('state')
         assert state is not None
         start_date = filter_kwargs.get('datefilter')
@@ -758,11 +761,12 @@ def format_date(datestr):
     else:
         raise ValueError("Invalid date format '{}'".format(datestr))
 
-def reporting_levels_for_election(election_date, election_type, raw=False):
+def reporting_levels_for_election(state, election_date, election_type, raw=False):
     """
     Retrieve available reporting levels for an election.
 
     Args:
+        state (string): State abbreviation.
         election_date (string): String representing election start date in
             format "YYYYMMDD".
         election_type: Election type. For example, general, primary, etc. 
@@ -781,4 +785,4 @@ def reporting_levels_for_election(election_date, election_type, raw=False):
     q = (Q(election_id__contains=format_date(election_date)) &
          Q(election_id__contains=election_type))
 
-    return result_class.objects.filter(q).distinct('reporting_level')
+    return result_class.objects.filter(state__iexact=state).filter(q).distinct('reporting_level')

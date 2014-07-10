@@ -277,7 +277,7 @@ class TestUtilitiesWithDatabase(MongoTestCase):
         for level in expected_levels:
             RawResultFactory(state=state, start_date=start_date,
                 reporting_level=level, election_type='general')
-        levels = reporting_levels_for_election(start_date.strftime("%Y%m%d"),
+        levels = reporting_levels_for_election(state, start_date.strftime("%Y%m%d"),
            'general', raw=True)
         self.assertEqual(len(levels), len(expected_levels))
         for level in expected_levels:

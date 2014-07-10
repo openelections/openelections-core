@@ -79,7 +79,7 @@ def standardized_filename(state, start_date, extension,
     # All filenames need a date and a state
     bits.extend([
         start_date.replace('-', ''),
-        state,
+        state.lower(),
     ])
 
     if special:

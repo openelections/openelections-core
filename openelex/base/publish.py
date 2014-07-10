@@ -1,6 +1,7 @@
 import glob
 import os.path
 import posixpath
+import urlparse
 
 from blinker import signal
 import github3
@@ -9,6 +10,7 @@ from openelex import COUNTRY_DIR
 
 RAW_PREFIX = 'raw'
 CLEAN_PREFIX = 'clean'
+PUBLISH_BASE_URL = "http://results.openelections.net"
 
 class ResultFileFinder(object):
     """Discover result files"""
@@ -227,3 +229,10 @@ class GitHubPublisher(BasePublisher):
                 return hsh.sha
         else:
             return None
+
+
+def published_url(state, filename, raw=False):
+    """Generate the publically accessible URL of a results file"""
+    subdir = RAW_PREFIX if raw else CLEAN_PREFIX
+    path = posixpath.join(state.lower(), subdir, filename)
+    return urlparse.urljoin(PUBLISH_BASE_URL, path)
