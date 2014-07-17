@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from openelex.lib import standardized_filename 
+from openelex.lib import format_date, standardized_filename 
 from openelex.lib.text import ocd_type_id, election_slug
 
 class TestText(TestCase):
@@ -81,6 +81,17 @@ class TestLib(TestCase):
             'extension': ".csv",
             'suffix_bits': ['raw']
         }
-        expected = "20120403__md.csv"
+        expected = "20120403__md__raw.csv"
         filename = standardized_filename(**kwargs)
         self.assertEqual(filename, expected)
+
+    def test_format_date(self):
+        test_values = [
+            ("20101106", "2010-11-06"),
+            ("201011", "2010-11"),
+            ("2010", "2010"),
+        ]
+        for input_date, expected in test_values:
+            self.assertEqual(format_date(input_date), expected)
+
+        self.assertRaises(ValueError, format_date, "201011-06")

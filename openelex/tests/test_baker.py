@@ -12,7 +12,7 @@ from openelex.tests.factories import (ContestFactory, CandidateFactory,
 from openelex.models import Candidate, RawResult, Result
 from openelex.base.bake import (FlattenFieldTransform, RawResultRoller, ResultRoller,
     Baker, RawBaker,
-    format_date, reporting_levels_for_election)
+    reporting_levels_for_election)
 
 
 class FieldTransformTestCase(TestCase):
@@ -254,19 +254,6 @@ class TestRawBaker(MongoTestCase):
         self.assertEqual(len(items),
             RawResult.objects.filter(start_date=start_date).count())
         # TODO: Test dates of filtered items
-
-
-class TestUtilities(TestCase):
-    def test_format_date(self):
-        test_values = [
-            ("20101106", "2010-11-06"),
-            ("201011", "2010-11"),
-            ("2010", "2010"),
-        ]
-        for input_date, expected in test_values:
-            self.assertEqual(format_date(input_date), expected)
-
-        self.assertRaises(ValueError, format_date, "201011-06")
 
 
 class TestUtilitiesWithDatabase(MongoTestCase):

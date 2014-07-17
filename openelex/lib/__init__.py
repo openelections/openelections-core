@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from openelex.lib.text import slugify
 
 def build_github_url(state, generated_filename):
@@ -106,3 +108,35 @@ def standardized_filename(state, start_date, extension,
     bits.extend(suffix_bits)
 
     return sep.join(bits) + extension
+
+
+def format_date(datestr):
+    """
+    Convert date string into a format used within a searchable data field.
+
+    This is needed because calling code, likely an invoke task uses dates
+    in "%Y%m%d" format and the data store uses dates in "%Y-%m-%d" format.
+
+    Args:
+        datestr (string): Date string in "%Y%m%d" format. 
+
+    Returns:
+        Date string in "%Y-%m-%d" format.
+
+    Raises:
+        ValueError if date string is not in an expected format.
+
+    """
+    datefilter_formats = {
+        "%Y": "%Y",
+        "%Y%m": "%Y-%m",
+        "%Y%m%d": "%Y-%m-%d",
+    }
+
+    for infmt, outfmt in datefilter_formats.items():
+        try:
+            return datetime.strptime(datestr, infmt).strftime(outfmt)
+        except ValueError:
+            pass
+    else:
+        raise ValueError("Invalid date format '{}'".format(datestr))
