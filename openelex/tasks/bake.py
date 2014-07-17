@@ -1,13 +1,16 @@
 from datetime import datetime
 import json
+import os.path
 import re
 import sys
 
 from invoke import task
 
+from openelex.api import elections as elec_api
 from openelex.base.bake import Baker, RawBaker, reporting_levels_for_election
 from openelex.base.publish import published_url
-from .utils import load_module
+from openelex.lib import format_date
+from openelex.us import STATE_POSTALS
 
 BASE_HELP = {
     'state': "Two-letter state-abbreviation, e.g. NY",
@@ -79,24 +82,27 @@ def state_file(state, fmt='csv', outputdir=None, datefilter=None,
          .write_manifest(outputdir=outputdir, timestamp=timestamp)
 
 def get_elections(state, datefilter=None):
-    """Get all elections"""
-    state_mod_name = "openelex.us.%s" % state
-    err_msg = "{} module could not be imported. Does it exist?"
-    try:
-        state_mod = load_module(state, ['datasource'])
-    except ImportError:
-        sys.exit(err_msg.format(state_mod_name))
+    """
+    Get all elections.
 
-    try:
-        datasrc = state_mod.datasource.Datasource()
-        elections = []
-        for yr, yr_elections in datasrc.elections(datefilter).items():
-            for election in yr_elections:
-                elections.append(election)
-        return elections
-    except AttributeError:
-        state_mod_name += ".datasource"
-        sys.exit(err_msg.format(state_mod_name))
+    Args:
+        state: Required. Postal code for a state.  For example, "md".
+        datefilter: Date specified in "YYYY" or "YYYYMMDD" used to filter
+            elections before they are baked.
+
+    Returns:
+        A list of dictionaries, each describing an election for the specified
+        state.  The elections are sorted by date.
+
+    """
+    elections = elec_api.find(state.upper())
+
+    if datefilter:
+        date_prefix = format_date(datefilter)
+        elections = [elec for elec in elections
+                     if elec['start_date'].startswith(date_prefix)]
+
+    return sorted(elections, key=lambda x: x['start_date'])
 
 def get_election_dates_types(state, datefilter=None):
     """Get all election dates and types for a state"""
@@ -170,7 +176,7 @@ def result_urls(election, raw=False):
     return urls
 
 @task
-def results_status_json(state):
+def results_status_json(state=None, bakeall=False, outputdir=None):
     """
     Output a JSON file describing available results for each election.
 
@@ -178,8 +184,48 @@ def results_status_json(state):
 
     Args:
         state (string): State abbreviation.
+        bakeall (boolean): If true, bake metadata for all states instead of the
+            specified state.
+        outputdir (string): If ``all`` is true, files will be created in this
+            directory.  If baking a single file, output is sent to stdout.
+
+    """
+    filename_tpl = "elections-{}.json"
+
+    if state:
+        # Bake metadata for a single state to stdout
+        print json.dumps(statuses_for_state(state))
+        sys.exit(0)
+
+    if not (bakeall and outputdir):
+        # Bad arguments.  Output a message and exit. 
+        msg = ("You must specify a state or the --bakeall flag and an "
+               "output directory")
+        sys.exit(msg)
+     
+    # The use has specified the bakeall flag and an outputdir.  Bake files for
+    # all states.
+    for state in STATE_POSTALS:
+        statuses = statuses_for_state(state)
+        output_path = os.path.join(outputdir,
+            filename_tpl.format(state.lower()))
+        with open(output_path, 'w') as f:
+            json.dump(statuses, f)
+
+def statuses_for_state(state):
+    """
+    Get metadata about available results for a state.
+
+    Args:
+        state (string): State abbreviation.
+
+    Returns:
+        A list of dictionaries where each dictionary represents information
+        about a single election.
+
     """
     statuses = []
+
     for election in get_elections(state):
         status = {
             'state': election['state']['postal'],
@@ -197,4 +243,5 @@ def results_status_json(state):
             'state_leg': election['state_leg'],
         }
         statuses.append(status)
-    print json.dumps(statuses)
+
+    return statuses
