@@ -92,6 +92,10 @@ class Datasource(BaseDatasource):
                         generated_filename = result['path']
                         raw_url = result['url']
                         pre_processed_url = ''
+                    elif result['raw_extracted_filename'] != '':
+                        generated_filename = self._generate_county_filename(result, election, '.xls')
+                        pre_processed_url = build_raw_github_url(self.state, election['start_date'].replace('-',''), result['raw_extracted_filename'])
+                        raw_url = ''
                     else:
                         generated_filename = self._generate_county_filename(result, election, '.xls')
                         raw_url = build_raw_github_url(self.state, election['start_date'].replace('-',''), result['raw_extracted_filename'])
