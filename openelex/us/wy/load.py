@@ -1,5 +1,5 @@
 import re
-import csv
+import xlrd
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -35,8 +35,11 @@ class WYBaseLoader(BaseLoader):
 
     target_offices = set([
         'U.S. President',
+        'United States President',
         'U.S. Senate',
+        'United States Senator',
         'U.S. House',
+        'United States Representative',
         'Governor',
         'Secretary of State',
         'State Auditor',
@@ -44,6 +47,18 @@ class WYBaseLoader(BaseLoader):
         'Superintendent of Public Instruction',
         'State Senate',
         'State House',
+        'House District',
+        'Senate District',
+    ])
+
+    office_segments = set([
+        'United States',
+        'House District',
+        'Senate District',
+        'Governor',
+        'Secretary of',
+        'State Auditor',
+        'State Superintendent',
     ])
 
     district_offices = set([
@@ -51,7 +66,7 @@ class WYBaseLoader(BaseLoader):
         'United States Representative'
         'State Senate',
         'State House',
-        'House'
+        'House District',
     ])
 
     def _skip_row(self, row):
@@ -69,73 +84,125 @@ class WYLoader(WYBaseLoader):
 
     """
     def load(self):
-        with self._file_handle as csvfile:
-            results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
-            for row in reader:
-                # Skip non-target offices
-                if self._skip_row(row): 
-                    continue
-                else:
-                    results.append(self._prep_precinct_result(row))
-            RawResult.objects.insert(results)
+        xlsfile = xlrd.open_workbook(self._xls_file_handle())
+        results = []
+        sheet = xlsfile.sheet_by_name('Sheet1')
+        candidates = self._build_candidates(sheet)
+
+        for i in xrange(sheet.nrows):
+            row = sheet.row_values(i)
+            # Skip non-target offices
+            if self._skip_row(row): 
+                continue
+            else:
+                results.append(self._prep_precinct_result(row, candidates))
+        RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        return row['OfficeDescription'].strip() not in self.target_offices
+        if row[0] == 'Total':
+            return True
+        # if the contents of the second cell is not a float, skip that row
+        try:
+            float(row[1])
+            return False
+        except ValueError:
+            return True
 
-    def _build_contest_kwargs(self, row, primary_type):
+    def _build_offices(self, sheet):
+        if sheet.row_values(0)[1] != '':
+            offices = sheet.row_values(0)[1:]
+        else:
+            offices = sheet.row_values(1)
+        office_indexes = [offices.index(x) for x in offices if x != '' and " ".join(x.split()[0:2]).strip() in self.office_segments]
+        office_max_indexes = [o-1 for o in office_indexes[1:]]
+        office_labels = [x for x in offices if " ".join(x.split()[0:2]).strip() in self.office_segments]
+        new_offices = []
+        for o in offices:
+            if o in office_labels:
+                previous = o
+                new_offices.append(o)
+            elif o == '':
+                new_offices.append(previous)
+            else:
+                break
+        return new_offices
+
+    def _build_candidates(self, sheet):
+        # map candidates to offices so we can lookup up one and get the other
+        # for our purposes, candidates include totals for write-ins, over and under votes
+        offices = self._build_offices(sheet)
+        if sheet.row_values(0)[1] != '':
+            cands = sheet.row_values(1)
+        else:
+            cands = sheet.row_values(2)
+        candidates = [c for c in cands[1:-1]][:len(offices)]
+        return zip(candidates, offices)
+
+    def _build_contest_kwargs(self, office):
+        # find a district number, if one exists (state house & senate only)
+        if any(c.isdigit() for c in office):
+            office = 'State ' + office.split(' ')[0]
+            district = int([c for c in office if c.isdigit()][0])
+        else:
+            district = None
         kwargs = {
-            'office': row['OfficeDescription'].strip(),
-            'district': row['District'].strip(),
-            'primary_party': row['PartyName'].strip()
+            'office': office.strip(),
+            'district': district,
+            'primary_party': None
         }
         return kwargs
 
-    def _build_candidate_kwargs(self, row):
-        full_name = row['Name'].strip()
+    def _build_candidate_kwargs(self, candidate):
+        # check if party is in name, extract if so
+        if "(" in candidate:
+            party = candidate.split('(')[1].replace(')', '').strip()
+        else:
+            party = None
+        full_name = candidate.strip()
         slug = slugify(full_name, substitute='-')
         kwargs = {
             'full_name': full_name,
-            #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
+            'party': party,
             'name_slug': slug,
         }
         return kwargs
 
-    def _base_kwargs(self, row):
+    def _base_kwargs(self, row, candidate, office):
         "Build base set of kwargs for RawResult"
-        # TODO: Can this just be called once?
         kwargs = self._build_common_election_kwargs()
-        contest_kwargs = self._build_contest_kwargs(row, kwargs['primary_type'])
-        candidate_kwargs = self._build_candidate_kwargs(row)
+        contest_kwargs = self._build_contest_kwargs(office)
+        candidate_kwargs = self._build_candidate_kwargs(candidate)
         kwargs.update(contest_kwargs)
         kwargs.update(candidate_kwargs)
         return kwargs
 
-    def _prep_precinct_result(self, row):
-        kwargs = self._base_kwargs(row)
-        precinct = str(row['Precinct'])
-        kwargs.update({
-            'reporting_level': 'precinct',
-            'jurisdiction': precinct,
-            # In West Virginia, precincts are nested below counties.
-            #
-            # The mapping ocd_id will be for the precinct's county.
-            # We'll save it as an expando property of the raw result because
-            # we won't have an easy way of looking up the county in the 
-            # transforms.
-            'county_ocd_id': self.mapping['ocd_id'],
-            'party': row['PartyName'].strip(),
-            'votes': self._votes(row['Votes']),
-            'vote_breakdowns': {},
-        })
-        return RawResult(**kwargs)
+    def _prep_precinct_result(self, row, candidates):
+        # each precinct has multiple candidate totals, plus write-ins, over and under votes
+        precinct = str(row[0])
+        for idx, col in enumerate(row[1:len(candidates)+1]):
+            candidate, office = candidates[idx]
+            kwargs = self._base_kwargs(row, candidate, office)
+            kwargs.update({
+                'reporting_level': 'precinct',
+                'jurisdiction': precinct,
+                # In Wyoming, precincts are nested below counties.
+                #
+                # The mapping ocd_id will be for the precinct's county.
+                # We'll save it as an expando property of the raw result because
+                # we won't have an easy way of looking up the county in the 
+                # transforms.
+                'county_ocd_id': self.mapping['ocd_id'],
+                'votes': self._votes(col),
+                'vote_breakdowns': {},
+            })
+            return RawResult(**kwargs)
 
     def _votes(self, val):
         """
         Returns cleaned version of votes or 0 if it's a non-numeric value.
         """
-        if val.strip() == '':
-            return 0
+#        if val.strip() == '-':
+#            return None
 
         try:
             return int(float(val))
