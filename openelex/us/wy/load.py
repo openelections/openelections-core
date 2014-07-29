@@ -91,11 +91,14 @@ class WYLoader(WYBaseLoader):
 
         for i in xrange(sheet.nrows):
             row = sheet.row_values(i)
+            precinct = str(row[0])
             # Skip non-target offices
             if self._skip_row(row): 
                 continue
             else:
-                results.append(self._prep_precinct_result(row, candidates))
+                grouped_results = zip(candidates, row[1:len(candidates)+1])
+                for (candidate, office), votes in grouped_results:
+                    results.append(self._prep_precinct_result(precinct, candidate, office, votes))
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
@@ -135,7 +138,7 @@ class WYLoader(WYBaseLoader):
             cands = sheet.row_values(1)
         else:
             cands = sheet.row_values(2)
-        candidates = [c for c in cands[1:-1]][:len(offices)]
+        candidates = [c.replace('\n', '') for c in cands[1:-1]][:len(offices)]
         return zip(candidates, offices)
 
     def _build_contest_kwargs(self, office):
@@ -167,7 +170,7 @@ class WYLoader(WYBaseLoader):
         }
         return kwargs
 
-    def _base_kwargs(self, row, candidate, office):
+    def _base_kwargs(self, candidate, office):
         "Build base set of kwargs for RawResult"
         kwargs = self._build_common_election_kwargs()
         contest_kwargs = self._build_contest_kwargs(office)
@@ -176,39 +179,36 @@ class WYLoader(WYBaseLoader):
         kwargs.update(candidate_kwargs)
         return kwargs
 
-    def _prep_precinct_result(self, row, candidates):
+    def _prep_precinct_result(self, precinct, candidate, office, votes):
         # each precinct has multiple candidate totals, plus write-ins, over and under votes
-        precinct = str(row[0])
-        for idx, col in enumerate(row[1:len(candidates)+1]):
-            candidate, office = candidates[idx]
-            kwargs = self._base_kwargs(row, candidate, office)
-            kwargs.update({
-                'reporting_level': 'precinct',
-                'jurisdiction': precinct,
-                # In Wyoming, precincts are nested below counties.
-                #
-                # The mapping ocd_id will be for the precinct's county.
-                # We'll save it as an expando property of the raw result because
-                # we won't have an easy way of looking up the county in the 
-                # transforms.
-                'county_ocd_id': self.mapping['ocd_id'],
-                'votes': self._votes(col),
-                'vote_breakdowns': {},
-            })
-            return RawResult(**kwargs)
+        print candidate
+        if self._votes(votes) == None:
+            pass
+        kwargs = self._base_kwargs(candidate, office)
+        kwargs.update({
+            'reporting_level': 'precinct',
+            'jurisdiction': precinct,
+            # In Wyoming, precincts are nested below counties.
+            #
+            # The mapping ocd_id will be for the precinct's county.
+            # We'll save it as an expando property of the raw result because
+            # we won't have an easy way of looking up the county in the 
+            # transforms.
+            'county_ocd_id': self.mapping['ocd_id'],
+            'votes': votes,
+            'vote_breakdowns': {},
+        })
+        return RawResult(**kwargs)
 
     def _votes(self, val):
         """
         Returns cleaned version of votes or 0 if it's a non-numeric value.
         """
-#        if val.strip() == '-':
-#            return None
-
         try:
             return int(float(val))
         except ValueError:
             # Count'y convert value from string   
-            return 0
+            return None
 
     def _writein(self, row):
         # sometimes write-in field not present
