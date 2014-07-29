@@ -138,7 +138,7 @@ class WYLoader(WYBaseLoader):
             cands = sheet.row_values(1)
         else:
             cands = sheet.row_values(2)
-        candidates = [c.replace('\n', '') for c in cands[1:-1]][:len(offices)]
+        candidates = [c.replace('\n', ' ') for c in cands[1:-1]][:len(offices)]
         return zip(candidates, offices)
 
     def _build_contest_kwargs(self, office):
@@ -159,9 +159,11 @@ class WYLoader(WYBaseLoader):
         # check if party is in name, extract if so
         if "(" in candidate:
             party = candidate.split('(')[1].replace(')', '').strip()
+            name = candidate.split('(')[0].replace('  ',' ').strip()
         else:
             party = None
-        full_name = candidate.strip()
+            name = candidate
+        full_name = name
         slug = slugify(full_name, substitute='-')
         kwargs = {
             'full_name': full_name,
