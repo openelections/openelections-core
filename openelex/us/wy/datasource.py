@@ -56,7 +56,10 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
-                    generated_filename = self._generate_county_filename(result, election, '.xls')
+                    if year == 2012:
+                        generated_filename = self._generate_county_filename(result, election, '.xlsx')
+                    else:
+                        generated_filename = self._generate_county_filename(result, election, '.xls')
                     meta.append({
                         "generated_filename": generated_filename,
                         'raw_url': result['url'],
