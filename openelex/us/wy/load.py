@@ -99,7 +99,8 @@ class WYLoader(WYBaseLoader):
                 votes = [v for v in row[1:len(candidates)] if not v == '']
                 grouped_results = zip(candidates, votes)
                 for (candidate, office, party), votes in grouped_results:
-                    results.append(self._prep_precinct_result(precinct, candidate, office, party, votes))
+                    if not votes == '-':
+                        results.append(self._prep_precinct_result(precinct, candidate, office, party, votes))
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
@@ -167,7 +168,7 @@ class WYLoader(WYBaseLoader):
         # find a district number, if one exists (state house & senate only)
         if any(c.isdigit() for c in office):
             office = 'State ' + office.split(' ')[0]
-            district = int([c for c in office if c.isdigit()][0])
+            district = ''.join([c for c in office if c.isdigit()])
         else:
             district = None
         kwargs = {
