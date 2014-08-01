@@ -52,7 +52,6 @@ date,office,district,url,race_type,special,reporting_level,winners,skip_loading,
 2009-09-01,State House,90,http://sos.iowa.gov/elections/pdf/2009/HD90precinctresults.pdf,general,TRUE,county,,,
 2010-11-02,,,http://sos.iowa.gov/elections/pdf/2010/gensummaryorr.pdf,general,TRUE,state,,TRUE,This file is only useful for validation as it only has racewide totals for the state and the contest-specific PDFs have per-county results.
 2010-11-02,,,http://sos.iowa.gov/elections/results/xls/2010/general/statewidepct.xlsx,general,FALSE,precinct,,TRUE,The per-county files are preferable because they contain absentee results
-2010-11-02,,,http://sos.iowa.gov/elections/pdf/2010/canvsummary.pdf,general,FALSE,county,,TRUE,The per-contest files are easier to parse because the candidate names in this file are oriented diagonally.
 2010-11-02,U.S. Senate,,http://sos.iowa.gov/elections/pdf/2010/senorr.pdf,general,FALSE,county,,,
 2010-11-02,U.S. House of Representatives,,http://sos.iowa.gov/elections/pdf/2010/usreporr.pdf,general,FALSE,county,,,
 2010-11-02,Governor,,http://sos.iowa.gov/elections/pdf/2010/govorr.pdf,general,FALSE,county,,,
