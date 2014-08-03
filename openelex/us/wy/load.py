@@ -105,48 +105,51 @@ class WYLoader(WYBaseLoader):
             party = None
         results = []
 
-        sheet = self._get_sheet(xlsfile)
-        if year == 2004:
-            candidates = self._build_candidates_2004(sheet, party)
-        else:
-            candidates = self._build_candidates(sheet, party)
-
-        for i in xrange(sheet.nrows):
-            row = [r for r in sheet.row_values(i) if not r == '']
-            # remove empty cells
-            # Skip non-target offices
-            if self._skip_row(row): 
-                continue
+        sheets = self._get_sheets(xlsfile)
+        for sheet in sheets:
+            if year == 2004:
+                candidates = self._build_candidates_2004(sheet, party)
             else:
-                precinct = str(row[0])
-                if year == 2004:
-                    votes = [v for v in row[2:len(candidates)] if not v == '']
-                elif len(candidates) == 1:
-                    votes = [v for v in row[1:] if not v == '']
-                else:
-                    votes = [v for v in row[1:len(candidates)] if not v == '']
-                grouped_results = zip(candidates, votes)
-                for (candidate, office, candidate_party), votes in grouped_results:
-                    if not votes == '-':
-                        results.append(self._prep_precinct_result(precinct, candidate, office, candidate_party, votes))
-        try:
-            RawResult.objects.insert(results)
-        except:
-            print grouped_results
-            raise
+                candidates = self._build_candidates(sheet, party)
 
-    def _get_sheet(self, xlsfile):
+            for i in xrange(sheet.nrows):
+                row = [r for r in sheet.row_values(i) if not r == '']
+                # remove empty cells
+                # Skip non-target offices
+                if self._skip_row(row): 
+                    continue
+                else:
+                    precinct = str(row[0])
+                    if year == 2004:
+                        votes = [v for v in row[2:len(candidates)] if not v == '']
+                    elif len(candidates) == 1:
+                        votes = [v for v in row[1:] if not v == '']
+                    else:
+                        votes = [v for v in row[1:len(candidates)] if not v == '']
+                    grouped_results = zip(candidates, votes)
+                    for (candidate, office, candidate_party), votes in grouped_results:
+                        if not votes == '-':
+                            results.append(self._prep_precinct_result(precinct, candidate, office, candidate_party, votes))
+            try:
+                RawResult.objects.insert(results)
+            except:
+                print grouped_results
+                raise
+
+    def _get_sheets(self, xlsfile):
         if '2004' in self.source:
             county = self.mapping['name']
             if 'general' in self.source:
                 sheet_name = county + ' General'
-            sheet = xlsfile.sheet_by_name(sheet_name)
+                sheets = [xlsfile.sheet_by_name(sheet_name)]
+            else:
+                sheets = []
         else:
             try:
-                sheet = xlsfile.sheet_by_name('Sheet1')
+                sheets = [xlsfile.sheet_by_name('Sheet1')]
             except:
-                sheet = xlsfile.sheet_by_name('Party_PbP_Candidates_Summary')
-        return sheet
+                sheets = [xlsfile.sheet_by_name('Party_PbP_Candidates_Summary')]
+        return sheets
 
     def _party_from_filehandle(self, file):
         return file.split("__")[2].title()
