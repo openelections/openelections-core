@@ -99,6 +99,7 @@ class WYLoader(WYBaseLoader):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
         if 'primary' in self._xls_file_handle():
             primary = True
+            # TODO: override for 2004 primary files
             party = self._party_from_filehandle(self._xls_file_handle())
         else:
             primary = False
@@ -143,7 +144,7 @@ class WYLoader(WYBaseLoader):
                 sheet_name = county + ' General'
                 sheets = [xlsfile.sheet_by_name(sheet_name)]
             else:
-                sheets = []
+                sheets = [s for s in xlsfile.sheets() if not 'Partisan' in s.name]
         else:
             try:
                 sheets = [xlsfile.sheet_by_name('Sheet1')]
