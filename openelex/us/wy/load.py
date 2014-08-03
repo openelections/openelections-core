@@ -99,8 +99,10 @@ class WYLoader(WYBaseLoader):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
         if 'primary' in self._xls_file_handle():
             primary = True
-            # TODO: override for 2004 primary files
-            party = self._party_from_filehandle(self._xls_file_handle())
+            if year == 2004:
+                party = None # get party from individual sheets
+            else:
+                party = self._party_from_filehandle(self._xls_file_handle())
         else:
             primary = False
             party = None
@@ -109,6 +111,8 @@ class WYLoader(WYBaseLoader):
         sheets = self._get_sheets(xlsfile)
         for sheet in sheets:
             if year == 2004:
+                if primary:
+                    party = sheet.name.split()[1]
                 candidates = self._build_candidates_2004(sheet, party)
             else:
                 candidates = self._build_candidates(sheet, party)
@@ -162,6 +166,8 @@ class WYLoader(WYBaseLoader):
             return True
         if row[0] == 'Official Totals':
             return True
+        if isinstance(row[0], float):
+            return False
         if row[0].strip() == '':
             return True
         if row[0].startswith("* The State Canvassing Board"):
