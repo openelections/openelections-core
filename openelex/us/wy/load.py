@@ -25,7 +25,7 @@ class LoadResults(object):
         election_id = mapping['election']
         if election_id == 'wy-2008-11-25-special-general':
             loader = WYSpecialLoader2008()
-        elif any(s in election_id for s in ['2006', 'special']):
+        elif any(s in election_id for s in ['2006']):
             loader = WYLoaderCSV()
         else:
             loader = WYLoader()
@@ -87,10 +87,10 @@ class WYLoader(WYBaseLoader):
     2012 general & primary
     2010 general & primary
     2008 general & primary
-    2004 general
+    2004 general & primary
+    2002 special general
 
     Doesn't work for:
-    2004 primary
     2002
     2000
     """
@@ -114,6 +114,8 @@ class WYLoader(WYBaseLoader):
                 if primary:
                     party = sheet.name.split()[1]
                 candidates = self._build_candidates_2004(sheet, party)
+            elif self.source == "20021126__wy__special__general__natrona__state_house__36__precinct.xls":
+                candidates = self._build_candidates_2002_special(sheet)
             else:
                 candidates = self._build_candidates(sheet, party)
 
@@ -149,6 +151,8 @@ class WYLoader(WYBaseLoader):
                 sheets = [xlsfile.sheet_by_name(sheet_name)]
             else:
                 sheets = [s for s in xlsfile.sheets() if not 'Partisan' in s.name]
+        elif self.source == '20021126__wy__special__general__natrona__state_house__36__precinct.xls':
+            sheets = [xlsfile.sheet_by_name('NA-HD36-Recount')]
         else:
             try:
                 sheets = [xlsfile.sheet_by_name('Sheet1')]
@@ -201,6 +205,12 @@ class WYLoader(WYBaseLoader):
                 continue
         return offices
 
+    def _build_offices_2002_special(self, sheet):
+        offices = []
+        offices.append(" ".join([sheet.row_values(0)[1], sheet.row_values(1)[1]]))
+        offices.append(" ".join([sheet.row_values(0)[1], sheet.row_values(1)[1]]))
+        return offices
+
     def _build_offices(self, sheet):
         if sheet.row_values(0)[1] != '':
             raw_offices = sheet.row_values(0)[1:]
@@ -235,6 +245,16 @@ class WYLoader(WYBaseLoader):
             else:
                 parties.append(party)
                 candidates.append(cand)
+        return zip(candidates, offices, parties)
+
+    def _build_candidates_2002_special(self, sheet):
+        offices = self._build_offices_2002_special(sheet)
+        raw_cands = sheet.row_values(3)[1:]
+        candidates = []
+        parties = []
+        for cand in raw_cands:
+            parties.append(cand.split(' - ')[1])
+            candidates.append(cand.split(' - ')[0])
         return zip(candidates, offices, parties)
 
     def _build_candidates(self, sheet, party):
