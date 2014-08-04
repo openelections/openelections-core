@@ -61,6 +61,7 @@ class WYBaseLoader(BaseLoader):
         'Secretary of',
         'State Auditor',
         'State Superintendent',
+        'State Treasurer',
     ])
 
     district_offices = set([
@@ -212,7 +213,11 @@ class WYLoader(WYBaseLoader):
     def _build_offices_2002(self, sheet):
         a = [x.strip() for x in sheet.row_values(0)[2:]]
         b = [x.strip() for x in sheet.row_values(1)[2:]]
-        raw_offices = [" ".join(x) for x in zip(a,b)]
+        c = [x.strip() for x in sheet.row_values(2)[2:]]
+        raw_offices = [" ".join(x) for x in zip(a,b,c)]
+        # some office names are shifted to the right
+        raw_offices[2] = raw_offices[3]
+        raw_offices[3] = ''
         office_labels = [x for x in raw_offices if " ".join(x.split()[0:2]).strip() in self.office_segments]
         office_labels = list(set(office_labels))
         offices = []
@@ -281,13 +286,15 @@ class WYLoader(WYBaseLoader):
 
     def _build_candidates_2002(self, sheet, party):
         offices = self._build_offices_2002(sheet)
-        raw_cands = [x for x in sheet.row_values(3)[2:] if x not in ('Yes', 'No', 'For', 'Against')]
-        offices = offices[1:len(raw_cands)]
+        raw_cands = [x for x in sheet.row_values(3)[2:] if x.strip() not in ('Yes', 'No', 'For', 'Against', '')]
+        print raw_cands
+        offices = offices[:len(raw_cands)]
         candidates = []
         parties = []
         for cand in raw_cands:
-            parties.append(cand.split(' - ')[1])
-            candidates.append(cand.split(' - ')[0])
+            parties.append(cand.split('-')[1].strip())
+            candidates.append(cand.split('-')[0].strip())
+        print zip(candidates, offices, parties)
         return zip(candidates, offices, parties)
 
     def _build_candidates(self, sheet, party):
