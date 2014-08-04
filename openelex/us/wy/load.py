@@ -118,6 +118,8 @@ class WYLoader(WYBaseLoader):
             elif self.source == "20021126__wy__special__general__natrona__state_house__36__precinct.xls":
                 candidates = self._build_candidates_2002_special(sheet)
             elif year == 2002:
+                if primary:
+                    party = sheet.name.split()[1]
                 candidates = self._build_candidates_2002(sheet, party)
             else:
                 candidates = self._build_candidates(sheet, party)
@@ -292,8 +294,12 @@ class WYLoader(WYBaseLoader):
         candidates = []
         parties = []
         for cand in raw_cands:
-            parties.append(cand.split('-')[1].strip())
-            candidates.append(cand.split('-')[0].strip())
+            if party:
+                parties.append(party)
+                candidates.append(cand)
+            else:
+                parties.append(cand.split('-')[1].strip())
+                candidates.append(cand.split('-')[0].strip())
         print zip(candidates, offices, parties)
         return zip(candidates, offices, parties)
 
