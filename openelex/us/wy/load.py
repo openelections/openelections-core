@@ -51,6 +51,7 @@ class WYBaseLoader(BaseLoader):
         'State House',
         'House District',
         'Senate District',
+        'President of the United States',
     ])
 
     office_segments = set([
@@ -62,6 +63,9 @@ class WYBaseLoader(BaseLoader):
         'State Auditor',
         'State Superintendent',
         'State Treasurer',
+        'President of',
+        'State Senate',
+        'State House',
     ])
 
     district_offices = set([
@@ -89,10 +93,9 @@ class WYLoader(WYBaseLoader):
     2010 general & primary
     2008 general & primary
     2004 general & primary
-    2002 special general
+    2002 general, primary & special general
 
     Doesn't work for:
-    2002
     2000
     """
     def load(self):
@@ -117,10 +120,13 @@ class WYLoader(WYBaseLoader):
                 candidates = self._build_candidates_2004(sheet, party)
             elif self.source == "20021126__wy__special__general__natrona__state_house__36__precinct.xls":
                 candidates = self._build_candidates_2002_special(sheet)
-            elif year == 2002:
+            elif year < 2004:
                 if primary:
                     party = sheet.name.split()[1]
-                candidates = self._build_candidates_2002(sheet, party)
+                if year == 2002:
+                    candidates = self._build_candidates_2002(sheet, party)
+                elif year == 2000:
+                    candidates = self._build_candidates_2000(sheet, party)
             else:
                 candidates = self._build_candidates(sheet, party)
 
@@ -134,10 +140,10 @@ class WYLoader(WYBaseLoader):
                     precinct = str(row[0])
                     if self.source == '20021126__wy__special__general__natrona__state_house__36__precinct.xls':
                         votes = [v for v in row[1:] if not v == '']
-                    elif year == 2004 or year == 2002:
-                        votes = [v for v in row[2:len(candidates)] if not v == '']
                     elif len(candidates) == 1:
                         votes = [v for v in row[1:] if not v == '']
+                    elif year < 2006:
+                        votes = [v for v in row[2:len(candidates)] if not v == '']
                     else:
                         votes = [v for v in row[1:len(candidates)] if not v == '']
                     grouped_results = zip(candidates, votes)
@@ -160,6 +166,10 @@ class WYLoader(WYBaseLoader):
                 sheets = [xlsfile.sheet_by_name(sheet_name)]
             else:
                 sheets = [s for s in xlsfile.sheets() if not 'Partisan' in s.name]
+        elif '2000' in self.source:
+            county = self.mapping['name']
+            sheet_name = county + ' County'
+            sheets = [xlsfile.sheet_by_name(sheet_name)]
         else:
             try:
                 sheets = [xlsfile.sheet_by_name('Sheet1')]
@@ -240,6 +250,26 @@ class WYLoader(WYBaseLoader):
         offices.append(" ".join([sheet.row_values(0)[1], sheet.row_values(1)[1]]))
         return offices
 
+    def _build_offices_2000(self, sheet, party):
+        a = [x.strip() for x in sheet.row_values(0)[2:]]
+        b = [x.strip() for x in sheet.row_values(1)[2:]]
+        raw_offices = [" ".join(x) for x in zip(a,b)]
+        raw_offices = [i for j, i in enumerate(raw_offices) if j not in [6,7,11,16,20,22,25,27,30]]
+        office_labels = [x for x in raw_offices if " ".join(x.split()[0:2]).strip() in self.office_segments]
+        office_labels = list(set(office_labels))
+        offices = []
+        for o in raw_offices:
+            if o in office_labels:
+                office = o.replace('\n', ' ').replace('  ',' ').strip()
+                previous = office
+                offices.append(office)
+            elif o.strip() == '':
+                offices.append(previous)
+            else:
+                continue
+        return offices
+
+
     def _build_offices(self, sheet):
         if sheet.row_values(0)[1] != '':
             raw_offices = sheet.row_values(0)[1:]
@@ -289,7 +319,6 @@ class WYLoader(WYBaseLoader):
     def _build_candidates_2002(self, sheet, party):
         offices = self._build_offices_2002(sheet)
         raw_cands = [x for x in sheet.row_values(3)[2:] if x.strip() not in ('Yes', 'No', 'For', 'Against', '')]
-        print raw_cands
         offices = offices[:len(raw_cands)]
         candidates = []
         parties = []
@@ -301,6 +330,21 @@ class WYLoader(WYBaseLoader):
                 parties.append(cand.split('-')[1].strip())
                 candidates.append(cand.split('-')[0].strip())
         print zip(candidates, offices, parties)
+        return zip(candidates, offices, parties)
+
+    def _build_candidates_2000(self, sheet, party):
+        offices = self._build_offices_2000(sheet, party)
+        raw_cands = [x for x in sheet.row_values(4)[2:] if x.strip() not in ('Yes', 'No', 'For', 'Against', '')][:len(offices)]
+        candidates = []
+        parties = []
+        for cand in raw_cands:
+            if "(" in cand:
+                parties.append(cand.split('(')[1].replace(')', '').strip())
+                candidates.append(cand.split('(')[0].replace('  ',' ').strip())
+            else:
+                parties.append(party)
+                candidates.append(cand)
+        print candidates
         return zip(candidates, offices, parties)
 
     def _build_candidates(self, sheet, party):
