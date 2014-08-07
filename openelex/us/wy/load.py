@@ -1,5 +1,6 @@
 import re
 import xlrd
+import operator
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -122,11 +123,14 @@ class WYLoader(WYBaseLoader):
                 candidates = self._build_candidates_2002_special(sheet)
             elif year < 2004:
                 if primary:
-                    party = sheet.name.split()[1]
+                    if year == 2000:
+                        party = self.source.split('__')[2].title()
+                    else:
+                        party = sheet.name.split()[1]
                 if year == 2002:
                     candidates = self._build_candidates_2002(sheet, party)
                 elif year == 2000:
-                    candidates = self._build_candidates_2000(sheet, party)
+                    candidates = self._build_candidates_2000(sheet, party, primary)
             else:
                 candidates = self._build_candidates(sheet, party)
 
@@ -167,9 +171,12 @@ class WYLoader(WYBaseLoader):
             else:
                 sheets = [s for s in xlsfile.sheets() if not 'Partisan' in s.name]
         elif '2000' in self.source:
-            county = self.mapping['name']
-            sheet_name = county + ' County'
-            sheets = [xlsfile.sheet_by_name(sheet_name)]
+            if 'general' in self.source:
+                county = self.mapping['name']
+                sheet_name = county + ' County'
+                sheets = [xlsfile.sheet_by_name(sheet_name)]
+            else:
+                sheets = [xlsfile.sheets()[0]]
         else:
             try:
                 sheets = [xlsfile.sheet_by_name('Sheet1')]
@@ -251,10 +258,16 @@ class WYLoader(WYBaseLoader):
         return offices
 
     def _build_offices_2000(self, sheet, party):
-        a = [x.strip() for x in sheet.row_values(0)[2:]]
-        b = [x.strip() for x in sheet.row_values(1)[2:]]
+        if 'primary' in self.source:
+            # always skip any columns that don't have a cand
+            cand_cols = [sheet.row_values(3).index(x) for x in sheet.row_values(3)[2:] if not x == '']
+            a = operator.itemgetter(*cand_cols)(sheet.row_values(0))
+            b = operator.itemgetter(*cand_cols)(sheet.row_values(1))
+        else:
+            a = [x.strip() for x in sheet.row_values(0)[2:]]
+            b = [x.strip() for x in sheet.row_values(1)[2:]]
         raw_offices = [" ".join(x) for x in zip(a,b)]
-        raw_offices = [i for j, i in enumerate(raw_offices) if j not in [6,7,11,16,20,22,25,27,30]]
+        print raw_offices
         office_labels = [x for x in raw_offices if " ".join(x.split()[0:2]).strip() in self.office_segments]
         office_labels = list(set(office_labels))
         offices = []
@@ -268,7 +281,6 @@ class WYLoader(WYBaseLoader):
             else:
                 continue
         return offices
-
 
     def _build_offices(self, sheet):
         if sheet.row_values(0)[1] != '':
@@ -329,12 +341,14 @@ class WYLoader(WYBaseLoader):
             else:
                 parties.append(cand.split('-')[1].strip())
                 candidates.append(cand.split('-')[0].strip())
-        print zip(candidates, offices, parties)
         return zip(candidates, offices, parties)
 
-    def _build_candidates_2000(self, sheet, party):
+    def _build_candidates_2000(self, sheet, party, primary):
         offices = self._build_offices_2000(sheet, party)
-        raw_cands = [x for x in sheet.row_values(4)[2:] if x.strip() not in ('Yes', 'No', 'For', 'Against', '')][:len(offices)]
+        if primary:
+            raw_cands = [x for x in sheet.row_values(3)[2:] if x.strip() not in ('Yes', 'No', 'For', 'Against', '')][:len(offices)]
+        else:
+            raw_cands = [x for x in sheet.row_values(4)[2:] if x.strip() not in ('Yes', 'No', 'For', 'Against', '')][:len(offices)]
         candidates = []
         parties = []
         for cand in raw_cands:
@@ -344,7 +358,6 @@ class WYLoader(WYBaseLoader):
             else:
                 parties.append(party)
                 candidates.append(cand)
-        print candidates
         return zip(candidates, offices, parties)
 
     def _build_candidates(self, sheet, party):
