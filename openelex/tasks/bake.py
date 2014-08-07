@@ -241,6 +241,11 @@ def statuses_for_state(state):
             'gov': election['gov'],
             'state_officers': election['state_officers'],
             'state_leg': election['state_leg'],
+            'state_level_status': election['state_level_status'],
+            'county_level_status': election['county_level_status'],
+            'precinct_level_status': election['precinct_level_status'],
+            'cong_dist_level_status': election['cong_dist_level_status'],
+            'state_leg_level_status': election['state_leg_level_status'],
         }
         statuses.append(status)
 
