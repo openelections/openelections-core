@@ -45,19 +45,23 @@ class Datasource(BaseDatasource):
             if 'special' in election['slug']:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    generated_filename = self._generate_special_filename(election, result)
+                    generated_filename = self._generate_special_filename(election['start_date'], result)
+                    if result['county']:
+                        ocd_id = 'ocd-division/country:us/state:ms' + '/' + result['county'].replace(' ','_').lower()
+                    else:
+                        ocd_id = 'ocd-division/country:us/state:ms'
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": self._build_raw_url(year, result['url']),
                         "pre_processed_url": build_github_url(self.state, generated_filename),
-                        "ocd_id": 'ocd-division/country:us/state:ms',
+                        "ocd_id": ocd_id,
                         "name": 'Mississippi',
                         "election": election['slug']
                     })
             else:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    generated_filename = self._generate_county_filename(election, result)
+                    generated_filename = self._generate_county_filename(election['start_date'], result)
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": self._build_raw_url(year, result['url']),
@@ -68,7 +72,7 @@ class Datasource(BaseDatasource):
                     })
         return meta
 
-    def _generate_special_filename(self, url, start_date, result):
+    def _generate_special_filename(self, start_date, result):
         bits = [
             start_date.replace('-',''),
             self.state,
@@ -87,7 +91,7 @@ class Datasource(BaseDatasource):
         filename = "__".join(bits) + '.csv'
         return filename
 
-    def _generate_county_filename(self, url, start_date, result):
+    def _generate_county_filename(self, start_date, result):
         bits = [
             start_date.replace('-',''),
             self.state,
