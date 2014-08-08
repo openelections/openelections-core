@@ -33,6 +33,9 @@ class Datasource(BaseDatasource):
         return [(item['generated_filename'], item['raw_url']) 
                 for item in self.mappings(year)]
 
+    def mappings_for_url(self, url):
+        return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
+
     # PRIVATE METHODS
 
     def _build_metadata(self, year, elections):
@@ -45,33 +48,40 @@ class Datasource(BaseDatasource):
                     generated_filename = self._generate_office_filename(election, result)
                     meta.append({
                         "generated_filename": generated_filename,
-                        "raw_url": result['path'],
+                        "raw_url": result['url'],
                         "ocd_id": 'ocd-division/country:us/state:nc',
                         "name": 'North Carolina',
                         "election": election['slug']
                     })
             else:
-                generated_filename = self._generate_filename(election)
-                meta.append({
-                    "generated_filename": generated_filename,
-                    'raw_url': election['direct_links'][0],
-                    "ocd_id": 'ocd-division/country:us/state:nc',
-                    "name": 'North Carolina',
-                    "election": election['slug']
-                })
+                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+                for result in results:
+                    if result['date'] in ('2000-11-07', '2002-11-05', '2002-09-10', '2006-09-12', '2006-11-07', '2006-05-30'):
+                        format = '.txt'
+                    else:
+                        format = '.csv'
+                    generated_filename = self._generate_filename(election, format)
+                    meta.append({
+                        "generated_filename": generated_filename,
+                        'raw_url': election['direct_links'][0],
+                        'raw_extracted_filename': result['raw_extracted_filename'],
+                        "ocd_id": 'ocd-division/country:us/state:nc',
+                        "name": 'North Carolina',
+                        "election": election['slug']
+                    })
         return meta
 
-    def _generate_filename(self, election):
+    def _generate_filename(self, election, format):
         if election['special']:
-            election_type = 'special__' + election['race_type']
+            election_type = 'special__' + election['race_type'].replace("-","__") + '__precinct'
         else:
-            election_type = election['race_type'] + '__precinct'
+            election_type = election['race_type'].replace("-","__") + '__precinct'
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),
             election_type
         ]
-        name = "__".join(bits) + '.csv'
+        name = "__".join(bits) + format
         return name
 
     def _generate_office_filename(self, election, result):
