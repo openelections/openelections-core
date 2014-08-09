@@ -2,6 +2,9 @@
 Mississippi has CSV files containing precinct-level results for each county and all offices 
 for all years back to 2003. All of the files are pre-processed and available on Github at 
 https://github.com/openelections/openelections-data-ms.
+
+For regular primary and general elections, each county has a results file. Special and runoff
+elections for non-statewide offices are contained in a single file for each office.
 """
 from os.path import join
 import json
@@ -45,14 +48,14 @@ class Datasource(BaseDatasource):
             if 'special' in election['slug']:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    generated_filename = self._generate_special_filename(election['start_date'], result)
+                    generated_filename = result['path']
                     if result['county']:
-                        ocd_id = 'ocd-division/country:us/state:ms' + '/' + result['county'].replace(' ','_').lower()
+                        ocd_id = 'ocd-division/country:us/state:ms/county:' + result['county'].replace(' ','_').lower()
                     else:
                         ocd_id = 'ocd-division/country:us/state:ms'
                     meta.append({
                         "generated_filename": generated_filename,
-                        "raw_url": self._build_raw_url(year, result['url']),
+                        "raw_url": result['url'],
                         "pre_processed_url": build_github_url(self.state, generated_filename),
                         "ocd_id": ocd_id,
                         "name": 'Mississippi',
@@ -66,30 +69,11 @@ class Datasource(BaseDatasource):
                         "generated_filename": generated_filename,
                         "raw_url": self._build_raw_url(year, result['url']),
                         "pre_processed_url": build_github_url(self.state, generated_filename),
-                        "ocd_id": ,
+                        "ocd_id": "",
                         "name": result['county'],
                         "election": election['slug']
                     })
         return meta
-
-    def _generate_special_filename(self, start_date, result):
-        bits = [
-            start_date.replace('-',''),
-            self.state,
-        ]
-        if result['party']:
-            bits.append(result['party'].lower())
-        bits.extend([
-            'special',
-            result['race_type'].lower(),
-            result['county'].replace(' ','_').lower()
-        ])
-        bits.append(result['office'])
-        if result['district']:
-            bits.append(result['district'])
-        bits.append('precinct')
-        filename = "__".join(bits) + '.csv'
-        return filename
 
     def _generate_county_filename(self, start_date, result):
         bits = [
