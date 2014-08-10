@@ -62,14 +62,17 @@ class Datasource(BaseDatasource):
                         "election": election['slug']
                     })
             else:
-                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+                # primary, general and runoff statewide elections have 1 or 2 files per county
+                # some general runoffs will have smaller numbers of files
+                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == '']
                 for result in results:
+                    county = [c for c in self._jurisdictions() if c['county'] == result['county']]
                     generated_filename = self._generate_county_filename(election['start_date'], result)
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": self._build_raw_url(year, result['url']),
                         "pre_processed_url": build_github_url(self.state, generated_filename),
-                        "ocd_id": "",
+                        "ocd_id": county['ocd_id'],
                         "name": result['county'],
                         "election": election['slug']
                     })
