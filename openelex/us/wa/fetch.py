@@ -61,7 +61,17 @@ class FetchResults(BaseFetcher):
                         with ZipFile(parent_zipfile_path, 'r') as parent_zipf:
                             parent_zipf.extract(mapping['raw_extracted_filename'],
                                     self.cache.abspath)
-                        # TODO: Delete the nested zip file?
+                        if remove:
+                            # Remove the parent zipfile
+                            os.remove(parent_zipfile_path)
+
+                            parent_zipfile_dir = os.path.dirname(mapping['parent_zipfile'])
+                            # If the extracted parent zipfile lives in a
+                            # subdirectory, we'll want to remove the directory
+                            # as well
+                            if parent_zipfile_dir:
+                                os.rmdir(os.path.join(self.cache.abspath,
+                                    parent_zipfile_dir))
                        
                     else:
                         zipf.extract(mapping['raw_extracted_filename'],
