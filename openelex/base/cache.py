@@ -1,3 +1,4 @@
+import errno
 import os
 import shutil
 
@@ -35,7 +36,10 @@ class StateCache(object):
         for f in files:
             try:
                 os.remove(os.path.join(self.path, f))
-            except OSError:
+            except OSError as e:
+                if e.errno != errno.EISDIR:
+                    raise
+
                 shutil.rmtree(os.path.join(self.path, f))
 
         remaining = self.list_dir()
