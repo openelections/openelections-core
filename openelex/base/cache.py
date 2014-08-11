@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from openelex import PROJECT_ROOT
 
@@ -30,7 +31,13 @@ class StateCache(object):
 
     def clear(self, datefilter=''):
         files = self.list_dir(datefilter)
-        [os.remove(os.path.join(self.path, f)) for f in files]
+
+        for f in files:
+            try:
+                os.remove(os.path.join(self.path, f))
+            except OSError:
+                shutil.rmtree(os.path.join(self.path, f))
+
         remaining = self.list_dir()
         print "%s files deleted" % len(files)
         print "%s files still in cache" % len(remaining)
