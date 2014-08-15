@@ -152,21 +152,6 @@ class WABaseLoader(BaseLoader):
         'Commissioner of Public Lands'
     ])
 
-    """
-    Target districts are all the ones openelex wants, so they must stay.
-    Do we need district_offices? They're not being used.
-    
-    """
-
-    district_offices = set([
-        'U.S. House',
-        'U.S. Representative',
-        'United States Representative'
-        'State Senate',
-        'State House',
-        'House'
-    ])
-
     def _skip_row(self, row):
         """
         Should this row be skipped?
@@ -175,6 +160,37 @@ class WABaseLoader(BaseLoader):
         """
         return False
 
+class ColumnMatch:
+
+    @classmethod
+    def _is_candidate_match(cls, header):
+
+        column_list = header.split(',')
+
+        regex = re.compile('.*(candidate.*name|candidate).*', re.IGNORECASE)
+
+        return [m.group(0) for l in column_list for m in [regex.search(l)] if m][0]
+
+    @classmethod
+    def _is_contest_match(cls, header):
+
+        column_list = header.split(',')
+
+        regex = re.compile('.*(race|contest.*name|contest.*title|contest).*', re.IGNORECASE)
+
+        return [m.group(0) for l in column_list for m in [regex.search(l)] if m][0]
+
+    @classmethod
+    def _is_precinct_match(cls, header):
+
+        column_list = header.split(',')
+
+        regex = re.compile('.*(precinct|precinct.*name).*', re.IGNORECASE)
+
+        return [m.group(0) for l in column_list for m in [regex.search(l)] if m][0]
+
+
+cm = ColumnMatch()
 
 class normalize_races:
 
@@ -212,9 +228,9 @@ class normalize_races:
                 return 'N/A'
         elif re.search(house_regex, string):
             if re.search(local_regex, string):
-                return 'State House'
+                return 'State Representative'
             elif re.search(national_regex, string):
-                return 'U.S. House'
+                return 'U.S. Representative'
             else:
                 return 'N/A'
         elif re.search(lt_gov_regex, string):
@@ -265,9 +281,6 @@ class WALoaderPrecincts(WABaseLoader):
         self._common_kwargs['reporting_level'] = 'precinct'
         results = []
 
-        #from sys import getsizeof
-        from gc import collect
-
         """
         For whatever reason, gc.collect() reduces memory usage from maxing
         out my 8GB of RAM down to around 3GB. This should be fixed.
@@ -275,11 +288,11 @@ class WALoaderPrecincts(WABaseLoader):
         """
 
         with self._file_handle as csvfile:
+            header = csvfile.readline()
             reader = unicodecsv.DictReader(
                 csvfile, encoding='latin-1', delimiter=',')
             for row in reader:
                 if self._skip_row(row):
-                    collect()
                     continue
                 else:
                     try:
@@ -296,7 +309,7 @@ class WALoaderPrecincts(WABaseLoader):
                         'county_ocd_id': self.mapping['ocd_id']
                     })
                     results.append(RawResult(**rr_kwargs))
-            collect()
+                    print str(results)
 
         """
         Many county files *only* have local races, such as schoolboard or
@@ -314,52 +327,18 @@ class WALoaderPrecincts(WABaseLoader):
     def _skip_row(self, row):
         try:
             return NormalizeRaces._is_match(
-                row['Race']) not in self.target_offices
+                row[cm._is_contest_match(self.header)]) not in self.target_offices
         except Exception:
-            try:
-                return NormalizeRaces._is_match(
-                    row['Contest_ID']) not in self.target_offices
-            except Exception:
-                try:
-                    return NormalizeRaces._is_match(
-                        row['Contest_Id']) not in self.target_offices
-                except Exception:
-                    try:
-                        return NormalizeRaces._is_match(
-                            row['Contest Title']) not in self.target_offices
-                    except Exception:
-                        try:
-                            return NormalizeRaces._is_match(
-                                row['contest_id']) not in self.target_offices
-                        except Exception:
-                            raise ValueError('This is too much')
+            raise ValueError('Line 332')
 
     def _build_contest_kwargs(self, row):
         try:
             return {
-                'office': row['Race'].strip(),
-                'jurisdiction': row['Precinct'].strip(),
+                'office': row[cm._is_contest_match(self.header)].strip(),
+                'jurisdiction': row[cm._is_precinct_match(self.header)].strip(),
             }
         except Exception:
-            try:
-                return {
-                    'office': row['Race'].strip(),
-                    'jurisdiction': row['JurisdictionName'].strip(),
-                }
-            except Exception:
-                try:
-                    return {
-                        'office': row['Contest Title'].strip(),
-                        'jurisdiction': row['Precinct Name'].strip(),
-                    }
-                except Exception:
-                    try:
-                        return {
-                            'office': row['Race'].strip(),
-                            'jurisdiction': row['PrecinctName'].strip()
-                        }
-                    except Exception:
-                        raise ValueError('Why are you doing this to me?')
+            raise ValueError('Line 341')
 
     def _build_candidate_kwargs(self, row):
         """
@@ -370,25 +349,10 @@ class WALoaderPrecincts(WABaseLoader):
 
         try:
             return {
-                'full_name': row['Candidate'].strip()
+                'full_name': row[cm._is_match(self.header)].strip()
             }
         except Exception:
-            try:
-                return {
-                    'full_name': row['CounterType'].strip()
-                }
-            except Exception:
-                try:
-                    return {
-                        'full_name': row['Candidate_name'].strip()
-                    }
-                except Exception:
-                    try:
-                        return {
-                            'full_name': row['Candidate Name'].strip()
-                        }
-                    except Exception:
-                        raise ValueError('I give up')
+            raise ValueError('Line 355')
 
 
 class WALoaderPre2007(WABaseLoader):
@@ -541,10 +505,12 @@ class WALoader2010Precincts(WABaseLoader):
         results = []
 
         with self._file_handle as csvfile:
+            header = csvfile.readline()
             reader = unicodecsv.DictReader(
                 csvfile, encoding='latin-1', delimiter=',')
             for row in reader:
                 if self._skip_row(row):
+                    print row
                     continue
                 else:
                     rr_kwargs = self._common_kwargs.copy()
@@ -573,31 +539,23 @@ class WALoader2010Precincts(WABaseLoader):
             print '\tNo raw results loaded'
 
     def _skip_row(self, row):
-        if row['CONTEST_FULL_NAME']:
             return NormalizeRaces._is_match(
-                row['CONTEST_FULL_NAME']) not in self.target_offices
-        else:
-            return NormalizeRaces._is_match(
-                row['Contest_title']) not in self.target_offices
+                cm._is_contest_match(self.header)) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
         try:
             return {
-                'office': row['Contest_title'].strip(),
+                'office': row[cm._is_contest_match(self.header)].strip(),
                 'jurisdiction': 'N/A',
             }
         except Exception:
-            return {
-                'office': row['CONTEST_FULL_NAME'].strip(),
-                'jurisdiction': 'N/A',
-            }
+            raise ValueError('Line 552')
 
     def _build_candidate_kwargs(self, row):
         try:
             return {
-                'full_name': row['candidate_name'].strip()
+                'full_name': row[cm._is_match(self.header)].strip()
+
             }
         except Exception:
-            return {
-                'full_name': row['CANDIDATE_FULL_NAME'].strip()
-            }
+            raise ValueError('Line 561')
