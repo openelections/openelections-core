@@ -1,0 +1,603 @@
+import csv
+import os
+import re
+import unicodecsv
+
+from pymongo import errors
+
+from openelex.base.load import BaseLoader
+from openelex.models import RawResult
+from openelex.lib.text import slugify
+from .datasource import Datasource
+
+"""
+Washington state elections have CSV and XLSX result files.
+Results from < 2007 have a different format than those <= 2008.
+Actually, most every file has a different format.
+
+TO DO:
+
+1.) Add in .xls(x) support (Aug 12, 2014)
+2.) Fix memory issues [class WALoaderPrecincts, LINE# 230] (Aug 14, 2014)
+3.) Normalize the file rows... (Aug 14, 2014)
+4.) Create more mature `raise error` statements (goes with #3) (Aug 14, 2014)
+5.) Takes forever on large files (Aug 15, 2014)
+
+"""
+
+
+class LoadResults(object):
+
+    """
+    Entry point for data loading.
+
+    Determines appropriate loader for file and triggers load process.
+
+    """
+
+    def run(self, mapping):
+        generated_filename = mapping['generated_filename']
+        election = mapping['election']
+
+        """
+        bad_filenames holds the list of files who have content that's not
+        actual information (e.g. a mess of HTML from a file that moved on the
+        remote server).
+
+        """
+
+        bad_filenames = [
+            '20090818__wa__primary__pierce__county.csv',
+            '20090818__wa__primary__ferry__county.csv',
+            '20090818__wa__primary__wahkiakum__county.csv',
+            '20090818__wa__primary__whatcom__county.csv',
+            '20090818__wa__primary__pend_oreille__county.csv',
+            '20090818__wa__primary__kitsap__county.csv',
+            '20090818__wa__primary__kittitas__county.csv'
+        ]
+
+        """
+        Could try using `generated_filename.split(.)[-1]` instead of
+        os.path.splitext(election)[-1], since all filenames are
+        standardized. This would, of course, break if the file path includes
+        a full stop.
+
+        """
+
+        if any(x in generated_filename for x in bad_filenames):
+            loader = SkipLoader()
+        elif os.path.splitext(
+                generated_filename)[-1].lower() == '.xls' or os.path.splitext(
+                generated_filename)[-1].lower() == '.xlsx':
+            loader = SkipLoader()
+        elif os.path.splitext(generated_filename)[-1].lower() == '.txt':
+
+            """
+            We run into issues where King County provides > 1 million line .txt files
+            that break my machine's memory. We definitely need to
+            refactor, but for the moment we'll pass over said files.
+
+            """
+
+            print 'Cannot do anything with {0}'.format(generated_filename)
+            loader = SkipLoader()
+        elif re.search('precinct', generated_filename):
+            loader = WALoaderPrecincts()
+        elif any(s in election for s in [
+                '2000',
+                '2001',
+                '2002',
+                '2003',
+                '2004',
+                '2005',
+                '2006']):
+            loader = WALoaderPre2007()
+        elif os.path.splitext(generated_filename)[-1].lower() != '.xls':
+            loader = WALoaderPost2007()
+        else:
+            loader = SkipLoader()
+
+        """
+        * UnboundLocalError: File passes through the elif statements, but is
+          not a file we have a loader class set up to handle at this point, so
+          loader.run(mapping) is called before it's mentioned
+
+        * IOError: File in quesiton does not exist. Seen when the mapping
+          a file path that recieved a 404 error
+
+        * unicodecsv.Error: Similar to UnboundLocalError, this error means
+          that the loader tried running but the csv parser could not parse
+          the file because of a null byte. See:
+          https://github.com/jdunck/python-unicodecsv/blob/master/unicodecsv/test.py#L222
+
+        * errors.InvalidOperation: When a file has no useful data, RawResult
+          is empty and mongodb refuses to load it.
+
+        Because of the if/else flow, sometimes we'll end up with multiple
+        UnboundLocalErrors. This should be changed so we only get the error
+        once.
+        
+        """
+
+        try:
+            loader.run(mapping)
+        except UnboundLocalError:
+            print '\tERROR: Unsupported file type ({0})'.format('UnboundLocalError')
+        except IOError:
+            print '\tERROR: File "{0}" does not exist'.format(generated_filename)
+        except unicodecsv.Error:
+            print '\tERROR: Unsupported file type ({0})'.format('unicodecsv.Error')
+        except errors.InvalidOperation:
+            print '\tNo raw results loaded'
+
+
+class WABaseLoader(BaseLoader):
+    datasource = Datasource()
+
+    target_offices = set([
+        'President',
+        'U.S. Senator',
+        'U.S. Representative',
+        'Governor',
+        'Secretary of State',
+        'Superintendent of Public Instruction',
+        'State Senator',
+        'State Representative',
+        'Lt. Governor',
+        'Governor',
+        'Treasurer',
+        'Auditor',
+        'State Superintendent of Public Instruction',
+        'Attorney General',
+        'Commissioner of Public Lands'
+    ])
+
+    """
+    Target districts are all the ones openelex wants, so they must stay.
+    Do we need district_offices? They're not being used.
+    
+    """
+
+    district_offices = set([
+        'U.S. House',
+        'U.S. Representative',
+        'United States Representative'
+        'State Senate',
+        'State House',
+        'House'
+    ])
+
+    def _skip_row(self, row):
+        """
+        Should this row be skipped?
+
+        This should be implemented in subclasses.
+        """
+        return False
+
+
+class normalize_races:
+
+    @classmethod
+    def _is_match(cls, string):
+
+        presidential_regex = re.compile('president', re.IGNORECASE)
+        senate_regex = re.compile('(senate|senator)', re.IGNORECASE)
+        house_regex = re.compile('(house|representative)', re.IGNORECASE)
+        governor_regex = re.compile('governor', re.IGNORECASE)
+        treasurer_regex = re.compile('treasurer', re.IGNORECASE)
+        auditor_regex = re.compile('auditor', re.IGNORECASE)
+        sos_regex = re.compile('secretary', re.IGNORECASE)
+        lt_gov_regex = re.compile(r'(lt|Lt|Lieutenant)', re.IGNORECASE)
+        ospi_regex = re.compile(
+            'superintendent of public instruction',
+            re.IGNORECASE)
+        ag_regex = re.compile('attorney general', re.IGNORECASE)
+        wcpl_regex = re.compile('commissioner of public lands', re.IGNORECASE)
+        local_regex = re.compile(
+            r'(\bState\b|Washington|Washington State|Local|Legislative District)',
+            re.IGNORECASE)
+        national_regex = re.compile(
+            r'(U.S.|US|Congressional|National|United States|U. S.)',
+            re.IGNORECASE)
+
+        if re.search(presidential_regex, string):
+            return 'President'
+        elif re.search(senate_regex, string):
+            if re.search(local_regex, string):
+                return 'State Senate'
+            elif re.search(national_regex, string):
+                return 'U.S. Senate'
+            else:
+                return 'N/A'
+        elif re.search(house_regex, string):
+            if re.search(local_regex, string):
+                return 'State House'
+            elif re.search(national_regex, string):
+                return 'U.S. House'
+            else:
+                return 'N/A'
+        elif re.search(lt_gov_regex, string):
+            return 'Lt. Governor'
+        elif re.search(sos_regex, string):
+            return 'Secretary of State'
+        elif re.search(governor_regex, string):
+            return 'Governor'
+        elif re.search(treasurer_regex, string):
+            return 'Treasurer'
+        elif re.search(auditor_regex, string):
+            return 'Auditor'
+        elif re.search(ospi_regex, string):
+            return 'Superintendent of Public Instruction'
+        elif re.search(ag_regex, string):
+            return 'Attorney General'
+        elif re.search(wcpl_regex, string):
+            return 'Commissioner of Public Lands'
+        else:
+            return 'N/A'
+
+NormalizeRaces = normalize_races()
+
+
+class SkipLoader(WABaseLoader):
+
+    """
+    A hacky workaround for all those pesky files that we can't do anything
+    with right now
+
+    """
+
+    def load(self):
+        print '\tNothing we can do with this file'
+        pass
+
+
+class WALoaderPrecincts(WABaseLoader):
+
+    """
+    Parse Washington election results for all precinct files.
+
+    """
+
+    def load(self):
+
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'precinct'
+        results = []
+
+        #from sys import getsizeof
+        from gc import collect
+
+        """
+        For whatever reason, gc.collect() reduces memory usage from maxing
+        out my 8GB of RAM down to around 3GB. This should be fixed.
+
+        """
+
+        with self._file_handle as csvfile:
+            reader = unicodecsv.DictReader(
+                csvfile, encoding='latin-1', delimiter=',')
+            for row in reader:
+                if self._skip_row(row):
+                    collect()
+                    continue
+                else:
+                    try:
+                        votes = int(row['Votes'].strip())
+                    except Exception:
+                        votes = int(row['Count'].strip())
+                    rr_kwargs = self._common_kwargs.copy()
+                    rr_kwargs.update(self._build_contest_kwargs(row))
+                    rr_kwargs.update(self._build_candidate_kwargs(row))
+                    rr_kwargs.update({
+                        'party': 'N/A',
+                        'jurisdiction': 'N/A',
+                        'votes': votes,
+                        'county_ocd_id': self.mapping['ocd_id']
+                    })
+                    results.append(RawResult(**rr_kwargs))
+            collect()
+
+        """
+        Many county files *only* have local races, such as schoolboard or
+        fire chief races. Since openstates does not want these results,
+        the entire files end up being skipped. To clarify the error message,
+        we print our own if RawResult tries to insert nothing into mongodb
+
+        """
+
+        try:
+            RawResult.objects.insert(results)
+        except errors.InvalidOperation:
+            print '\tNo raw results loaded'
+
+    def _skip_row(self, row):
+        try:
+            return NormalizeRaces._is_match(
+                row['Race']) not in self.target_offices
+        except Exception:
+            try:
+                return NormalizeRaces._is_match(
+                    row['Contest_ID']) not in self.target_offices
+            except Exception:
+                try:
+                    return NormalizeRaces._is_match(
+                        row['Contest_Id']) not in self.target_offices
+                except Exception:
+                    try:
+                        return NormalizeRaces._is_match(
+                            row['Contest Title']) not in self.target_offices
+                    except Exception:
+                        try:
+                            return NormalizeRaces._is_match(
+                                row['contest_id']) not in self.target_offices
+                        except Exception:
+                            raise ValueError('This is too much')
+
+    def _build_contest_kwargs(self, row):
+        try:
+            return {
+                'office': row['Race'].strip(),
+                'jurisdiction': row['Precinct'].strip(),
+            }
+        except Exception:
+            try:
+                return {
+                    'office': row['Race'].strip(),
+                    'jurisdiction': row['JurisdictionName'].strip(),
+                }
+            except Exception:
+                try:
+                    return {
+                        'office': row['Contest Title'].strip(),
+                        'jurisdiction': row['Precinct Name'].strip(),
+                    }
+                except Exception:
+                    try:
+                        return {
+                            'office': row['Race'].strip(),
+                            'jurisdiction': row['PrecinctName'].strip()
+                        }
+                    except Exception:
+                        raise ValueError('Why are you doing this to me?')
+
+    def _build_candidate_kwargs(self, row):
+        """
+        Washington has different results for different files that are labeled
+        similarly. Thus, this mess.
+
+        """
+
+        try:
+            return {
+                'full_name': row['Candidate'].strip()
+            }
+        except Exception:
+            try:
+                return {
+                    'full_name': row['CounterType'].strip()
+                }
+            except Exception:
+                try:
+                    return {
+                        'full_name': row['Candidate_name'].strip()
+                    }
+                except Exception:
+                    try:
+                        return {
+                            'full_name': row['Candidate Name'].strip()
+                        }
+                    except Exception:
+                        raise ValueError('I give up')
+
+
+class WALoaderPre2007(WABaseLoader):
+
+    """
+    Parse Washington election results for all elections before and including
+    2007.
+
+    """
+
+    def load(self):
+        with self._file_handle as csvfile:
+            results = []
+            reader = unicodecsv.DictReader(csvfile, encoding='latin-1',
+                                           delimiter=',')
+            for row in reader:
+                if self._skip_row(row):
+                    continue
+                else:
+                    results.append(self._prep_county_results(row))
+        RawResult.objects.insert(results)
+
+    def _skip_row(self, row):
+        return NormalizeRaces._is_match(
+            row['officename']) not in self.target_offices
+
+    def _build_contest_kwargs(self, row, primary_type):
+        kwargs = {
+            'office': NormalizeRaces._is_match(row['officename']),
+            'primary_party': row['partycode'].strip()
+        }
+        return kwargs
+
+    def _build_candidate_kwargs(self, row):
+        full_name = [row['firstname'].strip(), row['lastname'].strip()]
+        full_name = ' '.join(full_name).strip()
+
+        slug = slugify(full_name, substitute='-')
+        kwargs = {
+            'full_name': full_name,
+            'name_slug': slug,
+        }
+
+        return kwargs
+
+    def _base_kwargs(self, row):
+        """
+        Builds a base set of kwargs for RawResult
+
+        """
+
+        kwargs = self._build_common_election_kwargs()
+        contest_kwargs = self._build_contest_kwargs(
+            row, kwargs['primary_type'])
+        candidate_kwargs = self._build_candidate_kwargs(row)
+        kwargs.update(contest_kwargs)
+        kwargs.update(candidate_kwargs)
+        return kwargs
+
+    def _prep_county_results(self, row):
+        """
+        In Washington our general results are reported by county instead
+        of precinct, although precinct-level vote tallies are available.
+
+        """
+
+        kwargs = self._base_kwargs(row)
+        county = str(row['jurisdiction'])
+        kwargs.update({
+            'reporting_level': row['reporting_level'],
+            'jurisdiction': county,
+            'party': row['partycode'].strip(),
+            'votes': int(row['votes'].strip()),
+        })
+        return RawResult(**kwargs)
+
+
+class WALoaderPost2007(WABaseLoader):
+
+    """
+    Parse Washington election results for all elections after 2007.
+
+    """
+
+    def load(self):
+
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'county'
+        results = []
+
+        with self._file_handle as csvfile:
+            reader = unicodecsv.DictReader(
+                csvfile, encoding='latin-1', delimiter=',')
+            for row in reader:
+                if self._skip_row(row):
+                    continue
+                else:
+                    rr_kwargs = self._common_kwargs.copy()
+                    rr_kwargs['primary_party'] = row['Party'].strip()
+                    rr_kwargs.update(self._build_contest_kwargs(row))
+                    rr_kwargs.update(self._build_candidate_kwargs(row))
+                    rr_kwargs.update({
+                        'party': row['Party'].strip(),
+                        'jurisdiction': row['JurisdictionName'].strip(),
+                        'votes': int(row['Votes'].strip()),
+                        'county_ocd_id': self.mapping['ocd_id']
+                    })
+                    results.append(RawResult(**rr_kwargs))
+
+        """
+        Many county files *only* have local races, such as schoolboard or
+        fire chief races. Since openstates does not want these results,
+        the entire files end up being skipped. To clarify the error message,
+        we print our own if RawResult tries to insert nothing into mongodb
+
+        """
+
+        try:
+            RawResult.objects.insert(results)
+        except errors.InvalidOperation:
+            print '\tNo raw results loaded'
+
+    def _skip_row(self, row):
+        return NormalizeRaces._is_match(row['Race']) not in self.target_offices
+
+    def _build_contest_kwargs(self, row):
+        return {
+            'office': row['Race'].strip(),
+            'jurisdiction': row['JurisdictionName'].strip(),
+        }
+
+    def _build_candidate_kwargs(self, row):
+        return {
+            'full_name': row['Candidate'].strip()
+        }
+
+
+class WALoader2010Precincts(WABaseLoader):
+
+    """
+    Parse Washington election results for all 2010 elections whose results
+    are listed by precinct
+
+    """
+
+    def load(self):
+
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'county'
+        results = []
+
+        with self._file_handle as csvfile:
+            reader = unicodecsv.DictReader(
+                csvfile, encoding='latin-1', delimiter=',')
+            for row in reader:
+                if self._skip_row(row):
+                    continue
+                else:
+                    rr_kwargs = self._common_kwargs.copy()
+                    rr_kwargs['primary_party'] = row['Party'].strip()
+                    rr_kwargs.update(self._build_contest_kwargs(row))
+                    rr_kwargs.update(self._build_candidate_kwargs(row))
+                    rr_kwargs.update({
+                        'party': row['Party_Code'].strip(),
+                        'jurisdiction': 'N/A',
+                        'votes': int(row['total_votes'].strip()),
+                        'county_ocd_id': self.mapping['ocd_id']
+                    })
+                    results.append(RawResult(**rr_kwargs))
+
+        """
+        Many county files *only* have local races, such as schoolboard or
+        fire chief races. Since openstates does not want these results,
+        the entire files end up being skipped. To clarify the error message,
+        we print our own if RawResult tries to insert nothing into mongodb
+
+        """
+
+        try:
+            RawResult.objects.insert(results)
+        except errors.InvalidOperation:
+            print '\tNo raw results loaded'
+
+    def _skip_row(self, row):
+        if row['CONTEST_FULL_NAME']:
+            return NormalizeRaces._is_match(
+                row['CONTEST_FULL_NAME']) not in self.target_offices
+        else:
+            return NormalizeRaces._is_match(
+                row['Contest_title']) not in self.target_offices
+
+    def _build_contest_kwargs(self, row):
+        try:
+            return {
+                'office': row['Contest_title'].strip(),
+                'jurisdiction': 'N/A',
+            }
+        except Exception:
+            return {
+                'office': row['CONTEST_FULL_NAME'].strip(),
+                'jurisdiction': 'N/A',
+            }
+
+    def _build_candidate_kwargs(self, row):
+        try:
+            return {
+                'full_name': row['candidate_name'].strip()
+            }
+        except Exception:
+            return {
+                'full_name': row['CANDIDATE_FULL_NAME'].strip()
+            }
