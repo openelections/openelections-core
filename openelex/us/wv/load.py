@@ -22,7 +22,7 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2008', '2010', '2012']):
+        if any(s in election_id for s in ['2008', '2010', '2011', '2012']):
             loader = WVLoader()
         else:
             loader = WVLoaderPre2008()
@@ -63,7 +63,7 @@ class WVBaseLoader(BaseLoader):
 
 class WVLoader(WVBaseLoader):
     """
-    Parse West Virginia election results for all elections after 2006.
+    Parse West Virginia election results for all elections after 2011.
 
     """
     def load(self):
@@ -74,11 +74,18 @@ class WVLoader(WVBaseLoader):
                 # Skip non-target offices
                 if self._skip_row(row): 
                     continue
+                elif any(s in self.mapping['generated_filename'] for s in ['2008', '2010', '2011']):
+                    if row['Type'] == 'County':
+                        results.append(self._prep_county_result(row))
+                    else:
+                        continue
                 else:
                     results.append(self._prep_precinct_result(row))
             RawResult.objects.insert(results)
 
     def _skip_row(self, row):
+        if row['OfficialResults'] and row['OfficialResults'] == 'No':
+            return True
         return row['OfficeDescription'].strip() not in self.target_offices
 
     def _build_contest_kwargs(self, row, primary_type):
@@ -122,6 +129,19 @@ class WVLoader(WVBaseLoader):
             # we won't have an easy way of looking up the county in the 
             # transforms.
             'county_ocd_id': self.mapping['ocd_id'],
+            'party': row['PartyName'].strip(),
+            'votes': self._votes(row['Votes']),
+            'vote_breakdowns': {},
+        })
+        return RawResult(**kwargs)
+
+    def _prep_county_result(self, row):
+        kwargs = self._base_kwargs(row)
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'] == row['CountyName']][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'county',
+            'jurisdiction': row['CountyName'],
+            'county_ocd_id': county_ocd_id,
             'party': row['PartyName'].strip(),
             'votes': self._votes(row['Votes']),
             'vote_breakdowns': {},
