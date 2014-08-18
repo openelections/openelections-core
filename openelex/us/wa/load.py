@@ -451,6 +451,7 @@ I should fix this.
 
 """
 
+
 class WALoaderPre2007(WABaseLoader):
 
     """
@@ -622,32 +623,4 @@ class WALoadExcel(WABaseLoader):
 
     def load(self):
         pass
-        #pandas.read_excel(self._file_handle)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # pandas.read_excel(self._file_handle)
