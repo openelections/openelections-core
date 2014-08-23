@@ -110,7 +110,8 @@ class Datasource(BaseDatasource):
             election['start_date'].replace('-',''),
             self.state.lower(),
             election['race_type'],
-            county.lower()
+            county.lower(),
+            'precinct'
         ]
         return "__".join(bits) + '.csv'
 
