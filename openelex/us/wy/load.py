@@ -95,9 +95,7 @@ class WYLoader(WYBaseLoader):
     2008 general & primary
     2004 general & primary
     2002 general, primary & special general
-
-    Doesn't work for:
-    2000
+    2000 general & primary
     """
     def load(self):
         year = int(re.search(r'\d{4}', self.election_id).group())
@@ -146,6 +144,9 @@ class WYLoader(WYBaseLoader):
                         votes = [v for v in row[1:] if not v == '']
                     elif len(candidates) == 1:
                         votes = [v for v in row[1:] if not v == '']
+                    elif year == 2000 and primary is False:
+                        precinct = row[0]
+                        votes = [v for v in row[2:len(candidates)] if not v == precinct ]
                     elif year < 2006:
                         votes = [v for v in row[2:len(candidates)] if not v == '']
                     else:
@@ -264,10 +265,10 @@ class WYLoader(WYBaseLoader):
             a = operator.itemgetter(*cand_cols)(sheet.row_values(0))
             b = operator.itemgetter(*cand_cols)(sheet.row_values(1))
         else:
-            a = [x.strip() for x in sheet.row_values(0)[2:]]
-            b = [x.strip() for x in sheet.row_values(1)[2:]]
+            cand_cols = [sheet.row_values(4).index(x) for x in sheet.row_values(4)[2:] if not x == '']
+            a = operator.itemgetter(*cand_cols)(sheet.row_values(0))
+            b = operator.itemgetter(*cand_cols)(sheet.row_values(1))
         raw_offices = [" ".join(x) for x in zip(a,b)]
-        print raw_offices
         office_labels = [x for x in raw_offices if " ".join(x.split()[0:2]).strip() in self.office_segments]
         office_labels = list(set(office_labels))
         offices = []
