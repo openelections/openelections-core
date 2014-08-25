@@ -1,10 +1,18 @@
+import logging
 import os
-import pandas
 import re
 import unicodecsv
 import xlrd
 
 from pymongo import errors
+
+"""
+Importing errors from pymongo allows us to except the specific pymongo
+error which is raised when we try to perform an empty bulk insert.
+We except the error because we provide our own, slightly more in-depth
+error message instead.
+
+"""
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
@@ -22,7 +30,30 @@ TO DO:
 2.) Fix memory issues [class WALoaderPrecincts, LINE# 230] (Aug 14, 2014)
 3.) Takes forever on large files (Aug 15, 2014)
 
+NOTES:
+
+1.) Loader uses two normalizing classes that normalize parts of the data.
+    In particular, we use ColumnMatch to normalize the headers of different
+    files whose headers are generally the same, but differ in the wording.
+
+    For example, some files will have all the same fields, but name them
+    slightly differently. In one file, the column that holds the candidate's
+    name might be "CANDIDATE_FULL_NAME", while another might be
+    "candidate name". Because of this, we use regex to test the header row
+    to find the correct field.
+
+    NormalizeRaces takes the race data and then matches it against
+    `target_offices`, found in the WABaseLoader class. We do this because
+    Washington will preface some of the positions (e.g. Governor) with
+    "Washington State", and some files call the lower chamber "Representative"
+    or "Legislator" or use the word "House" while referring to the same
+    position.
+
 """
+
+# Instantiate logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
 
 
 class LoadResults(object):
@@ -36,8 +67,11 @@ class LoadResults(object):
 
     def run(self, mapping):
         """
-        generated_filename will return a filename similar to this: `20101107__wa__general__precinct.csv`
-        election will return a filename similar to this: `20101102__wa__general__precinct`
+        generated_filename will return a filename similar to this:
+            `20101107__wa__general__precinct.csv`
+
+        election will return a filename similar to this:
+            `20101102__wa__general__precinct`
 
         """
 
@@ -52,13 +86,30 @@ class LoadResults(object):
         """
 
         bad_filenames = [
+
+            # The below are .csv
+
             '20090818__wa__primary__pierce__county.csv',
             '20090818__wa__primary__ferry__county.csv',
             '20090818__wa__primary__wahkiakum__county.csv',
             '20090818__wa__primary__whatcom__county.csv',
             '20090818__wa__primary__pend_oreille__county.csv',
             '20090818__wa__primary__kitsap__county.csv',
-            '20090818__wa__primary__kittitas__county.csv'
+            '20090818__wa__primary__kittitas__county.csv',
+
+            # The the below are .xls
+
+            '20080219__wa__primary__benton__precinct.xls',
+            '20081104__wa__general__kittitas__precinct.xls',
+            '20081104__wa__general__precinct.xls',
+            '20091103__wa__general__clark__precinct.xls',
+            '20100817__wa__primary__state_legislative.xls'
+            '20120807__wa__primary__congressional_district.xls',
+            '20120807__wa__primary__state_legislative.xls',
+            '20121106__wa__general__congressional_district.xls',
+            '20121106__wa__general__state_legislative.xls',
+            '20080219__wa__primary__adams__precinct.xls',
+            '20101102__wa__general__kittitas___precinct.xls'
         ]
 
         """
@@ -71,7 +122,8 @@ class LoadResults(object):
 
         # If files are 'bad', skip them
         if any(x in generated_filename for x in bad_filenames):
-            print 'File {0} does not contain .csv data'.format(generated_filename)
+            print('File {0} does not contain .csv data'
+                  .format(generated_filename))
             loader = SkipLoader()
 
         # If files are .xls(x), skip them
@@ -83,8 +135,8 @@ class LoadResults(object):
         elif os.path.splitext(generated_filename)[-1].lower() == '.txt':
 
             """
-            We run into issues where King County provides > 1 million line .txt files
-            that break my machine's memory. We definitely need to
+            We run into issues where King County provides > 1 million line
+            .txt files that break my machine's memory. We definitely need to
             refactor, but for the moment we'll pass over said files.
 
             """
@@ -132,13 +184,19 @@ class LoadResults(object):
         try:
             loader.run(mapping)
         except UnboundLocalError:
-            print '\tERROR: Unsupported file type ({0})'.format('UnboundLocalError')
+            logger.error(
+                '\tERROR: Unsupported file type ({0})'
+                .format('UnboundLocalError'))
         except IOError:
-            print '\tERROR: File "{0}" does not exist'.format(generated_filename)
+            logger.error(
+                '\tERROR: File "{0}" does not exist'
+                .format(generated_filename))
         except unicodecsv.Error:
-            print '\tERROR: Unsupported file type ({0})'.format('unicodecsv.Error')
+            logger.error(
+                '\tERROR: Unsupported file type ({0})'
+                .format('unicodecsv.Error'))
         except errors.InvalidOperation:
-            print '\tNo raw results loaded'
+            logger.error('\tNo raw results loaded')
 
 
 class WABaseLoader(BaseLoader):
@@ -180,11 +238,61 @@ class WABaseLoader(BaseLoader):
 
 class ColumnMatch:
 
+    """
+    New methods to normalize headers should follow this structure:
+
+        @classmethod
+        def _normalize_*(cls, header):
+
+
+            # Some sort of examples of what words the regex tests for
+            # Example 1
+            # Example 2
+            # etc
+
+            regex = re.compile(regex, flags)
+
+            return [
+                m.group(0) for l in header for m in [
+                    regex.search(l)] if m][0]
+
+            # OR
+
+            return filter(lambda x: regex.search(x), header)[0]
+
+    The filter(lambda...) is equivalent to the list comprehension, but is
+    more readable. I've chosen to go with the lambda function because of
+    readability, even though the list comprehension is much quicker.
+
+    See: https://gist.github.com/EricLagerg/152e402e45088266e189
+
+        * For 1 iteration:
+
+          lambda: 0.000517129898071
+          list  : 0.000169992446899 <
+
+        * For 10:
+
+          lambda: 0.00197100639343
+          list  : 0.00181102752686 <
+
+        * For 100:
+
+          lambda: 0.0169317722321
+          list  : 0.0162620544434 <
+
+        * For 1,000:
+
+          lambda: 0.15958404541 <
+          list  : 0.161957025528
+
+    The `header` arg will be (or at least currently is) a list of all the
+    matches from testing the .csv file's header field.
+
+    """
+
     @classmethod
-    def _is_party_match(cls, header):
-
-        column_list = header.replace('"', '').split(',')
-
+    def _normalize_party(cls, header):
         """
         Regex examples:
 
@@ -194,17 +302,20 @@ class ColumnMatch:
 
         """
 
-        regex = re.compile('.*(^party$|party.*code).*', re.IGNORECASE)
+        regex = re.compile(
+            r'.*(^party$|party.*code|candidate(_|\s+)party(_|\s)id).*',
+            re.IGNORECASE)
 
-        return [
-            m.group(0) for l in column_list for m in [
-                regex.search(l)] if m][0]
+        """
+        `return filter(lambda x: regex.search(x), header)[0]`
+        does the same as the below list comprehension
+
+        """
+
+        return filter(lambda x: regex.search(x), header)[0]
 
     @classmethod
-    def _is_candidate_match(cls, header):
-
-        column_list = header.replace('"', '').split(',')
-
+    def _normalize_candidate(cls, header):
         """
         Regex examples:
 
@@ -217,15 +328,10 @@ class ColumnMatch:
 
         regex = re.compile('.*(candidate.*name|candidate).*', re.IGNORECASE)
 
-        return [
-            m.group(0) for l in column_list for m in [
-                regex.search(l)] if m][0]
+        return filter(lambda x: regex.search(x), header)[0]
 
     @classmethod
-    def _is_contest_match(cls, header):
-
-        column_list = header.replace('"', '').split(',')
-
+    def _normalize_contest(cls, header):
         """
         Regex examples:
 
@@ -240,15 +346,10 @@ class ColumnMatch:
             '.*(^contest$|race|(contest.*(title|name))).*',
             re.IGNORECASE)
 
-        return [
-            m.group(0) for l in column_list for m in [
-                regex.search(l)] if m][0]
+        return filter(lambda x: regex.search(x), header)[0]
 
     @classmethod
-    def _is_precinct_match(cls, header):
-
-        column_list = header.replace('"', '').split(',')
-
+    def _normalize_precinct(cls, header):
         """
         Regex examples:
 
@@ -260,15 +361,10 @@ class ColumnMatch:
 
         regex = re.compile('.*(precinct|precinct.*name).*', re.IGNORECASE)
 
-        return [
-            m.group(0) for l in column_list for m in [
-                regex.search(l)] if m][0]
+        return filter(lambda x: regex.search(x), header)[0]
 
     @classmethod
-    def _is_vote_match(cls, header):
-
-        column_list = header.replace('"', '').split(',')
-
+    def _normalize_votes(cls, header):
         """
         Regex examples:
 
@@ -283,18 +379,31 @@ class ColumnMatch:
             '.*(.*vote.*for|^vote|^count$|total_votes|total.*votes).*',
             re.IGNORECASE)
 
-        return [
-            m.group(0) for l in column_list for m in [
-                regex.search(l)] if m][0]
+        return filter(lambda x: regex.search(x), header)[0]
 
 
 cm = ColumnMatch()
 
 
-class normalize_races:
+class NormalizeRaces:
 
     @classmethod
     def _is_match(cls, string):
+        """
+        Would appear to return a boolean, but returns the normalized
+        race result as per `target_offices`.
+
+        Although we should not provide 'N/A' in places where we don't have
+        valid data (e.g. if no party is stated, we simply don't provide the
+        party value instead of providing 'N/A' or a blank value), returning
+        'N/A' here will result in us skipping the row, since this class is
+        and only should be used *only* in the `self._skip_row` methods.
+
+        Returning anything other than one of the values in `target_offices`
+        will result in the row being skipped. Since 'N/A' isn't in
+        `target_offices`, we're fine.
+
+        """
 
         presidential_regex = re.compile('president', re.IGNORECASE)
         senate_regex = re.compile('(senate|senator)', re.IGNORECASE)
@@ -310,7 +419,8 @@ class normalize_races:
         ag_regex = re.compile('attorney general', re.IGNORECASE)
         wcpl_regex = re.compile('commissioner of public lands', re.IGNORECASE)
         local_regex = re.compile(
-            r'(\bState\b|Washington|Washington State|Local|Legislative District)',
+            r'(\bState\b|Washington|Washington State|Local|'
+            'Legislative District)',
             re.IGNORECASE)
         national_regex = re.compile(
             r'(U.S.|US|Congressional|National|United States|U. S.)',
@@ -351,7 +461,7 @@ class normalize_races:
         else:
             return 'N/A'
 
-NormalizeRaces = normalize_races()
+nr = NormalizeRaces()
 
 
 class SkipLoader(WABaseLoader):
@@ -372,7 +482,7 @@ class SkipLoader(WABaseLoader):
     """
 
     def load(self):
-        print '\tNothing we can do with this file'
+        logger.error('\tNothing we can do with this file')
         pass
 
 
@@ -380,6 +490,8 @@ class WALoaderPrecincts(WABaseLoader):
 
     """
     Parse Washington election results for all precinct files.
+    This class uses the ColumnMatch class to normalize the column
+    headers.
 
     """
 
@@ -390,29 +502,51 @@ class WALoaderPrecincts(WABaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            self.header = csvfile.readline()
-        with self._file_handle as csvfile:
+            no_district = 0
+            no_party = 0
             reader = unicodecsv.DictReader(
                 csvfile, encoding='latin-1', delimiter=',')
+            self.header = [x.replace('"', '') for x in reader.fieldnames]
             for row in reader:
                 if self._skip_row(row):
                     continue
                 else:
-                    votes = int(row[cm._is_vote_match(self.header)].strip())
-                    try:
-                        party = row[cm._is_party_match(self.header)].strip()
-                    except IndexError:
-                        party = 'N/A'
+                    votes = int(row[cm._normalize_votes(self.header)].strip())
                     rr_kwargs = self._common_kwargs.copy()
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
                     rr_kwargs.update({
                         'reporting_level': 'precinct',
-                        'party': party,
                         'votes': votes,
                         'county_ocd_id': self.mapping['ocd_id']
                     })
+                    try:
+                        rr_kwargs.update({
+                            'party': row[cm._normalize_party(
+                                self.header)].strip()
+                        })
+                    except IndexError:
+                        no_party += 1
+                    try:
+                        rr_kwargs.update({
+                            'district': '{0} {1}'.format(
+                                nr._is_match(
+                                        row[cm._normalize_contest(
+                                            self.header)]), [
+                                        int(s) for s in row[
+                                            cm._normalize_contest(
+                                                self.header)].strip()
+                                        if s.isdigit()][0])})
+                    except IndexError:
+                        no_district += 1
                     results.append(RawResult(**rr_kwargs))
+            if no_district != 0:
+                logger.error(
+                    'Index Error in WALoaderPost2007 while updating'
+                    ' district: {0} lines had no district'
+                    ' number').format(no_district)
+            if no_party != 0:
+                logger.error('No party preference listed for any candidate')
 
         """
         Many county files *only* have local races, such as schoolboard or
@@ -425,20 +559,20 @@ class WALoaderPrecincts(WABaseLoader):
         try:
             RawResult.objects.insert(results)
         except errors.InvalidOperation:
-            print '\tNo raw results loaded'
+            logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return NormalizeRaces._is_match(
-            row[cm._is_contest_match(self.header)]) not in self.target_offices
+        return nr._is_match(
+            row[cm._normalize_contest(self.header)]) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
         return {
-            'office': row[cm._is_contest_match(self.header)].strip(),
-            'jurisdiction': row[cm._is_precinct_match(self.header)].strip(),
+            'office': row[cm._normalize_contest(self.header)].strip(),
+            'jurisdiction': row[cm._normalize_precinct(self.header)].strip(),
         }
 
     def _build_candidate_kwargs(self, row):
-        full_name = row[cm._is_candidate_match(self.header)].strip()
+        full_name = row[cm._normalize_candidate(self.header)].strip()
 
         return {
             'full_name': full_name,
@@ -473,10 +607,10 @@ class WALoaderPre2007(WABaseLoader):
         try:
             RawResult.objects.insert(results)
         except errors.InvalidOperation:
-            print '\tNo raw results loaded'
+            logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return NormalizeRaces._is_match(
+        return nr._is_match(
             row['officename']) not in self.target_offices
 
     def _build_contest_kwargs(self, row, primary_type):
@@ -486,7 +620,7 @@ class WALoaderPre2007(WABaseLoader):
         """
 
         kwargs = {
-            'office': NormalizeRaces._is_match(row['officename']),
+            'office': nr._is_match(row['officename']),
             'primary_party': row['partycode'].strip()
         }
         return kwargs
@@ -555,8 +689,10 @@ class WALoaderPost2007(WABaseLoader):
         results = []
 
         with self._file_handle as csvfile:
+            no_district = 0
             reader = unicodecsv.DictReader(
                 csvfile, encoding='latin-1', delimiter=',')
+            self.header = [x.replace('"', '') for x in reader.fieldnames]
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -570,7 +706,25 @@ class WALoaderPost2007(WABaseLoader):
                         'votes': int(row['Votes'].strip()),
                         'county_ocd_id': self.mapping['ocd_id'],
                     })
+                    try:
+                        rr_kwargs.update({
+                            'district': '{0} {1}'.format(
+                                nr._is_match(
+                                        row[
+                                            cm._normalize_contest(
+                                                self.header)]), [
+                                        int(s) for s in row[
+                                            cm._normalize_contest(
+                                                self.header)].strip()
+                                        if s.isdigit()][0])})
+                    except IndexError:
+                        no_district += 1
                     results.append(RawResult(**rr_kwargs))
+            if no_district != 0:
+                logger.error(
+                    'Index Error in WALoaderPost2007 while updating'
+                    ' district: {0} lines had no district'
+                    ' number'.format(no_district))
 
         """
         Many county files *only* have local races, such as schoolboard or
@@ -583,10 +737,10 @@ class WALoaderPost2007(WABaseLoader):
         try:
             RawResult.objects.insert(results)
         except errors.InvalidOperation:
-            print '\tNo raw results loaded'
+            logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return NormalizeRaces._is_match(row['Race']) not in self.target_offices
+        return nr._is_match(row['Race']) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
         """
@@ -603,7 +757,10 @@ class WALoaderPost2007(WABaseLoader):
         try:
             jurisdiction = row['County'].strip()
         except KeyError:
-            jurisdiction = row['JurisdictionName'].strip()
+            name_list = self.source.split('__')[-2:]
+            jurisdiction = '{0} {1}'.format(
+                name_list[0],
+                name_list[1].split('.')[0])
 
         return {
             'office': row['Race'].strip(),
@@ -622,5 +779,19 @@ class WALoaderPost2007(WABaseLoader):
 class WALoadExcel(WABaseLoader):
 
     def load(self):
+        logger.error('\tCannot parse Excel files yet')
         pass
-        # pandas.read_excel(self._file_handle)
+    """
+        xlsfile = xlrd.open_workbook(self._xls_file_handle())
+
+        sheets = self._get_sheets(xlsfile)
+        print xlsfile
+        for sheet in sheets:
+            for i in xrange(sheet.nrows):
+                row = [r for r in sheet.row_values(i) if not r == '']
+                print str(row[0])
+
+    def _get_sheets(self, xlsfile):
+        sheets = xlsfile.sheets()
+        return sheets
+    """
