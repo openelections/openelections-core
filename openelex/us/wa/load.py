@@ -52,7 +52,7 @@ NOTES:
 """
 
 # Instantiate logging
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -502,8 +502,8 @@ class WALoaderPrecincts(WABaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            no_district = 0
-            no_party = 0
+            party_flag = 0
+            district_flag = 0
             reader = unicodecsv.DictReader(
                 csvfile, encoding='latin-1', delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
@@ -526,7 +526,7 @@ class WALoaderPrecincts(WABaseLoader):
                                 self.header)].strip()
                         })
                     except IndexError:
-                        no_party += 1
+                        party_flag = 1
                     try:
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
@@ -538,15 +538,12 @@ class WALoaderPrecincts(WABaseLoader):
                                                 self.header)].strip()
                                         if s.isdigit()][0])})
                     except IndexError:
-                        no_district += 1
+                        district_flag = 1
                     results.append(RawResult(**rr_kwargs))
-            if no_district != 0:
-                logger.error(
-                    'Index Error in WALoaderPost2007 while updating'
-                    ' district: {0} lines had no district'
-                    ' number').format(no_district)
-            if no_party != 0:
-                logger.error('No party preference listed for any candidate')
+            if 0 != party_flag:
+                logger.info('Some rows did not contain party info')
+            if 0 != district_flag:
+                logger.info('Some rows did not contain district info')
 
         """
         Many county files *only* have local races, such as schoolboard or
@@ -589,8 +586,7 @@ I should fix this.
 class WALoaderPre2007(WABaseLoader):
 
     """
-    Parse Washington election results for all elections before and including
-    2007.
+    Parse Washington election results for all elections before 2007.
 
     """
 
@@ -599,6 +595,7 @@ class WALoaderPre2007(WABaseLoader):
             results = []
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1',
                                            delimiter=',')
+            self.header = [x.replace('"', '') for x in reader.fieldnames]
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -672,13 +669,23 @@ class WALoaderPre2007(WABaseLoader):
             'votes': int(row['votes'].strip()),
             'county_ocd_id': self.mapping['ocd_id']
         })
+        try:
+            kwargs.update({
+                'district': '{0} {1}'.format(
+                    nr._is_match(row[cm._normalize_contest(
+                        self.header)]), [
+                            int(s) for s in row[cm._normalize_contest(
+                                self.header)].strip()
+                            if s.isdigit()][0])})
+        except IndexError:
+            pass
         return RawResult(**kwargs)
 
 
 class WALoaderPost2007(WABaseLoader):
 
     """
-    Parse Washington election results for all elections after 2007.
+    Parse Washington election results for all elections after and including 2007.
 
     """
 
@@ -689,7 +696,7 @@ class WALoaderPost2007(WABaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            no_district = 0
+            district_flag = 0
             reader = unicodecsv.DictReader(
                 csvfile, encoding='latin-1', delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
@@ -710,21 +717,17 @@ class WALoaderPost2007(WABaseLoader):
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
                                 nr._is_match(
-                                        row[
-                                            cm._normalize_contest(
-                                                self.header)]), [
-                                        int(s) for s in row[
-                                            cm._normalize_contest(
-                                                self.header)].strip()
-                                        if s.isdigit()][0])})
+                                    row[cm._normalize_contest(
+                                        self.header)]),
+                                [int(s) for s in row[
+                                    cm._normalize_contest(
+                                        self.header)].strip()
+                                    if s.isdigit()][0])})
                     except IndexError:
-                        no_district += 1
+                        district_flag = 1
                     results.append(RawResult(**rr_kwargs))
-            if no_district != 0:
-                logger.error(
-                    'Index Error in WALoaderPost2007 while updating'
-                    ' district: {0} lines had no district'
-                    ' number'.format(no_district))
+            if 0 != district_flag:
+                logger.info('Some rows did not contain district info')
 
         """
         Many county files *only* have local races, such as schoolboard or
