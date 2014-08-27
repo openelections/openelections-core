@@ -112,6 +112,109 @@ class LoadResults(object):
             '20101102__wa__general__kittitas___precinct.xls'
         ]
 
+        case_one = [
+
+            '20071106__wa__general__pacific__precinct.xls',
+            '20071106__wa__general__wahkiakum__precinct.xls',
+            '20071106__wa__general__yakima__precinct.xls',
+            '20080219__wa__primary__asotin__precinct.xls',
+            '20080219__wa__primary__chelan__precinct.xls',
+            '20080219__wa__primary__clark__precinct.xls',
+            '20080219__wa__primary__columbia__precinct.xls',
+            '20080219__wa__primary__ferry__precinct.xls',
+            '20080219__wa__primary__franklin__precinct.xls',
+            '20080219__wa__primary__garfield__precinct.xls',
+            '20080219__wa__primary__island__precinct.xls',
+            '20080219__wa__primary__kittitas__precinct.xls',
+            '20080219__wa__primary__lewis__precinct.xls',
+            '20080219__wa__primary__lincoln__precinct.xls',
+            '20080219__wa__primary__mason__precinct.xls',
+            '20080219__wa__primary__okanogan__precinct.xls',
+            '20080219__wa__primary__pacific__precinct.xls',
+            '20080219__wa__primary__san_juan__precinct.xls',
+            '20080219__wa__primary__skagit__precinct.xls',
+            '20080219__wa__primary__skamania__precinct.xls',
+            '20080219__wa__primary__stevens__precinct.xls',
+            '20080219__wa__primary__wahkiakum__precinct.xls',
+            '20080219__wa__primary__whatcom__precinct.xls',
+            '20080219__wa__primary__yakima__precinct.xls',
+            '20080819__wa__primary__adams__precinct.xls',
+            '20080819__wa__primary__asotin__precinct.xls',
+            '20080819__wa__primary__benton__precinct.xls',
+            '20080819__wa__primary__chelan__precinct.xls',
+            '20080819__wa__primary__clallam__precinct.xls',
+            '20080819__wa__primary__clark__precinct.xls',
+            '20080819__wa__primary__columbia__precinct.xls',
+            '20080819__wa__primary__ferry__precinct.xls',
+            '20080819__wa__primary__franklin__precinct.xls',
+            '20080819__wa__primary__garfield__precinct.xls',
+            '20080819__wa__primary__island__precinct.xls',
+            '20080819__wa__primary__kittitas__precinct.xls',
+            '20080819__wa__primary__klickitat__precinct.xls',
+            '20080819__wa__primary__lewis__precinct.xls',
+            '20080819__wa__primary__lincoln__precinct.xls',
+            '20080819__wa__primary__mason__precinct.xls',
+            '20080819__wa__primary__okanogan__precinct.xls',
+            '20080819__wa__primary__pacific__precinct.xls',
+            '20080819__wa__primary__pierce__precinct.xls',
+            '20080819__wa__primary__san_juan__precinct.xls',
+            '20080819__wa__primary__skagit__precinct.xls',
+            '20080819__wa__primary__skamania__precinct.xls',
+            '20080819__wa__primary__stevens__precinct.xls',
+            '20080819__wa__primary__wahkiakum__precinct.xls',
+            '20080819__wa__primary__whatcom__precinct.xls',
+            '20080819__wa__primary__yakima__precinct.xls',
+            '20081104__wa__general__asotin__precinct.xls',
+            '20081104__wa__general__benton__precinct.xls',
+            '20081104__wa__general__chelan__precinct.xls',
+            '20081104__wa__general__clallam__precinct.xls',
+            '20081104__wa__general__clark__precinct.xls',
+            '20081104__wa__general__columbia__precinct.xls',
+            '20081104__wa__general__ferry__precinct.xls',
+            '20081104__wa__general__garfield__precinct.xls',
+            '20081104__wa__general__island__precinct.xls',
+            '20081104__wa__general__klickitat__precinct.xls',
+            '20081104__wa__general__lewis__precinct.xls',
+            '20081104__wa__general__lincoln__precinct.xls',
+            '20081104__wa__general__mason__precinct.xls',
+            '20081104__wa__general__okanogan__precinct.xls',
+            '20081104__wa__general__pacific__precinct.xls',
+            '20081104__wa__general__san_juan__precinct.xls',
+            '20081104__wa__general__skamania__precinct.xls',
+            '20081104__wa__general__snohomish__precinct.xls',
+            '20081104__wa__general__stevens__precinct.xls',
+            '20081104__wa__general__wahkiakum__precinct.xls',
+            '20081104__wa__general__whatcom__precinct.xls',
+            '20081104__wa__general__yakima__precinct.xls',
+            '20091103__wa__general__adams__precinct.xls',
+            '20091103__wa__general__asotin__precinct.xls',
+            '20091103__wa__general__benton__precinct.xls',
+            '20091103__wa__general__chelan__precinct.xls',
+            '20091103__wa__general__clallam__precinct.xls',
+            '20091103__wa__general__columbia__precinct.xls',
+            '20091103__wa__general__ferry__precinct.xls',
+            '20091103__wa__general__franklin__precinct.xls',
+            '20091103__wa__general__garfield__precinct.xls',
+            '20091103__wa__general__island__precinct.xls',
+            '20091103__wa__general__kittitas__precinct.xls',
+            '20091103__wa__general__klickitat__precinct.xls',
+            '20091103__wa__general__lewis__precinct.xls',
+            '20091103__wa__general__lincoln__precinct.xls',
+            '20091103__wa__general__mason__precinct.xls',
+            '20091103__wa__general__okanogan__precinct.xls',
+            '20091103__wa__general__pacific__precinct.xls',
+            '20091103__wa__general__pierce__precinct.xls',
+            '20091103__wa__general__san_juan__precinct.xls',
+            '20091103__wa__general__skagit__precinct.xls',
+            '20091103__wa__general__skamania__precinct.xls',
+            '20091103__wa__general__snohomish__precinct.xls',
+            '20091103__wa__general__stevens__precinct.xls',
+            '20091103__wa__general__wahkiakum__precinct.xls',
+            '20091103__wa__general__whatcom__precinct.xls',
+            '20091103__wa__general__yakima__precinct.xls',
+            '20111108__wa__general__clark___precinct.xls'
+        ]
+
         """
         Could try using `generated_filename.split(.)[-1]` instead of
         os.path.splitext(election)[-1], since all filenames are
@@ -122,15 +225,18 @@ class LoadResults(object):
 
         # If files are 'bad', skip them
         if any(x in generated_filename for x in bad_filenames):
-            print('File {0} does not contain .csv data'
+            print('File {0} does not contain currently usable data.'
                   .format(generated_filename))
             loader = SkipLoader()
+
+        elif any(x in generated_filename for x in case_one):
+            loader = WALoadExcelCaseOne()
 
         # If files are .xls(x), skip them
         elif os.path.splitext(
                 generated_filename)[-1].lower() == '.xls' or os.path.splitext(
                 generated_filename)[-1].lower() == '.xlsx':
-            loader = WALoadExcel()
+            loader = SkipLoader()
 
         elif os.path.splitext(generated_filename)[-1].lower() == '.txt':
 
@@ -426,38 +532,65 @@ class NormalizeRaces:
             r'(U.S.|US|Congressional|National|United States|U. S.)',
             re.IGNORECASE)
 
-        if re.search(presidential_regex, string):
-            return 'President'
-        elif re.search(senate_regex, string):
-            if re.search(local_regex, string):
-                return 'State Senate'
-            elif re.search(national_regex, string):
-                return 'U.S. Senate'
+        """
+        The following chained if statements are ordered by the most frequent
+        occurrences. As of August 26th, 2014 these are the results from
+        running `egrep -rohi 'regex' . | wc -l`
+
+        I've placed Lt. Governor's regex ahead of Governor's in order to
+        be able to get the Lt. Governor's values and keep a simplified regex.
+
+        These aren't exact, but give are a rough assessment of the number
+        of occurrences.
+
+        National:  935375
+        Local:     953031
+
+        *House:    417020
+        Governor:  319836
+        CPL:       344795
+        *Senate:   186247
+        Lt. Gov.:  161537
+        SPI:       128783
+        SoS:       122404
+        Auditor:   103920
+        AG:        85059
+        President: 75183
+
+        """
+
+        if re.search(house_regex, string):
+            if re.search(national_regex, string):
+                return 'U.S. Representative'
+            elif re.search(local_regex, string):
+                return 'State Representative'
             else:
                 return 'N/A'
-        elif re.search(house_regex, string):
-            if re.search(local_regex, string):
-                return 'State Representative'
-            elif re.search(national_regex, string):
-                return 'U.S. Representative'
+        elif re.search(governor_regex, string):
+            return 'Governor'
+        elif re.search(wcpl_regex, string):
+            return 'Commissioner of Public Lands'
+        elif re.search(senate_regex, string):
+            if re.search(national_regex, string):
+                return 'U.S. Senate'
+            elif re.search(local_regex, string):
+                return 'State Senate'
             else:
                 return 'N/A'
         elif re.search(lt_gov_regex, string):
             return 'Lt. Governor'
+        elif re.search(ospi_regex, string):
+            return 'Superintendent of Public Instruction'
         elif re.search(sos_regex, string):
             return 'Secretary of State'
-        elif re.search(governor_regex, string):
-            return 'Governor'
         elif re.search(treasurer_regex, string):
             return 'Treasurer'
         elif re.search(auditor_regex, string):
             return 'Auditor'
-        elif re.search(ospi_regex, string):
-            return 'Superintendent of Public Instruction'
         elif re.search(ag_regex, string):
             return 'Attorney General'
-        elif re.search(wcpl_regex, string):
-            return 'Commissioner of Public Lands'
+        elif re.search(presidential_regex, string):
+            return 'President'
         else:
             return 'N/A'
 
@@ -779,22 +912,52 @@ class WALoaderPost2007(WABaseLoader):
         }
 
 
-class WALoadExcel(WABaseLoader):
+class WALoadExcelCaseOne(WABaseLoader):
 
     def load(self):
-        logger.error('\tCannot parse Excel files yet')
-        pass
-    """
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'precinct'
+        results = []
+        sheet = xlsfile.sheet_by_index(0)
+        self.header = str(sheet.row_values(0)).split(',')
 
-        sheets = self._get_sheets(xlsfile)
-        print xlsfile
-        for sheet in sheets:
-            for i in xrange(sheet.nrows):
-                row = [r for r in sheet.row_values(i) if not r == '']
-                print str(row[0])
+        for row in xrange(sheet.nrows):
+            if self._skip_row:
+                continue
+            else:
+                party = self.sheet.cell(rowx=row, colx=17).replace('||', '')
+                rr_kwargs = self._common_kwargs.copy()
+                rr_kwargs.update(self._build_candidate_kwargs())
+                rr_kwargs.update(self._build_contest_kwargs())
+                rr_kwargs.update({
+                    'party': party,
+                    'votes': int(self.sheet.cell(rowx=row, colx=19).strip()),
+                    'county_ocd_id': self.mapping['ocd_id']
+                })
+                results.append(RawResult(**rr_kwargs))
+        RawResult.objects.insert(results)
 
-    def _get_sheets(self, xlsfile):
-        sheets = xlsfile.sheets()
-        return sheets
-    """
+    def _skip_row(self, row):
+        return nr._is_match(
+            row[cm._normalize_contest(self.header)]) not in self.target_offices
+
+    def _build_contest_kwargs(self, row):
+        name_list = self.source.split('__')[-2:]
+        jurisdiction = '{0} {1}'.format(
+            name_list[0],
+            name_list[1].split('.')[0])
+
+        return {
+            'office': self.sheet.cell(rowx=row, colx=10).strip(),
+            'jurisdiction': jurisdiction
+        }
+
+    def _build_candidate_kwargs(self, row):
+        full_name = self.sheet.cell(rowx=row, colx=14)
+        slug = slugify(full_name, substitute='-')
+
+        return {
+            'full_name': full_name,
+            'name_slug': slug
+        }
