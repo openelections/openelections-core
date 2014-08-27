@@ -926,13 +926,13 @@ class WALoadExcelCaseOne(WABaseLoader):
             if self._skip_row:
                 continue
             else:
-                party = self.sheet.cell(rowx=row, colx=17).replace('||', '')
+                party = self.sheet.cell(rowx=row, colx=17).value
                 rr_kwargs = self._common_kwargs.copy()
                 rr_kwargs.update(self._build_candidate_kwargs())
                 rr_kwargs.update(self._build_contest_kwargs())
                 rr_kwargs.update({
                     'party': party,
-                    'votes': int(self.sheet.cell(rowx=row, colx=19).strip()),
+                    'votes': int(self.sheet.cell(rowx=row, colx=19).value.strip()),
                     'county_ocd_id': self.mapping['ocd_id']
                 })
                 results.append(RawResult(**rr_kwargs))
@@ -949,12 +949,12 @@ class WALoadExcelCaseOne(WABaseLoader):
             name_list[1].split('.')[0])
 
         return {
-            'office': self.sheet.cell(rowx=row, colx=10).strip(),
+            'office': self.sheet.cell(rowx=row, colx=10).value.strip(),
             'jurisdiction': jurisdiction
         }
 
     def _build_candidate_kwargs(self, row):
-        full_name = self.sheet.cell(rowx=row, colx=14)
+        full_name = self.sheet.cell(rowx=row, colx=14).value
         slug = slugify(full_name, substitute='-')
 
         return {
