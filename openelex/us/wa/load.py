@@ -487,11 +487,24 @@ class ColumnMatch:
 
         return filter(lambda x: regex.search(x), header)[0]
 
+    @classmethod
+    def _normalize_index(cls, header, result):
+        """
+        Returns the index of a normalized column
 
-cm = ColumnMatch()
+        Usage:
+        CM._normalize_index(header, CM._normalize_contest(header))
+
+        """
+
+        return header.index(''.join(result))
+
+
+CM = ColumnMatch()
 
 
 class NormalizeRaces:
+    """ Normalizes races per 'target_offices' """
 
     @classmethod
     def _is_match(cls, string):
@@ -594,7 +607,7 @@ class NormalizeRaces:
         else:
             return 'N/A'
 
-nr = NormalizeRaces()
+NR = NormalizeRaces()
 
 
 class SkipLoader(WABaseLoader):
@@ -644,7 +657,7 @@ class WALoaderPrecincts(WABaseLoader):
                 if self._skip_row(row):
                     continue
                 else:
-                    votes = int(row[cm._normalize_votes(self.header)].strip())
+                    votes = int(row[CM._normalize_votes(self.header)].strip())
                     rr_kwargs = self._common_kwargs.copy()
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
@@ -655,7 +668,7 @@ class WALoaderPrecincts(WABaseLoader):
                     })
                     try:
                         rr_kwargs.update({
-                            'party': row[cm._normalize_party(
+                            'party': row[CM._normalize_party(
                                 self.header)].strip()
                         })
                     except IndexError:
@@ -663,11 +676,11 @@ class WALoaderPrecincts(WABaseLoader):
                     try:
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
-                                nr._is_match(
-                                        row[cm._normalize_contest(
+                                NR._is_match(
+                                        row[CM._normalize_contest(
                                             self.header)]), [
                                         int(s) for s in row[
-                                            cm._normalize_contest(
+                                            CM._normalize_contest(
                                                 self.header)].strip()
                                         if s.isdigit()][0])})
                     except IndexError:
@@ -692,17 +705,17 @@ class WALoaderPrecincts(WABaseLoader):
             logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return nr._is_match(
-            row[cm._normalize_contest(self.header)]) not in self.target_offices
+        return NR._is_match(
+            row[CM._normalize_contest(self.header)]) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
         return {
-            'office': row[cm._normalize_contest(self.header)].strip(),
-            'jurisdiction': row[cm._normalize_precinct(self.header)].strip(),
+            'office': row[CM._normalize_contest(self.header)].strip(),
+            'jurisdiction': row[CM._normalize_precinct(self.header)].strip(),
         }
 
     def _build_candidate_kwargs(self, row):
-        full_name = row[cm._normalize_candidate(self.header)].strip()
+        full_name = row[CM._normalize_candidate(self.header)].strip()
 
         return {
             'full_name': full_name,
@@ -740,7 +753,7 @@ class WALoaderPre2007(WABaseLoader):
             logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return nr._is_match(
+        return NR._is_match(
             row['officename']) not in self.target_offices
 
     def _build_contest_kwargs(self, row, primary_type):
@@ -750,7 +763,7 @@ class WALoaderPre2007(WABaseLoader):
         """
 
         kwargs = {
-            'office': nr._is_match(row['officename']),
+            'office': NR._is_match(row['officename']),
             'primary_party': row['partycode'].strip()
         }
         return kwargs
@@ -805,9 +818,9 @@ class WALoaderPre2007(WABaseLoader):
         try:
             kwargs.update({
                 'district': '{0} {1}'.format(
-                    nr._is_match(row[cm._normalize_contest(
+                    NR._is_match(row[CM._normalize_contest(
                         self.header)]), [
-                            int(s) for s in row[cm._normalize_contest(
+                            int(s) for s in row[CM._normalize_contest(
                                 self.header)].strip()
                             if s.isdigit()][0])})
         except IndexError:
@@ -849,11 +862,11 @@ class WALoaderPost2007(WABaseLoader):
                     try:
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
-                                nr._is_match(
-                                    row[cm._normalize_contest(
+                                NR._is_match(
+                                    row[CM._normalize_contest(
                                         self.header)]),
                                 [int(s) for s in row[
-                                    cm._normalize_contest(
+                                    CM._normalize_contest(
                                         self.header)].strip()
                                     if s.isdigit()][0])})
                     except IndexError:
@@ -876,7 +889,7 @@ class WALoaderPost2007(WABaseLoader):
             logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return nr._is_match(row['Race']) not in self.target_offices
+        return NR._is_match(row['Race']) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
         """
@@ -926,13 +939,24 @@ class WALoadExcelCaseOne(WABaseLoader):
             if self._skip_row(row, sheet):
                 continue
             else:
-                party = sheet.cell(rowx=row, colx=17).value.strip()
+                # Get party
+                p_index = self.header.index(
+                    ''.join(
+                        CM._normalize_party(
+                            self.header)))
+                party = sheet.cell(rowx=row, colx=p_index).value.strip()
+                # Get votes
+                v_index = self.header.index(
+                    ''.join(
+                        CM._normalize_votes(
+                            self.header)))
+                votes = int(sheet.cell(rowx=row, colx=v_index).value)
                 rr_kwargs = self._common_kwargs.copy()
                 rr_kwargs.update(self._build_candidate_kwargs(row, sheet))
                 rr_kwargs.update(self._build_contest_kwargs(row, sheet))
                 rr_kwargs.update({
                     'party': party,
-                    'votes': int(sheet.cell(rowx=row, colx=19).value),
+                    'votes': votes,
                     'county_ocd_id': self.mapping['ocd_id']
                 })
                 results.append(RawResult(**rr_kwargs))
@@ -957,25 +981,32 @@ class WALoadExcelCaseOne(WABaseLoader):
         contest name. Then I can run my _skip_row method like usual.
 
         """
-        index = self.header.index(''.join(cm._normalize_contest(self.header)))
-        return nr._is_match(
+        index = self.header.index(''.join(CM._normalize_contest(self.header)))
+        return NR._is_match(
             sheet.cell(
                 rowx=row,
                 colx=index).value.strip()) not in self.target_offices
 
     def _build_contest_kwargs(self, row, sheet):
+        # Set index integer to a variable for readability
+        index = self.header.index(''.join(CM._normalize_contest(self.header)))
         name_list = self.source.split('__')[-2:]
         jurisdiction = '{0} {1}'.format(
             name_list[0],
             name_list[1].split('.')[0])
 
         return {
-            'office': sheet.cell(rowx=row, colx=10).value.strip(),
+            'office': sheet.cell(rowx=row, colx=index).value.strip(),
             'jurisdiction': jurisdiction
         }
 
     def _build_candidate_kwargs(self, row, sheet):
-        full_name = sheet.cell(rowx=row, colx=14).value
+        # Set index integer to a variable for readability
+        index = self.header.index(
+            ''.join(
+                CM._normalize_candidate(
+                    self.header)))
+        full_name = sheet.cell(rowx=row, colx=index).value
         slug = slugify(full_name, substitute='-')
 
         return {
