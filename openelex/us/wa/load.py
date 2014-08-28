@@ -52,7 +52,7 @@ NOTES:
 """
 
 # Instantiate logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
@@ -525,11 +525,11 @@ class NormalizeRaces:
         ag_regex = re.compile('attorney general', re.IGNORECASE)
         wcpl_regex = re.compile('commissioner of public lands', re.IGNORECASE)
         local_regex = re.compile(
-            r'(\bState\b|Washington|Washington State|Local|'
+            r'(\bState\b|Washington|Washington\s+State|Local|'
             'Legislative District)',
             re.IGNORECASE)
         national_regex = re.compile(
-            r'(U.S.|US|Congressional|National|United States|U. S.)',
+            r'(U\.S\.|^US$|Congressional|National|United\s+States|U\.\s+S\.\s+)',
             re.IGNORECASE)
 
         """
@@ -572,9 +572,9 @@ class NormalizeRaces:
             return 'Commissioner of Public Lands'
         elif re.search(senate_regex, string):
             if re.search(national_regex, string):
-                return 'U.S. Senate'
+                return 'U.S. Senator'
             elif re.search(local_regex, string):
-                return 'State Senate'
+                return 'State Senator'
             else:
                 return 'N/A'
         elif re.search(lt_gov_regex, string):
@@ -920,41 +920,62 @@ class WALoadExcelCaseOne(WABaseLoader):
         self._common_kwargs['reporting_level'] = 'precinct'
         results = []
         sheet = xlsfile.sheet_by_index(0)
-        self.header = str(sheet.row_values(0)).split(',')
+        self.header = sheet.row_values(0)
 
         for row in xrange(sheet.nrows):
-            if self._skip_row:
+            if self._skip_row(row, sheet):
                 continue
             else:
-                party = self.sheet.cell(rowx=row, colx=17).value
+                party = sheet.cell(rowx=row, colx=17).value.strip()
                 rr_kwargs = self._common_kwargs.copy()
-                rr_kwargs.update(self._build_candidate_kwargs())
-                rr_kwargs.update(self._build_contest_kwargs())
+                rr_kwargs.update(self._build_candidate_kwargs(row, sheet))
+                rr_kwargs.update(self._build_contest_kwargs(row, sheet))
                 rr_kwargs.update({
                     'party': party,
-                    'votes': int(self.sheet.cell(rowx=row, colx=19).value.strip()),
+                    'votes': int(sheet.cell(rowx=row, colx=19).value),
                     'county_ocd_id': self.mapping['ocd_id']
                 })
                 results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
 
-    def _skip_row(self, row):
-        return nr._is_match(
-            row[cm._normalize_contest(self.header)]) not in self.target_offices
+    def _skip_row(self, row, sheet):
+        """
+        I ran into an issue where RawResult wasn't loading any results for my
+        .xls files. I hypothesized that the _skip_row method was, for whatever
+        reason, skipping all the results. I was correct, and found out that
+        the indices of an Excel sheet (through the xlrd module) need to be
+        integers, not string. My normalzing class returns strings, thus
+        causing _skip_row to always return false as xlrd couldn't do
+        anything with a string.
 
-    def _build_contest_kwargs(self, row):
+        self.header is a list, and so I run the list through my normalzing
+        class which returns a list with one value (the column we want). I
+        turn that list value into a string and find the index of that string
+        within the header list.
+
+        That returns the correct integer value for the column which holds the
+        contest name. Then I can run my _skip_row method like usual.
+
+        """
+        index = self.header.index(''.join(cm._normalize_contest(self.header)))
+        return nr._is_match(
+            sheet.cell(
+                rowx=row,
+                colx=index).value.strip()) not in self.target_offices
+
+    def _build_contest_kwargs(self, row, sheet):
         name_list = self.source.split('__')[-2:]
         jurisdiction = '{0} {1}'.format(
             name_list[0],
             name_list[1].split('.')[0])
 
         return {
-            'office': self.sheet.cell(rowx=row, colx=10).value.strip(),
+            'office': sheet.cell(rowx=row, colx=10).value.strip(),
             'jurisdiction': jurisdiction
         }
 
-    def _build_candidate_kwargs(self, row):
-        full_name = self.sheet.cell(rowx=row, colx=14).value
+    def _build_candidate_kwargs(self, row, sheet):
+        full_name = sheet.cell(rowx=row, colx=14).value
         slug = slugify(full_name, substitute='-')
 
         return {
