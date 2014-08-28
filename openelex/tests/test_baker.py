@@ -209,13 +209,13 @@ class TestBaker(TestCase):
         baker = Baker(state='md')
         ts = datetime(2014, 2, 11, 10, 56, 15)
         fmt = 'json'
-        filename = baker.filename(fmt=fmt, timestamp=ts)
+        filename = baker.filename(fmt=fmt, timestamp=ts, state='md')
         self.assertEqual(filename, 'md_20140211T105615.json')
 
     def test_manifest_filename(self):
         baker = Baker(state='md')
         ts = datetime(2014, 2, 11, 10, 56, 15)
-        filename = baker.manifest_filename(timestamp=ts)
+        filename = baker.manifest_filename(timestamp=ts, state='md')
         self.assertEqual(filename, 'md_20140211T105615_manifest.txt')
 
     def test_write_unsupported_format(self):

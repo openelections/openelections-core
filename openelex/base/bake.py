@@ -191,11 +191,6 @@ class Roller(object):
         except KeyError:
             pass
 
-        try:
-            q_kwargs['reporting_level'] = filter_kwargs['reporting_level']
-        except KeyError:
-            pass
-
         common_q = Q(**q_kwargs)
 
         # Merge in the date filters
@@ -498,6 +493,12 @@ class RawResultRoller(Roller):
         return {
             'raw_result': [],
         }
+
+    def build_filters_raw_result(self, **filter_kwargs):
+        try:
+            return Q(reporting_level=filter_kwargs['reporting_level'])
+        except KeyError:
+            return None
 
 
 class BaseBaker(object):
