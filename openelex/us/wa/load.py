@@ -116,7 +116,19 @@ class LoadResults(object):
             '20101102__wa__general__kittitas___precinct.xls'
             '20080819__wa__primary__kitsap__precinct.xls',
             '20070821__wa__primary__county.xls',
-            '20070821__wa__primary.xls'
+            '20070821__wa__primary.xls',
+            '20081104__wa__general__congressional_district.xls',
+            '20081104__wa__general__state_legislative.xls',
+            '20081104__wa__general__adams__precinct.xls',
+            '20081104__wa__general__franklin__precinct.xls',
+            '20081104__wa__general__pierce__precinct.xls',
+            '20080819__wa__primary__kitsap__precinct.xls',
+            '20080819__wa__primary__pierce__precinct.xls',
+            '20080219__wa__primary__douglas__precinct.xls',
+            '20080219__wa__primary__douglas__precinct.xls',
+            '20091103__wa__general__pierce__precinct.xls',
+            '20101102__wa__general__kittitas___precinct.xls',
+            '20101102__wa__general__san_juan___precinct.xls'
         ]
 
 
@@ -390,18 +402,6 @@ class ColumnMatch:
             re.IGNORECASE)
 
         return filter(lambda x: regex.search(x), header)[0]
-
-    @classmethod
-    def _normalize_index(cls, header, result):
-        """
-        Returns the index of a normalized column
-
-        Usage:
-        CM._normalize_index(header, CM._normalize_contest(header))
-
-        """
-
-        return header.index(''.join(result))
 
 
 CM = ColumnMatch()
@@ -804,7 +804,7 @@ class WALoaderPost2007(WABaseLoader):
             jurisdiction = row['JurisdictionName']
 
         The above is the same as the code below, except a try/catch is quicker
-        than an if/else statement.
+        than an if/else statement. Plus, Python is EAFP, not LBYL.
 
         """
 
@@ -852,7 +852,11 @@ class WALoadExcel(WABaseLoader):
     def load(self):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
         self._common_kwargs = self._build_common_election_kwargs()
-        self._common_kwargs['reporting_level'] = 'precinct'
+        if re.search('precinct', self.mapping['generated_filename']):
+            reporting_level = 'precinct'
+        else:
+            reporting_level = 'county'
+        self._common_kwargs['reporting_level'] = reporting_level
         results = []
         sheet = xlsfile.sheet_by_index(0)
         self.header = sheet.row_values(0)
@@ -886,6 +890,13 @@ class WALoadExcel(WABaseLoader):
                         'party': party
                     })
                 except IndexError:
+                    """
+                    Should this be implemented?
+                    Would need to extract the error message from the loop
+                    to avoid potentially printing the message over 1,000 times
+                    
+                    """
+                    # logger.info('No party')
                     pass
 
                 results.append(RawResult(**rr_kwargs))
