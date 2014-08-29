@@ -1,5 +1,6 @@
 import logging
 import os
+import pdb
 import re
 import unicodecsv
 import xlrd
@@ -26,9 +27,8 @@ Actually, most every file has a different format.
 
 TO DO:
 
-1.) Add in .xls(x) support (Aug 12, 2014)
-2.) Fix memory issues [class WALoaderPrecincts, LINE# 230] (Aug 14, 2014)
-3.) Takes forever on large files (Aug 15, 2014)
+1.) Fix memory issues [class WALoaderPrecincts, LINE# 230] (Aug 14, 2014)
+2.) Takes forever on large files (Aug 15, 2014)
 
 NOTES:
 
@@ -81,7 +81,11 @@ class LoadResults(object):
         """
         bad_filenames[] holds the list of files who have content that's not
         actual information (e.g. a mess of HTML from a file that moved on the
-        remote server).
+        remote server) or are hard to use (e.g. an .xls file with 10 sheets).
+
+        The edge cases will be taken care of later. The cases where there is
+        zero actual usable data will have to be rectified outside of the
+        loader module.
 
         """
 
@@ -97,7 +101,7 @@ class LoadResults(object):
             '20090818__wa__primary__kitsap__county.csv',
             '20090818__wa__primary__kittitas__county.csv',
 
-            # The the below are .xls
+            # The below are .xls
 
             '20080219__wa__primary__benton__precinct.xls',
             '20081104__wa__general__kittitas__precinct.xls',
@@ -110,110 +114,11 @@ class LoadResults(object):
             '20121106__wa__general__state_legislative.xls',
             '20080219__wa__primary__adams__precinct.xls',
             '20101102__wa__general__kittitas___precinct.xls'
+            '20080819__wa__primary__kitsap__precinct.xls',
+            '20070821__wa__primary__county.xls',
+            '20070821__wa__primary.xls'
         ]
 
-        case_one = [
-
-            '20071106__wa__general__pacific__precinct.xls',
-            '20071106__wa__general__wahkiakum__precinct.xls',
-            '20071106__wa__general__yakima__precinct.xls',
-            '20080219__wa__primary__asotin__precinct.xls',
-            '20080219__wa__primary__chelan__precinct.xls',
-            '20080219__wa__primary__clark__precinct.xls',
-            '20080219__wa__primary__columbia__precinct.xls',
-            '20080219__wa__primary__ferry__precinct.xls',
-            '20080219__wa__primary__franklin__precinct.xls',
-            '20080219__wa__primary__garfield__precinct.xls',
-            '20080219__wa__primary__island__precinct.xls',
-            '20080219__wa__primary__kittitas__precinct.xls',
-            '20080219__wa__primary__lewis__precinct.xls',
-            '20080219__wa__primary__lincoln__precinct.xls',
-            '20080219__wa__primary__mason__precinct.xls',
-            '20080219__wa__primary__okanogan__precinct.xls',
-            '20080219__wa__primary__pacific__precinct.xls',
-            '20080219__wa__primary__san_juan__precinct.xls',
-            '20080219__wa__primary__skagit__precinct.xls',
-            '20080219__wa__primary__skamania__precinct.xls',
-            '20080219__wa__primary__stevens__precinct.xls',
-            '20080219__wa__primary__wahkiakum__precinct.xls',
-            '20080219__wa__primary__whatcom__precinct.xls',
-            '20080219__wa__primary__yakima__precinct.xls',
-            '20080819__wa__primary__adams__precinct.xls',
-            '20080819__wa__primary__asotin__precinct.xls',
-            '20080819__wa__primary__benton__precinct.xls',
-            '20080819__wa__primary__chelan__precinct.xls',
-            '20080819__wa__primary__clallam__precinct.xls',
-            '20080819__wa__primary__clark__precinct.xls',
-            '20080819__wa__primary__columbia__precinct.xls',
-            '20080819__wa__primary__ferry__precinct.xls',
-            '20080819__wa__primary__franklin__precinct.xls',
-            '20080819__wa__primary__garfield__precinct.xls',
-            '20080819__wa__primary__island__precinct.xls',
-            '20080819__wa__primary__kittitas__precinct.xls',
-            '20080819__wa__primary__klickitat__precinct.xls',
-            '20080819__wa__primary__lewis__precinct.xls',
-            '20080819__wa__primary__lincoln__precinct.xls',
-            '20080819__wa__primary__mason__precinct.xls',
-            '20080819__wa__primary__okanogan__precinct.xls',
-            '20080819__wa__primary__pacific__precinct.xls',
-            '20080819__wa__primary__pierce__precinct.xls',
-            '20080819__wa__primary__san_juan__precinct.xls',
-            '20080819__wa__primary__skagit__precinct.xls',
-            '20080819__wa__primary__skamania__precinct.xls',
-            '20080819__wa__primary__stevens__precinct.xls',
-            '20080819__wa__primary__wahkiakum__precinct.xls',
-            '20080819__wa__primary__whatcom__precinct.xls',
-            '20080819__wa__primary__yakima__precinct.xls',
-            '20081104__wa__general__asotin__precinct.xls',
-            '20081104__wa__general__benton__precinct.xls',
-            '20081104__wa__general__chelan__precinct.xls',
-            '20081104__wa__general__clallam__precinct.xls',
-            '20081104__wa__general__clark__precinct.xls',
-            '20081104__wa__general__columbia__precinct.xls',
-            '20081104__wa__general__ferry__precinct.xls',
-            '20081104__wa__general__garfield__precinct.xls',
-            '20081104__wa__general__island__precinct.xls',
-            '20081104__wa__general__klickitat__precinct.xls',
-            '20081104__wa__general__lewis__precinct.xls',
-            '20081104__wa__general__lincoln__precinct.xls',
-            '20081104__wa__general__mason__precinct.xls',
-            '20081104__wa__general__okanogan__precinct.xls',
-            '20081104__wa__general__pacific__precinct.xls',
-            '20081104__wa__general__san_juan__precinct.xls',
-            '20081104__wa__general__skamania__precinct.xls',
-            '20081104__wa__general__snohomish__precinct.xls',
-            '20081104__wa__general__stevens__precinct.xls',
-            '20081104__wa__general__wahkiakum__precinct.xls',
-            '20081104__wa__general__whatcom__precinct.xls',
-            '20081104__wa__general__yakima__precinct.xls',
-            '20091103__wa__general__adams__precinct.xls',
-            '20091103__wa__general__asotin__precinct.xls',
-            '20091103__wa__general__benton__precinct.xls',
-            '20091103__wa__general__chelan__precinct.xls',
-            '20091103__wa__general__clallam__precinct.xls',
-            '20091103__wa__general__columbia__precinct.xls',
-            '20091103__wa__general__ferry__precinct.xls',
-            '20091103__wa__general__franklin__precinct.xls',
-            '20091103__wa__general__garfield__precinct.xls',
-            '20091103__wa__general__island__precinct.xls',
-            '20091103__wa__general__kittitas__precinct.xls',
-            '20091103__wa__general__klickitat__precinct.xls',
-            '20091103__wa__general__lewis__precinct.xls',
-            '20091103__wa__general__lincoln__precinct.xls',
-            '20091103__wa__general__mason__precinct.xls',
-            '20091103__wa__general__okanogan__precinct.xls',
-            '20091103__wa__general__pacific__precinct.xls',
-            '20091103__wa__general__pierce__precinct.xls',
-            '20091103__wa__general__san_juan__precinct.xls',
-            '20091103__wa__general__skagit__precinct.xls',
-            '20091103__wa__general__skamania__precinct.xls',
-            '20091103__wa__general__snohomish__precinct.xls',
-            '20091103__wa__general__stevens__precinct.xls',
-            '20091103__wa__general__wahkiakum__precinct.xls',
-            '20091103__wa__general__whatcom__precinct.xls',
-            '20091103__wa__general__yakima__precinct.xls',
-            '20111108__wa__general__clark___precinct.xls'
-        ]
 
         """
         Could try using `generated_filename.split(.)[-1]` instead of
@@ -229,14 +134,11 @@ class LoadResults(object):
                   .format(generated_filename))
             loader = SkipLoader()
 
-        elif any(x in generated_filename for x in case_one):
-            loader = WALoadExcelCaseOne()
-
         # If files are .xls(x), skip them
         elif os.path.splitext(
                 generated_filename)[-1].lower() == '.xls' or os.path.splitext(
                 generated_filename)[-1].lower() == '.xlsx':
-            loader = SkipLoader()
+            loader = WALoadExcel()
 
         elif os.path.splitext(generated_filename)[-1].lower() == '.txt':
 
@@ -432,7 +334,9 @@ class ColumnMatch:
 
         """
 
-        regex = re.compile('.*(candidate.*name|candidate).*', re.IGNORECASE)
+        regex = re.compile(
+            r'.*(ballot\sname|candidate.*(name|title)|candidate$).*',
+            re.IGNORECASE)
 
         return filter(lambda x: regex.search(x), header)[0]
 
@@ -449,7 +353,7 @@ class ColumnMatch:
         """
 
         regex = re.compile(
-            '.*(^contest$|race|(contest.*(title|name))).*',
+            r'.*(^contest$|race$|race(_|\s)(title|name)|(contest.*(title|name))).*',
             re.IGNORECASE)
 
         return filter(lambda x: regex.search(x), header)[0]
@@ -504,6 +408,7 @@ CM = ColumnMatch()
 
 
 class NormalizeRaces:
+
     """ Normalizes races per 'target_offices' """
 
     @classmethod
@@ -925,7 +830,24 @@ class WALoaderPost2007(WABaseLoader):
         }
 
 
-class WALoadExcelCaseOne(WABaseLoader):
+class WALoadExcel(WABaseLoader):
+
+    """
+    Side note about the *_index variables: If a method requires the use of
+    more than one index variable, I represent what the index is of with a
+    single letter that's the beginning of the dict key it's for.
+
+    For example:
+
+        rr_kwargs.update({
+            'office': sheet.cell(rowx=row, colx=o_index).value
+        })
+
+    Because 'office' begins with 'o' I prefix the index with 'o'. Sure, it
+    clutters the namespace a bit, but it keeps from redefining variables which
+    can lead to poor readability.
+
+    """
 
     def load(self):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
@@ -939,26 +861,33 @@ class WALoadExcelCaseOne(WABaseLoader):
             if self._skip_row(row, sheet):
                 continue
             else:
-                # Get party
-                p_index = self.header.index(
-                    ''.join(
-                        CM._normalize_party(
-                            self.header)))
-                party = sheet.cell(rowx=row, colx=p_index).value.strip()
                 # Get votes
                 v_index = self.header.index(
                     ''.join(
                         CM._normalize_votes(
                             self.header)))
                 votes = int(sheet.cell(rowx=row, colx=v_index).value)
+                # Store rest of kwargs
                 rr_kwargs = self._common_kwargs.copy()
                 rr_kwargs.update(self._build_candidate_kwargs(row, sheet))
                 rr_kwargs.update(self._build_contest_kwargs(row, sheet))
                 rr_kwargs.update({
-                    'party': party,
                     'votes': votes,
                     'county_ocd_id': self.mapping['ocd_id']
                 })
+                # Get party
+                try:
+                    p_index = self.header.index(
+                        ''.join(
+                            CM._normalize_party(
+                                self.header)))
+                    party = str(sheet.cell(rowx=row, colx=p_index).value).strip()
+                    rr_kwargs.update({
+                        'party': party
+                    })
+                except IndexError:
+                    pass
+
                 results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
 
@@ -989,14 +918,25 @@ class WALoadExcelCaseOne(WABaseLoader):
 
     def _build_contest_kwargs(self, row, sheet):
         # Set index integer to a variable for readability
-        index = self.header.index(''.join(CM._normalize_contest(self.header)))
-        name_list = self.source.split('__')[-2:]
-        jurisdiction = '{0} {1}'.format(
-            name_list[0],
-            name_list[1].split('.')[0])
+        j_index = self.header.index(
+            ''.join(
+                CM._normalize_precinct(
+                    self.header)))
+        """
+        Coerce the jurisdiction into a string because some precinct
+        jurisdictions are numbers and getting that value from an Excel file
+        returns a float. You can't .strip() a float.
+
+        """
+        jurisdiction = str(sheet.cell(rowx=row, colx=j_index).value).strip()
+
+        o_index = self.header.index(
+            ''.join(
+                CM._normalize_contest(
+                    self.header)))
 
         return {
-            'office': sheet.cell(rowx=row, colx=index).value.strip(),
+            'office': sheet.cell(rowx=row, colx=o_index).value.strip(),
             'jurisdiction': jurisdiction
         }
 
