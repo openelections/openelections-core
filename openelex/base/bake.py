@@ -461,7 +461,7 @@ class RawResultRoller(Roller):
     last_name = FieldNameTransform(RawResult, 'family_name')
     middle_name = FieldNameTransform(RawResult, 'additional_name')
     name_raw = FieldNameTransform(RawResult, 'full_name')
-    division = FieldNameTransform(RawResult, 'jurisdiction')
+    division = FieldNameTransform(RawResult, 'ocd_id')
     updated_at = FieldNameTransform(RawResult, 'updated')
     vote_breakdowns = FlattenFieldTransform(RawResult, 'vote_breakdowns',
         output_name=None)

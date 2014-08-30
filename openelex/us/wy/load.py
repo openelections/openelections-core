@@ -5,7 +5,7 @@ import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import slugify
+from openelex.lib.text import ocd_type_id, slugify
 from .datasource import Datasource
 
 """
@@ -452,13 +452,8 @@ class WYLoader(WYBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
-            # In Wyoming, precincts are nested below counties.
-            #
-            # The mapping ocd_id will be for the precinct's county.
-            # We'll save it as an expando property of the raw result because
-            # we won't have an easy way of looking up the county in the 
-            # transforms.
-            'county_ocd_id': self.mapping['ocd_id'],
+            'ocd_id': "{}/precinct:{}".format(self.mapping['ocd_id'],
+                ocd_type_id(precinct)),
             'votes': votes,
             'vote_breakdowns': {},
         })
@@ -521,9 +516,12 @@ class WYLoaderCSV(WYBaseLoader):
                     rr_kwargs['primary_party'] = row['party'].strip()
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
+                    jurisdiction = row['precinct'].strip()
                     rr_kwargs.update({
                         'party': row['party'].strip(),
-                        'jurisdiction': row['precinct'].strip(),
+                        'jurisdiction': jurisdiction,
+                        'ocd_id': "{}/precinct:{}".format(self.mapping['ocd_id'],
+                            ocd_type_id(jurisdiction)),
                         'votes': int(row['votes'].strip()),
                         'winner': row['winner'].strip(),
                         'county_ocd_id': self.mapping['ocd_id'],
@@ -586,7 +584,7 @@ class WYSpecialLoader2008(WYBaseLoader):
                         'jurisdiction': row['county'].strip(),
                         'votes': int(row['votes'].strip()),
                         'winner': row['winner'].strip(),
-                        'county_ocd_id': self.mapping['ocd_id'],
+                        'ocd_id': self.mapping['ocd_id'],
                     })
                     results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)

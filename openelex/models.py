@@ -128,6 +128,7 @@ class RawResult(TimestampMixin, DynamicDocument):
         "and results will be per-party.")
     jurisdiction = StringField(required=True, help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number."
             "Or default to state + office/district, if not present in data.")
+    ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
     # See https://github.com/openelections/core/issues/46
     votes = IntField(required=True, help_text="Raw vote count for this jurisdiction")
     total_votes = IntField(help_text="Total candidate votes contest-wide, if provided in raw results.")

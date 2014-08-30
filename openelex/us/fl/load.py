@@ -2,7 +2,7 @@ import logging
 import unicodecsv
 
 from openelex.base.load import BaseLoader
-from openelex.lib.text import slugify
+from openelex.lib.text import slugify, ocd_type_id
 from openelex.models import RawResult
 
 from .datasource import Datasource
@@ -128,9 +128,12 @@ class LoadResults(BaseLoader):
         }
 
     def _build_result_kwargs(self, row):
+        jurisdiction = row['CountyName'].strip()
         kwargs = {
             'party': row['PartyName'].strip(),
-            'jurisdiction': row['CountyName'].strip(),
+            'jurisdiction': jurisdiction,
+            'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
+                ocd_type_id(jurisdiction)),
             'votes': row['CanVotes'].strip()
         }
         if row['OfficeDesc'].strip() == "U.S. President by Congressional District":
