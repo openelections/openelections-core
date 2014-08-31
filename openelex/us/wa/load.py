@@ -26,8 +26,7 @@ Actually, most every file has a different format.
 
 TO DO:
 
-1.) Fix memory issues [class WALoaderPrecincts, LINE# 230] (Aug 14, 2014)
-2.) Takes forever on large files (Aug 15, 2014)
+1.) Create class(es) for bad_filenames' .xls files
 
 NOTES:
 
