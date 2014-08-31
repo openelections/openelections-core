@@ -1,6 +1,5 @@
 import logging
 import os
-import pdb
 import re
 import unicodecsv
 import xlrd
@@ -107,14 +106,11 @@ class LoadResults(object):
             '20081104__wa__general__kittitas__precinct.xls',
             '20081104__wa__general__precinct.xls',
             '20091103__wa__general__clark__precinct.xls',
-            '20100817__wa__primary__state_legislative.xls'
             '20120807__wa__primary__congressional_district.xls',
             '20120807__wa__primary__state_legislative.xls',
             '20121106__wa__general__congressional_district.xls',
             '20121106__wa__general__state_legislative.xls',
             '20080219__wa__primary__adams__precinct.xls',
-            '20101102__wa__general__kittitas___precinct.xls'
-            '20080819__wa__primary__kitsap__precinct.xls',
             '20070821__wa__primary__county.xls',
             '20070821__wa__primary.xls',
             '20081104__wa__general__congressional_district.xls',
@@ -125,12 +121,14 @@ class LoadResults(object):
             '20080819__wa__primary__kitsap__precinct.xls',
             '20080819__wa__primary__pierce__precinct.xls',
             '20080219__wa__primary__douglas__precinct.xls',
-            '20080219__wa__primary__douglas__precinct.xls',
             '20091103__wa__general__pierce__precinct.xls',
             '20101102__wa__general__kittitas___precinct.xls',
-            '20101102__wa__general__san_juan___precinct.xls'
+            '20101102__wa__general__san_juan___precinct.xls',
+            '20100817__wa__primary__state_legislative.xls',
+            '20100817__wa__primary__congressional_district.xls',
+            '20111108__wa__general__clark___precinct.xlsx',
+            '20111108__wa__general__spokane___precinct.xlsx'
         ]
-
 
         """
         Could try using `generated_filename.split(.)[-1]` instead of
@@ -146,10 +144,9 @@ class LoadResults(object):
                   .format(generated_filename))
             loader = SkipLoader()
 
-        # If files are .xls(x), skip them
+        # If files are .xls(x), use the correct loader
         elif os.path.splitext(
-                generated_filename)[-1].lower() == '.xls' or os.path.splitext(
-                generated_filename)[-1].lower() == '.xlsx':
+                generated_filename)[-1].lower() in ('.xls', '.xlsx'):
             loader = WALoadExcel()
 
         elif os.path.splitext(generated_filename)[-1].lower() == '.txt':
@@ -163,8 +160,10 @@ class LoadResults(object):
 
             print 'Cannot do anything with {0}'.format(generated_filename)
             loader = SkipLoader()
-        elif re.search('precinct', generated_filename):
+
+        elif 'precinct' in generated_filename:
             loader = WALoaderPrecincts()
+
         elif any(s in election for s in [
                 '2000',
                 '2001',
@@ -174,8 +173,11 @@ class LoadResults(object):
                 '2005',
                 '2006']):
             loader = WALoaderPre2007()
-        elif os.path.splitext(generated_filename)[-1].lower() != '.xls':
+
+        elif os.path.splitext(
+                generated_filename)[-1].lower() in ('.csv', '.txt'):
             loader = WALoaderPost2007()
+
         else:
             loader = SkipLoader()
 
@@ -205,15 +207,15 @@ class LoadResults(object):
             loader.run(mapping)
         except UnboundLocalError:
             logger.error(
-                '\tERROR: Unsupported file type ({0})'
+                '\tUnsupported file type ({0})'
                 .format('UnboundLocalError'))
         except IOError:
             logger.error(
-                '\tERROR: File "{0}" does not exist'
+                '\tFile "{0}" does not exist'
                 .format(generated_filename))
         except unicodecsv.Error:
             logger.error(
-                '\tERROR: Unsupported file type ({0})'
+                '\tUnsupported file type "({0})"'
                 .format('unicodecsv.Error'))
         except errors.InvalidOperation:
             logger.error('\tNo raw results loaded')
@@ -591,9 +593,9 @@ class WALoaderPrecincts(WABaseLoader):
                     except IndexError:
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
-            if 0 != party_flag:
+            if 0 is not party_flag:
                 logger.info('Some rows did not contain party info')
-            if 0 != district_flag:
+            if 0 is not district_flag:
                 logger.info('Some rows did not contain district info')
 
         """
@@ -777,7 +779,7 @@ class WALoaderPost2007(WABaseLoader):
                     except IndexError:
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
-            if 0 != district_flag:
+            if 0 is not district_flag:
                 logger.info('Some rows did not contain district info')
 
         """
@@ -852,6 +854,7 @@ class WALoadExcel(WABaseLoader):
     def load(self):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
         self._common_kwargs = self._build_common_election_kwargs()
+        # Set the correct reporting level based on file name
         if re.search('precinct', self.mapping['generated_filename']):
             reporting_level = 'precinct'
         else:
@@ -885,7 +888,10 @@ class WALoadExcel(WABaseLoader):
                         ''.join(
                             CM._normalize_party(
                                 self.header)))
-                    party = str(sheet.cell(rowx=row, colx=p_index).value).strip()
+                    party = str(
+                        sheet.cell(
+                            rowx=row,
+                            colx=p_index).value).strip()
                     rr_kwargs.update({
                         'party': party
                     })
@@ -894,7 +900,7 @@ class WALoadExcel(WABaseLoader):
                     Should this be implemented?
                     Would need to extract the error message from the loop
                     to avoid potentially printing the message over 1,000 times
-                    
+
                     """
                     # logger.info('No party')
                     pass
