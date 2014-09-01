@@ -104,6 +104,7 @@ class LoadResults(object):
             '20080219__wa__primary__benton__precinct.xls',
             '20081104__wa__general__kittitas__precinct.xls',
             '20081104__wa__general__precinct.xls',
+            '20081104__wa__general__kitsap__precinct.xls',
             '20091103__wa__general__clark__precinct.xls',
             '20120807__wa__primary__congressional_district.xls',
             '20120807__wa__primary__state_legislative.xls',
@@ -111,7 +112,9 @@ class LoadResults(object):
             '20121106__wa__general__state_legislative.xls',
             '20080219__wa__primary__adams__precinct.xls',
             '20070821__wa__primary__county.xls',
+            '20091103__wa__general__kitsap__precinct.xls',
             '20070821__wa__primary.xls',
+            '20080219__wa__primary__kitsap__precinct.xls',
             '20081104__wa__general__congressional_district.xls',
             '20081104__wa__general__state_legislative.xls',
             '20081104__wa__general__adams__precinct.xls',
@@ -126,7 +129,8 @@ class LoadResults(object):
             '20100817__wa__primary__state_legislative.xls',
             '20100817__wa__primary__congressional_district.xls',
             '20111108__wa__general__clark___precinct.xlsx',
-            '20111108__wa__general__spokane___precinct.xlsx'
+            '20111108__wa__general__spokane___precinct.xlsx',
+            '20080219__wa__primary__congressional_district_state_legislative.xls'
         ]
 
         """
@@ -146,7 +150,7 @@ class LoadResults(object):
         # If files are .xls(x), use the correct loader
         elif os.path.splitext(
                 generated_filename)[-1].lower() in ('.xls', '.xlsx'):
-            loader = WALoadExcel()
+            loader = WALoaderExcel()
 
         elif os.path.splitext(generated_filename)[-1].lower() == '.txt':
 
@@ -547,6 +551,13 @@ class WALoaderPrecincts(WABaseLoader):
 
     """
 
+    header          = ''
+    votes_index     = ''
+    party_index     = ''
+    contest_index   = ''
+    candidate_index = ''
+    precinct_index  = ''
+
     def load(self):
 
         self._common_kwargs = self._build_common_election_kwargs()
@@ -557,13 +568,26 @@ class WALoaderPrecincts(WABaseLoader):
             party_flag = 0
             district_flag = 0
             reader = unicodecsv.DictReader(
-                csvfile, encoding='latin-1', delimiter=',')
+                    csvfile, encoding='latin-1', delimiter=',')
+
+            # Declare column indices before the loop so we aren't making
+            # a method call for each line in the file
+
             self.header = [x.replace('"', '') for x in reader.fieldnames]
+            self.votes_index = CM._normalize_votes(self.header)
+            self.contest_index = CM._normalize_contest(self.header)
+            self.candidate_index = CM._normalize_candidate(self.header)
+            self.precinct_index = CM._normalize_precinct(self.header)
+            try:
+                self.party_index = CM._normalize_party(self.header)
+            except IndexError:
+                pass
+
             for row in reader:
                 if self._skip_row(row):
                     continue
                 else:
-                    votes = int(row[CM._normalize_votes(self.header)].strip())
+                    votes = int(row[self.votes_index].strip())
                     rr_kwargs = self._common_kwargs.copy()
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
@@ -574,21 +598,18 @@ class WALoaderPrecincts(WABaseLoader):
                     })
                     try:
                         rr_kwargs.update({
-                            'party': row[CM._normalize_party(
-                                self.header)].strip()
+                            'party': row[self.party_index].strip()
                         })
-                    except IndexError:
+                    except (IndexError, KeyError):
                         party_flag = 1
                     try:
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
                                 NR._is_match(
-                                        row[CM._normalize_contest(
-                                            self.header)]), [
-                                        int(s) for s in row[
-                                            CM._normalize_contest(
-                                                self.header)].strip()
-                                        if s.isdigit()][0])})
+                                        row[self.contest_index]), [
+                                    int(s) for s in row[
+                                        self.contest_index].strip()
+                                    if s.isdigit()][0])})
                     except IndexError:
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
@@ -612,16 +633,16 @@ class WALoaderPrecincts(WABaseLoader):
 
     def _skip_row(self, row):
         return NR._is_match(
-            row[CM._normalize_contest(self.header)]) not in self.target_offices
+            row[self.contest_index]) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
         return {
-            'office': row[CM._normalize_contest(self.header)].strip(),
-            'jurisdiction': row[CM._normalize_precinct(self.header)].strip(),
+            'office': row[self.contest_index].strip(),
+            'jurisdiction': row[self.precinct_index].strip(),
         }
 
     def _build_candidate_kwargs(self, row):
-        full_name = row[CM._normalize_candidate(self.header)].strip()
+        full_name = row[self.candidate_index].strip()
 
         return {
             'full_name': full_name,
@@ -642,12 +663,24 @@ class WALoaderPre2007(WABaseLoader):
 
     """
 
+    # Declare column indices before the loop so we aren't making
+    # a method call for each line in the file
+
+    header = ''
+    contest_index = ''
+
     def load(self):
         with self._file_handle as csvfile:
             results = []
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1',
                                            delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
+
+            try:
+                self.contest_index = CM._normalize_contest(self.header)
+            except IndexError:
+                pass
+
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -724,12 +757,10 @@ class WALoaderPre2007(WABaseLoader):
         try:
             kwargs.update({
                 'district': '{0} {1}'.format(
-                    NR._is_match(row[CM._normalize_contest(
-                        self.header)]), [
-                            int(s) for s in row[CM._normalize_contest(
-                                self.header)].strip()
+                    NR._is_match(row[self.contest_index]), [
+                            int(s) for s in row[self.contest_index].strip()
                             if s.isdigit()][0])})
-        except IndexError:
+        except (IndexError, KeyError):
             pass
         return RawResult(**kwargs)
 
@@ -740,6 +771,9 @@ class WALoaderPost2007(WABaseLoader):
     Parse Washington election results for all elections after and including 2007.
 
     """
+
+    header = ''
+    contest_index = ''
 
     def load(self):
 
@@ -769,13 +803,11 @@ class WALoaderPost2007(WABaseLoader):
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
                                 NR._is_match(
-                                    row[CM._normalize_contest(
-                                        self.header)]),
+                                    row[self.contest_index]),
                                 [int(s) for s in row[
-                                    CM._normalize_contest(
-                                        self.header)].strip()
+                                    self.contest_index].strip()
                                     if s.isdigit()][0])})
-                    except IndexError:
+                    except (IndexError, KeyError):
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
             if 0 is not district_flag:
@@ -831,83 +863,31 @@ class WALoaderPost2007(WABaseLoader):
         }
 
 
-class WALoadExcel(WABaseLoader):
+class WALoaderExcel(WABaseLoader):
+    """ Load Excel (.xls/.xlsx) results """
 
-    """
-    Side note about the *_index variables: If a method requires the use of
-    more than one index variable, I represent what the index is of with a
-    single letter that's the beginning of the dict key it's for.
-
-    For example:
-
-        rr_kwargs.update({
-            'office': sheet.cell(rowx=row, colx=o_index).value
-        })
-
-    Because 'office' begins with 'o' I prefix the index with 'o'. Sure, it
-    clutters the namespace a bit, but it keeps from redefining variables which
-    can lead to poor readability.
-
-    """
+    header             = ''
+    votes_index        = ''
+    party_index        = ''
+    contest_index      = ''
+    candidate_index    = ''
+    precinct_index     = ''
+    jurisdiction_index = ''
 
     def load(self):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
         self._common_kwargs = self._build_common_election_kwargs()
+
         # Set the correct reporting level based on file name
-        if re.search('precinct', self.mapping['generated_filename']):
+        if 'precinct' in self.mapping['generated_filename']:
             reporting_level = 'precinct'
         else:
             reporting_level = 'county'
+
         self._common_kwargs['reporting_level'] = reporting_level
         results = []
         sheet = xlsfile.sheet_by_index(0)
-        self.header = sheet.row_values(0)
 
-        for row in xrange(sheet.nrows):
-            if self._skip_row(row, sheet):
-                continue
-            else:
-                # Get votes
-                v_index = self.header.index(
-                    ''.join(
-                        CM._normalize_votes(
-                            self.header)))
-                votes = int(sheet.cell(rowx=row, colx=v_index).value)
-                # Store rest of kwargs
-                rr_kwargs = self._common_kwargs.copy()
-                rr_kwargs.update(self._build_candidate_kwargs(row, sheet))
-                rr_kwargs.update(self._build_contest_kwargs(row, sheet))
-                rr_kwargs.update({
-                    'votes': votes,
-                    'county_ocd_id': self.mapping['ocd_id']
-                })
-                # Get party
-                try:
-                    p_index = self.header.index(
-                        ''.join(
-                            CM._normalize_party(
-                                self.header)))
-                    party = str(
-                        sheet.cell(
-                            rowx=row,
-                            colx=p_index).value).strip()
-                    rr_kwargs.update({
-                        'party': party
-                    })
-                except IndexError:
-                    """
-                    Should this be implemented?
-                    Would need to extract the error message from the loop
-                    to avoid potentially printing the message over 1,000 times
-
-                    """
-                    # logger.info('No party')
-                    pass
-
-                results.append(RawResult(**rr_kwargs))
-        RawResult.objects.insert(results)
-
-    def _skip_row(self, row, sheet):
         """
         I ran into an issue where RawResult wasn't loading any results for my
         .xls files. I hypothesized that the _skip_row method was, for whatever
@@ -923,46 +903,99 @@ class WALoadExcel(WABaseLoader):
         within the header list.
 
         That returns the correct integer value for the column which holds the
-        contest name. Then I can run my _skip_row method like usual.
+        contest name.
 
         """
-        index = self.header.index(''.join(CM._normalize_contest(self.header)))
-        return NR._is_match(
-            sheet.cell(
-                rowx=row,
-                colx=index).value.strip()) not in self.target_offices
 
-    def _build_contest_kwargs(self, row, sheet):
-        # Set index integer to a variable for readability
-        j_index = self.header.index(
+        self.header = sheet.row_values(0)
+        self.votes_index = self.header.index(
+            ''.join(
+                CM._normalize_votes(
+                    self.header)))
+        self.contest_index = self.header.index(
+            ''.join(
+                CM._normalize_contest(
+                    self.header)))
+        self.candidate_index = self.header.index(
+            ''.join(
+                CM._normalize_candidate(
+                    self.header)))
+        self.precinct_index = self.header.index(
             ''.join(
                 CM._normalize_precinct(
                     self.header)))
+        self.jurisdiction_index = self.header.index(
+            ''.join(
+                CM._normalize_precinct(
+                    self.header)))
+        try:
+            self.party_index = self.header.index(
+                ''.join(
+                    CM._normalize_party(
+                        self.header)))
+        except IndexError:
+            pass
+
+        for row in xrange(sheet.nrows):
+            if self._skip_row(row, sheet):
+                continue
+            else:
+                votes = int(sheet.cell(rowx=row, colx=self.votes_index).value)
+                rr_kwargs = self._common_kwargs.copy()
+                rr_kwargs.update(self._build_candidate_kwargs(row, sheet))
+                rr_kwargs.update(self._build_contest_kwargs(row, sheet))
+                rr_kwargs.update({
+                    'votes': votes,
+                    'county_ocd_id': self.mapping['ocd_id']
+                })
+                # Get party
+                try:
+                    party = str(
+                        sheet.cell(
+                            rowx=row,
+                            colx=self.party_index).value).strip()
+                    rr_kwargs.update({
+                        'party': party
+                    })
+                except TypeError:
+                    """
+                    Should this be implemented?
+                    Would need to extract the error message from the loop
+                    to avoid potentially printing the message over 1,000 times
+
+                    """
+                    # logger.info('No party')
+                    pass
+
+                results.append(RawResult(**rr_kwargs))
+        RawResult.objects.insert(results)
+
+    def _skip_row(self, row, sheet):
+        return NR._is_match(
+            sheet.cell(
+                rowx=row,
+                colx=self.contest_index).value.strip()) not in self.target_offices
+
+    def _build_contest_kwargs(self, row, sheet):
         """
         Coerce the jurisdiction into a string because some precinct
         jurisdictions are numbers and getting that value from an Excel file
         returns a float. You can't .strip() a float.
 
         """
-        jurisdiction = str(sheet.cell(rowx=row, colx=j_index).value).strip()
-
-        o_index = self.header.index(
-            ''.join(
-                CM._normalize_contest(
-                    self.header)))
+        jurisdiction = str(
+            sheet.cell(
+                rowx=row,
+                colx=self.jurisdiction_index).value).strip()
 
         return {
-            'office': sheet.cell(rowx=row, colx=o_index).value.strip(),
-            'jurisdiction': jurisdiction
-        }
+            'office': sheet.cell(
+                rowx=row,
+                colx=self.contest_index).value.strip(),
+            'jurisdiction': jurisdiction}
 
     def _build_candidate_kwargs(self, row, sheet):
-        # Set index integer to a variable for readability
-        index = self.header.index(
-            ''.join(
-                CM._normalize_candidate(
-                    self.header)))
-        full_name = sheet.cell(rowx=row, colx=index).value
+        full_name = sheet.cell(rowx=row, colx=self.candidate_index).value
         slug = slugify(full_name, substitute='-')
 
         return {
