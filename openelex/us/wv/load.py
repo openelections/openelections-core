@@ -4,7 +4,7 @@ import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import slugify
+from openelex.lib.text import ocd_type_id, slugify
 from .datasource import Datasource
 
 """
@@ -119,16 +119,12 @@ class WVLoader(WVBaseLoader):
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
         precinct = str(row['Precinct'])
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'] == row['CountyName']][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
-            # In West Virginia, precincts are nested below counties.
-            #
-            # The mapping ocd_id will be for the precinct's county.
-            # We'll save it as an expando property of the raw result because
-            # we won't have an easy way of looking up the county in the 
-            # transforms.
-            'county_ocd_id': self.mapping['ocd_id'],
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id,
+                ocd_type_id(precinct)),
             'party': row['PartyName'].strip(),
             'votes': self._votes(row['Votes']),
             'vote_breakdowns': {},
@@ -141,7 +137,7 @@ class WVLoader(WVBaseLoader):
         kwargs.update({
             'reporting_level': 'county',
             'jurisdiction': row['CountyName'],
-            'county_ocd_id': county_ocd_id,
+            'ocd_id': county_ocd_id,
             'party': row['PartyName'].strip(),
             'votes': self._votes(row['Votes']),
             'vote_breakdowns': {},
@@ -211,9 +207,12 @@ class WVLoaderPre2008(WVBaseLoader):
                     rr_kwargs['primary_party'] = row['party'].strip()
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
+                    jurisdiction = row['county'].strip()
                     rr_kwargs.update({
                         'party': row['party'].strip(),
-                        'jurisdiction': row['county'].strip(),
+                        'jurisdiction': jurisdiction,
+                        'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
+                            ocd_type_id(jurisdiction)),
                         'office': row['office'].strip(),
                         'district': row['district'].strip(),
                         'votes': int(row['votes'].strip()),

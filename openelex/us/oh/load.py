@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import slugify
+from openelex.lib.text import ocd_type_id, slugify
 from .datasource import Datasource
 
 class LoadResults(object):
@@ -151,6 +151,13 @@ class OH2010PrecinctLoader(OHBaseLoader):
         kwargs.update(candidate_kwargs)
         return kwargs
 
+    def _get_state_ocd_id(self):
+        # It looks like the OCD ID in this years mappings is
+        # ocd-division/country:us/state:oh/precinct:all
+        # We need to get rid of the "precinct:all" part to
+        # build valid OCD IDs for the individual jurisdictions.
+        return '/'.join(self.mapping['ocd_id'].split('/')[:-1])
+
     def _prep_state_leg_results(self, row):
         kwargs = self._base_kwargs(row)
         kwargs.update({
@@ -169,8 +176,11 @@ class OH2010PrecinctLoader(OHBaseLoader):
             # Legislative fields prefixed with LEGS
             if not clean_field.startswith('LEGS'):
                 continue
+
             kwargs.update({
                 'jurisdiction': clean_field,
+                'ocd_id': "{}/sldl:{}".format(self._get_state_ocd_id(),
+                    ocd_type_id(clean_field)),
                 'votes': self._votes(val),
             })
             results.append(RawResult(**kwargs))
@@ -193,6 +203,8 @@ class OH2010PrecinctLoader(OHBaseLoader):
         kwargs.update({
             'reporting_level': 'county',
             'jurisdiction': self.mapping['name'],
+            'ocd_id': "{}/county:{}".format(self._get_state_ocd_id(),
+                ocd_type_id(self.mapping['name'])),
             'party': row['Party'].strip(),
             'votes': self._votes(row['Total Votes']),
         })
@@ -213,13 +225,8 @@ class OH2010PrecinctLoader(OHBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
-            # In Maryland, precincts are nested below counties.
-            #
-            # The mapping ocd_id will be for the precinct's county.
-            # We'll save it as an expando property of the raw result because
-            # we won't have an easy way of looking up the county in the 
-            # transforms.
-            'county_ocd_id': self.mapping['ocd_id'],
+            'ocd_id': "{}/precinct:{}".format(self._get_state_ocd_id(),
+                ocd_type_id(precinct)),
             'party': row['Party'].strip(),
             'votes': self._votes(row['Election Night Votes']),
             'winner': row['Winner'],
