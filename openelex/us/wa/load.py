@@ -137,14 +137,14 @@ class LoadResults(object):
         Could try using `generated_filename.split(.)[-1]` instead of
         os.path.splitext(election)[-1], since all filenames are
         standardized. This would, of course, break if the file path includes
-        a full stop.
+        a full stop (period).
 
         """
 
         # If files are 'bad', skip them
         if any(x in generated_filename for x in bad_filenames):
-            print('File {0} does not contain currently usable data.'
-                  .format(generated_filename))
+            logger.info('File {0} does not contain currently usable data.'
+                        .format(generated_filename))
             loader = SkipLoader()
 
         # If files are .xls(x), use the correct loader
@@ -161,7 +161,8 @@ class LoadResults(object):
 
             """
 
-            print 'Cannot do anything with {0}'.format(generated_filename)
+            logger.info(
+                'Cannot do anything with {0}'.format(generated_filename))
             loader = SkipLoader()
 
         elif 'precinct' in generated_filename:
@@ -551,12 +552,12 @@ class WALoaderPrecincts(WABaseLoader):
 
     """
 
-    header          = ''
-    votes_index     = ''
-    party_index     = ''
-    contest_index   = ''
+    header = ''
+    votes_index = ''
+    party_index = ''
+    contest_index = ''
     candidate_index = ''
-    precinct_index  = ''
+    precinct_index = ''
 
     def load(self):
 
@@ -568,7 +569,7 @@ class WALoaderPrecincts(WABaseLoader):
             party_flag = 0
             district_flag = 0
             reader = unicodecsv.DictReader(
-                    csvfile, encoding='latin-1', delimiter=',')
+                csvfile, encoding='latin-1', delimiter=',')
 
             # Declare column indices before the loop so we aren't making
             # a method call for each line in the file
@@ -864,14 +865,15 @@ class WALoaderPost2007(WABaseLoader):
 
 
 class WALoaderExcel(WABaseLoader):
+
     """ Load Excel (.xls/.xlsx) results """
 
-    header             = ''
-    votes_index        = ''
-    party_index        = ''
-    contest_index      = ''
-    candidate_index    = ''
-    precinct_index     = ''
+    header = ''
+    votes_index = ''
+    party_index = ''
+    contest_index = ''
+    candidate_index = ''
+    precinct_index = ''
     jurisdiction_index = ''
 
     def load(self):
