@@ -58,14 +58,34 @@ class Datasource(BaseDatasource):
     def __filter_results_links(self, year):
         links = {}
         for link in [x for x in self.results_links(year)]:
-            if link.text == 'Statewide' and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'pri_lgpc' in link['href']):
-                links['primary_statewide'] = 'http://www.sos.idaho.gov/elect/'+link['href']
-            elif 'Legislature' in link.text and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'pri_lgpc' in link['href']):
-                links['primary_state_legislature'] = 'http://www.sos.idaho.gov/elect/'+link['href']
-            elif link.text == 'Statewide' and ('prec' in link['href'] or 'pct' in link['href'] or 'gen_fed' in link['href']):
-                links['general_statewide'] = 'http://www.sos.idaho.gov/elect/'+link['href']
-            elif 'Legislature' in link.text and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'gen_lgpc' in link['href']):
-                links['general_state_legislature'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            if link.text == 'Statewide' and 'rimary' in link['href'] and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'pri_lgpc' in link['href']):
+                if year == 2004:
+                    links['primary_statewide'] = 'http://www.sos.idaho.gov'+link['href']
+                elif year < 2004:
+                    links['primary_statewide'] = link['href']
+                else:
+                    links['primary_statewide'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif 'Legislature' in link.text and 'rimary' in link['href'] and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'pri_lgpc' in link['href']):
+                if year == 2004:
+                    links['primary_state_legislature'] = 'http://www.sos.idaho.gov/'+link['href']
+                elif year < 2004:
+                    links['primary_state_legislature'] = link['href']
+                else:
+                    links['primary_state_legislature'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif link.text == 'Statewide' and ('prec' in link['href'] or 'pct' in link['href'] or 'en_fed' in link['href']):
+                if year == 2004:
+                    links['general_statewide'] = 'http://www.sos.idaho.gov'+link['href']
+                elif year < 2004:
+                    links['general_statewide'] = link['href']
+                else:
+                    links['general_statewide'] = 'http://www.sos.idaho.gov/elect/'+link['href']
+            elif 'Legislature' in link.text and ('prec' in link['href'] or 'pct' in link['href'] or 'pri_fed' in link['href'] or 'gen_lgpc' in link['href'] or 'Gen_leg' in link['href']):
+                if year == 2004:
+                    links['general_state_legislature'] = 'http://www.sos.idaho.gov'+link['href']
+                elif year < 2004:
+                    links['general_state_legislature'] = link['href']
+                else:
+                    links['general_state_legislature'] = 'http://www.sos.idaho.gov/elect/'+link['href']
         try:
             links['primary_state_legislature']
         except:

@@ -18,7 +18,7 @@ class TestMappings(TestCase):
     def setUp(self):
         self.datasource = Datasource()
 
-    @patch('openelex.us.md.datasource.elec_api.find')
+    @patch('openelex.base.datasource.elec_api.find')
     def test_mappings_default(self, mock_elec_find):
         # By default, mappings returns all URLs
         mock_elec_find.return_value = md_data['objects']
@@ -40,7 +40,7 @@ class TestMappings(TestCase):
         }
         self.assertDictEqual(expected_2012, mappings[-1])
 
-    @patch('openelex.us.md.datasource.elec_api.find')
+    @patch('openelex.base.datasource.elec_api.find')
     def test_mappings_filtered_by_year(self, mock_elec_find):
         mock_elec_find.return_value = md_data['objects']
         mappings = self.datasource.mappings(2000)
@@ -59,7 +59,7 @@ class TestTargetUrls(TestCase):
     def setUp(self):
         self.datasource = Datasource()
 
-    @patch('openelex.us.md.datasource.elec_api.find')
+    @patch('openelex.base.datasource.elec_api.find')
     def test_target_urls_default(self, mock_elec_find):
         # By default, target_urls returns all URLs
         mock_elec_find.return_value = md_data['objects']
@@ -77,7 +77,7 @@ class TestTargetUrls(TestCase):
         for url in expected_urls:
             self.assertIn(url, target_urls)
 
-    @patch('openelex.us.md.datasource.elec_api.find')
+    @patch('openelex.base.datasource.elec_api.find')
     def test_target_urls_filtered_by_year(self, mock_elec_find):
         # supplying only a year returns a state legislative url for a general election
         mock_elec_find.return_value = md_data['objects']
@@ -101,7 +101,7 @@ class TestUrlFilenameMappings(TestCase):
     def setUp(self):
         self.datasource = Datasource()
 
-    @patch('openelex.us.md.datasource.elec_api.find')
+    @patch('openelex.base.datasource.elec_api.find')
     def test_filename_url_pairs_default(self, mock_elec_find):
         # By default, ls returns all URLs
         expected = [
@@ -124,7 +124,7 @@ class TestUrlFilenameMappings(TestCase):
         for pair in expected:
             self.assertTrue(pair[1] in urls)
 
-    @patch('openelex.us.md.datasource.elec_api.find')
+    @patch('openelex.base.datasource.elec_api.find')
     def test_filename_url_pairs_filterd_by_year(self, mock_elec_find):
         # supplying only a year returns a state legislative url for a general election
         mock_elec_find.return_value = md_data['objects']

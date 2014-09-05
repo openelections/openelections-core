@@ -1,71 +1,146 @@
-core
-====
+## Open Elections core code
 
 Core repo for election results data acquisition, transformation and output.
 
 OpenElections core is developed and tested using Python 2.7.*. The package
 might not work with older or newer Python distributions.
 
-Getting started as a developer
-------------------------------
+### Getting started as a developer
 
-Create a sandboxed development environment using [virtualenv](http://www.virtualenv.org/en/latest/)
+You'll:
+
+* set up a virtual environment
+* fork/clone this repository, install dependencies
+* add any optional configuration details you need (e.g. Mongo or AWS)
+
+#### Setting up a virtual environment
+
+You should use [virtualenv](http://www.virtualenv.org/en/latest/) and [virtualenvwrapper](http://virtualenvwrapper.readthedocs.org/) to work on Open Elections inside a virtualized development environment.
+
+The easiest way is to install these tools system-wide with `pip` (you may need to use `sudo`):
+
 ```bash
-# cd to your virtualenv home
-cd ~/.virtualenvs
-$ virtualenv openelex-core
+$ pip install virtualenv
+$ pip install virtualenvwrapper
 ```
 
-Jump in and activate your virtualenv
+Then, to make a virtual environment called `openelex` for open elections work:
+
 ```bash
+$ mkvirtualenv openelex
+```
+
+If your terminal is unable to find `mkvirtualenv`, you may need to add the `virtualenvwrapper.sh` script to your `.bashrc` (probably in `/usr/bin/` or `/usr/local/bin`):
+
+```bash
+$ echo 'source "/usr/bin/virtualenvwrapper.sh"' >> ~/.bashrc
+```
+
+This will automatically activate the `openelex` environment. To turn it on for future sessions:
+
+```bash
+$ workon openelex
+```
+
+#### Fork and set up this project
+
+[Fork this repo](https://help.github.com/articles/fork-a-repo) by hitting the "Fork" button above, and clone your fork to your computer:
+
+```bash
+$ git clone git@github.com:[my_github_user]/core.git openelex-core
 $ cd openelex-core
-$ . bin/activate
-
 ```
 
-NOTE: To deactivate your environment:
+Turn on your virtual environment from the previous step, if you haven't already:
+
 ```bash
-$ deactivate
+$ workon openelex
 ```
 
-[Fork](https://help.github.com/articles/fork-a-repo) and clone the openelex-core repo on Github
-to wherever you stash your code.
-```bash
-# 
-$ mkdir src/
-$ cd src/
-$ git clone git@github.com:<my_github_user>/core.git openelex-core
-$ cd openelex-core 
-```
+Then install the Python dependencies:
 
-Install the python dependencies
-**Perform below commands while inside an active virtual environment**
 ```bash
 $ pip install -r requirements.txt
 $ pip install -r requirements-dev.txt
 ```
 
-Add the ``openelex`` package to your PYTHONPATH
-```bash
-$ export PYTHONPATH=$PYTHONPATH:`pwd`
-```
+Create `settings.py` from the template
 
-Create ``settings.py`` from the template 
 ```bash
 $ cp settings.py.tmplt openelex/settings.py
 ```
 
-(Optional) Edit settings.py to add AWS configs and db configs
-You only need to set these configs if you plan to
-archive files on your own S3 account or write data loaders.
+#### Setting up 'invoke'
+
+OpenElections uses [invoke](http://docs.pyinvoke.org/en/latest/) to run tasks (similar to Ruby's `rake`).
+
+First, make sure you're in the **root of the repository** you've cloned.
+
+Add the `openelex` directory to your `$PYTHONPATH`, so that `invoke` can see our tasks. This will append to your shell's login script (replace `.bashrc` with whatever your shell uses, if needed).
+
 ```bash
-$ vim openelex/settings.py
+echo "export PYTHONPATH=$PYTHONPATH:`pwd`/openelex" >> ~/.bashrc
 ```
 
-(Optional) [Install mongo](http://docs.mongodb.org/manual/installation/)
-You only need to install mongo if you plan to write data loaders.
+That will run automatically for future terminal sessions. To activate it for the current session:
 
-(Optional) Load party and office metadata into mongo.
+```bash
+source ~/.bashrc
+```
+
+All `invoke` commands must be run **from the project root**.
+
+Test it out by running `invoke --list`, you should see something like:
+
+```bash
+$ invoke --list
+Available tasks:
+
+    fetch
+    archive.delete
+    archive.save
+    cache.clear
+    cache.files
+    datasource.elections
+    datasource.filename_url_pairs
+    datasource.mappings
+    datasource.target_urls
+    load.run
+    transform.list
+    transform.run
+    validate.list
+    validate.run
+```
+
+Running commands looks something like this:
+
+```bash
+$ invoke cache.clear --state=NY
+0 files deleted
+0 files still in cache
+```
+
+You can also get help on particular commands, e.g. `invoke --help cache.clear`.
+
+#### Configuring services (optional)
+
+`openelex/settings.py` can be configured for MongoDB and AWS. You only need to set these configs if you plan to archive files on your own S3 account, or write data loaders.
+
+To configure S3 to cache your raw results, update these values in `openelex/settings.py`:
+
+```python
+AWS_ACCESS_KEY_ID = ''
+AWS_SECRET_ACCESS_KEY =''
+```
+
+#### Install MongoDB (optional)
+
+You only need to install MongoDB if you plan to write data loaders.
+
+To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
+
+#### Load party and office metadata (optional)
+
 You only need to do this if you plan to write data loaders or transforms.
 
 ```bash

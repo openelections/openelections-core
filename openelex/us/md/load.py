@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import slugify
+from openelex.lib.text import ocd_type_id, slugify
 from .datasource import Datasource
 
 class LoadResults(object):
@@ -29,7 +29,29 @@ class LoadResults(object):
         loader.run(mapping)
 
 
-class MDBaseLoader(BaseLoader):
+class CountyOCDMixin(object):
+    """
+    Loader mixin that adds convenience method for generating county-level
+    OCD IDs
+
+    """
+    def _get_county_ocd_id(self, jurisdiction):
+        """
+        Build an OCD ID for a county-level jurisdiction when the mapping
+        reflects the state OCD ID.
+        """
+        # Baltimore City is treated like a county in the results, but we
+        # should use the city's OCD ID
+        if jurisdiction == "Baltimore City":
+            ocd_id = "{}/place:baltimore".format(self.mapping['ocd_id'])
+        else:
+            ocd_id = "{}/county:{}".format(self.mapping['ocd_id'],
+                ocd_type_id(jurisdiction))
+
+        return ocd_id
+
+
+class MDBaseLoader(CountyOCDMixin, BaseLoader):
     datasource = Datasource()
 
     target_offices = set([
@@ -73,7 +95,7 @@ class MDLoader(MDBaseLoader):
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if self._skip_row(row): 
+                if self._skip_row(row):
                     continue
                 elif 'state_legislative' in self.source:
                     results.extend(self._prep_state_leg_results(row))
@@ -121,6 +143,25 @@ class MDLoader(MDBaseLoader):
         kwargs.update(candidate_kwargs)
         return kwargs
 
+    def _get_state_ocd_id(self):
+        """
+        Get the state portion of the mapping's OCD ID
+
+        This is neccessary because the mappings for some files have OCD IDs
+        like 'ocd-division/country:us/state:md/sldl:all'.  We need to extract
+        the state portion, 'ocd-division/country:us/state:md' to build OCD
+        IDs for lower jurisdictions.
+
+        """
+        bits = []
+        state_bit = "state:"+ self.state
+        for bit in self.mapping['ocd_id'].split('/'):
+            bits.append(bit)
+            if bit == state_bit:
+                break
+
+        return '/'.join(bits)
+
     def _prep_state_leg_results(self, row):
         kwargs = self._base_kwargs(row)
         kwargs.update({
@@ -141,6 +182,11 @@ class MDLoader(MDBaseLoader):
                 continue
             kwargs.update({
                 'jurisdiction': clean_field,
+                # Remove the "LEGS " from the ocd_id.  This is a somewhat
+                # transformy action, but do it here in order to make the OCD IDs
+                # as usable as possible when we bake out raw results
+                'ocd_id': "{}/sldl:{}".format(self._get_state_ocd_id(),
+                    ocd_type_id(clean_field.replace("LEGS ", ""))),
                 'votes': self._votes(val),
             })
             results.append(RawResult(**kwargs))
@@ -163,6 +209,7 @@ class MDLoader(MDBaseLoader):
         kwargs.update({
             'reporting_level': 'county',
             'jurisdiction': self.mapping['name'],
+            'ocd_id': self.mapping['ocd_id'],
             'party': row['Party'].strip(),
             'votes': self._votes(row['Total Votes']),
         })
@@ -180,16 +227,12 @@ class MDLoader(MDBaseLoader):
             'election_night_total': self._votes(row['Election Night Votes'])
         }
         precinct = "%s-%s" % (row['Election District'], row['Election Precinct'].strip())
+        ocd_id = "{}/precinct:{}".format(self.mapping['ocd_id'],
+            ocd_type_id(precinct))
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
-            # In Maryland, precincts are nested below counties.
-            #
-            # The mapping ocd_id will be for the precinct's county.
-            # We'll save it as an expando property of the raw result because
-            # we won't have an easy way of looking up the county in the 
-            # transforms.
-            'county_ocd_id': self.mapping['ocd_id'],
+            'ocd_id': ocd_id,
             'party': row['Party'].strip(),
             'votes': self._votes(row['Election Night Votes']),
             'winner': row['Winner'],
@@ -208,7 +251,7 @@ class MDLoader(MDBaseLoader):
         try:
             return int(float(val))
         except ValueError:
-            # Count'y convert value from string   
+            # Count'y convert value from string
             return 0
 
     def _writein(self, row):
@@ -232,7 +275,7 @@ class MDLoader2002(MDBaseLoader):
     Fields:
 
      0: Office
-     1: Office District - '-' is used to denote null values 
+     1: Office District - '-' is used to denote null values
      2: County
      3: Last Name - "zz998" is used for write-in candidates
      4: Middle Name - "\N" is used to denote null values
@@ -240,9 +283,9 @@ class MDLoader2002(MDBaseLoader):
      6: Party
      7: Winner - Value is 0 or 1
      8: UNKNOWN - Values are "(Vote for One)", "(Vote for No More Than Three)", etc.
-     9: Votes 
+     9: Votes
     10: UNKNOWN - Values are "\N" for every row
-    
+
     Sample row:
 
     House of Delegates                                                  |32 |Anne Arundel County                               |Burton                                                      |W.              |Robert                                                      |Republican                                        |              0|(Vote for No More Than Three)                     |           1494|\N
@@ -279,15 +322,17 @@ class MDLoader2002(MDBaseLoader):
             for row in reader:
                 if self._skip_row(row):
                     continue
-                
+
                 rr_kwargs = self._common_kwargs.copy()
                 if rr_kwargs['primary_type'] == 'closed':
                     rr_kwargs['primary_party'] = row['party'].strip()
                 rr_kwargs.update(self._build_contest_kwargs(row))
                 rr_kwargs.update(self._build_candidate_kwargs(row))
+                jurisdiction = row['jurisdiction'].strip()
                 rr_kwargs.update({
                     'party': row['party'].strip(),
-                    'jurisdiction': row['jurisdiction'].strip(),
+                    'jurisdiction': jurisdiction,
+                    'ocd_id': self._get_county_ocd_id(jurisdiction),
                     'office': row['office'].strip(),
                     'district': row['district'].strip(),
                     'votes': int(row['votes'].strip()),
@@ -336,7 +381,7 @@ class MDLoader2000Primary(MDBaseLoader):
         with self._file_handle as csvfile:
             reader = csv.reader(csvfile)
             for row in reader:
-                if not len(row): 
+                if not len(row):
                     continue # Skip blank lines
 
                 # determine if this is a row with an office
@@ -361,7 +406,7 @@ class MDLoader2000Primary(MDBaseLoader):
                         last_party, last_district,
                         candidates, winner_name, common_kwargs)
                     results.extend(new_results)
-        
+
         RawResult.objects.insert(results)
 
     def _parse_header(self, row):
@@ -408,7 +453,7 @@ class MDLoader2000Primary(MDBaseLoader):
         candidates = []
         for col in row:
             if col != '':
-                full_name = col.strip() 
+                full_name = col.strip()
                 if 'Winner' in full_name:
                     # Trim winner from candidate name
                     full_name, remainder = full_name.split(' Winner')
@@ -416,7 +461,7 @@ class MDLoader2000Primary(MDBaseLoader):
 
                 candidates.append(full_name)
 
-        return candidates, winner 
+        return candidates, winner
         # TODO: QUESTION: How to handle "Uncomitted to any ..." values
 
     def _parse_results(self, row, office, party, district, candidates,
@@ -430,6 +475,7 @@ class MDLoader2000Primary(MDBaseLoader):
             result_kwargs = common_kwargs.copy()
             result_kwargs.update({
                 'jurisdiction': county,
+                'ocd_id': self._get_county_ocd_id(county),
                 'office': office,
                 'party': party,
                 'full_name': cand,
@@ -470,7 +516,7 @@ class MDLoader2000Primary(MDBaseLoader):
             return "county"
 
 
-class MDLoader2008Special(BaseLoader):
+class MDLoader2008Special(CountyOCDMixin, BaseLoader):
     """
     Loader for the Maryland 2008 4th Congressional District Special election results
     """
@@ -508,7 +554,7 @@ class MDLoader2008Special(BaseLoader):
 
     def _parse_candidates_and_parties(self, row, winner_name):
         candidate_attrs = []
-        for cell in row[1:]: 
+        for cell in row[1:]:
             # Skip the first cell.  It's a header, "County"
             attrs = {
                 'full_name': self._parse_name(cell),
@@ -519,9 +565,9 @@ class MDLoader2008Special(BaseLoader):
             if attrs['full_name'] == winner_name:
                 attrs['contest_winner'] = True
 
-            candidate_attrs.append(attrs) 
+            candidate_attrs.append(attrs)
 
-        return candidate_attrs 
+        return candidate_attrs
 
     def _parse_name(self, s):
         if s == "Other Write-Ins":
@@ -543,14 +589,14 @@ class MDLoader2008Special(BaseLoader):
         elif "Write-In" in s:
             return "Write-In"
         else:
-            return "" 
+            return ""
 
     def _parse_results(self, rows, candidate_attrs):
         # These raw result attributes will be the same for every result.
         common_kwargs = self._build_common_election_kwargs()
         common_kwargs.update({
             'office': "Representative in Congress",
-            'district': '4', 
+            'district': '4',
             'reporting_level': "county",
         })
 
@@ -561,7 +607,8 @@ class MDLoader2008Special(BaseLoader):
                 kwargs = common_kwargs.copy()
                 kwargs.update(candidate_attrs[i-1])
                 kwargs['jurisdiction'] = county
-                kwargs['votes'] = self._parse_votes(row[i]) 
+                kwargs['ocd_id'] = self._get_county_ocd_id(county)
+                kwargs['votes'] = self._parse_votes(row[i])
                 results.append(RawResult(**kwargs))
         return results
 

@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from openelex.lib import format_date, standardized_filename 
 from openelex.lib.text import ocd_type_id, election_slug
 
 class TestText(TestCase):
@@ -45,3 +46,52 @@ class TestText(TestCase):
 
         for slug, attrs in elec_attrs.items():
             self.assertEqual(election_slug(**attrs), slug)
+
+
+class TestLib(TestCase):
+    def test_standardized_filename(self):
+        # Test with bare minimum args
+        kwargs = {
+            'start_date': "2012-04-03",
+            'state': 'md',
+            'extension': ".csv",
+        }
+        expected = "20120403__md.csv"
+        filename = standardized_filename(**kwargs)
+        self.assertEqual(filename, expected)
+
+        # Test with more complicated example
+        kwargs = {
+            'start_date': "2012-04-03",
+            'state': 'md',
+            'party': "Republican",
+            'race_type': "primary",
+            'jurisdiction': "Prince George's",
+            'reporting_level': 'precinct',
+            'extension': ".csv",
+        }
+        expected = "20120403__md__republican__primary__prince_georges__precinct.csv"
+        filename = standardized_filename(**kwargs)
+        self.assertEqual(filename, expected)
+
+        # Test with suffix bits
+        kwargs = {
+            'start_date': "2012-04-03",
+            'state': 'md',
+            'extension': ".csv",
+            'suffix_bits': ['raw']
+        }
+        expected = "20120403__md__raw.csv"
+        filename = standardized_filename(**kwargs)
+        self.assertEqual(filename, expected)
+
+    def test_format_date(self):
+        test_values = [
+            ("20101106", "2010-11-06"),
+            ("201011", "2010-11"),
+            ("2010", "2010"),
+        ]
+        for input_date, expected in test_values:
+            self.assertEqual(format_date(input_date), expected)
+
+        self.assertRaises(ValueError, format_date, "201011-06")

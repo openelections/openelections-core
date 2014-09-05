@@ -65,6 +65,16 @@ class Datasource(BaseDatasource):
                         "name": 'West Virginia',
                         "election": election['slug']
                     })
+        elif year < 2012:
+            for election in elections:
+                meta.append({
+                    "generated_filename": self._generate_statewide_filename(election),
+                    "raw_url": election['direct_links'][0],
+                    "pre_processed_url": None,
+                    "ocd_id": 'ocd-division/country:us/state:wv',
+                    "name": 'West Virginia',
+                    "election": election['slug']
+                })
         else:
             for election in elections:
                 csv_links = self._find_csv_links(election['direct_links'][0])
@@ -100,7 +110,8 @@ class Datasource(BaseDatasource):
             election['start_date'].replace('-',''),
             self.state.lower(),
             election['race_type'],
-            county.lower()
+            county.lower(),
+            'precinct'
         ]
         return "__".join(bits) + '.csv'
 

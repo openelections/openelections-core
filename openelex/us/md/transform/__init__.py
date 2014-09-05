@@ -333,7 +333,8 @@ class CreateResultsTransform(BaseTransform):
         that will be passed to the Result constructor.
         """
         fields['write_in'] = self._parse_write_in(raw_result)
-        fields['ocd_id'] = self._get_ocd_id(raw_result)
+        fields['ocd_id'] = self._get_ocd_id(raw_result,
+            jurisdiction=fields['jurisdiction'])
         return fields
 
     def _create_results_collection(self):
@@ -410,29 +411,37 @@ class CreateResultsTransform(BaseTransform):
         else:
             return False
 
-    def _get_ocd_id(self, raw_result, reporting_level=None):
+    def _get_ocd_id(self, raw_result, jurisdiction=None, reporting_level=None):
         """
         Returns the OCD ID for a RawResult's reporting level.
 
         Arguments:
-        
-        raw_result - the RawResult instance used to determine the OCD ID
-        reporting_level - the reporting level to reflect in the OCD ID.
-            Default is raw_result.reporting_level. Specifying this
-            argument is useful if you want to use a RawResult's
-            jurisdiction, but override the reporting level.
+            raw_result: the RawResult instance used to determine the OCD ID
+            jurisdiction: the jurisdiction for which the OCD ID should be 
+                created.
+                Default is the raw result's jurisdiction field.
+            reporting_level: the reporting level to reflect in the OCD ID.
+                Default is raw_result.reporting_level. Specifying this
+                argument is useful if you want to use a RawResult's
+                jurisdiction, but override the reporting level.
 
         """
         if reporting_level is None:
             reporting_level = raw_result.reporting_level
-        juris_ocd = ocd_type_id(raw_result.jurisdiction)
+
+        if jurisdiction is None:
+            jurisdiction = raw_result.jurisdiction
+
+        juris_ocd = ocd_type_id(jurisdiction)
+
         if reporting_level == "county":
             # TODO: Should jurisdiction/ocd_id be different for Baltimore City?
-            return "ocd-division/country:us/state:md/county:%s" % juris_ocd 
+            return "ocd-division/country:us/state:md/county:%s" % juris_ocd
         elif reporting_level == "state_legislative":
-            return "ocd-division/country:us/state:md/sldl:%s" % juris_ocd 
-        elif reporting_level == "precinct": 
-            return "%s/precinct:%s" % (raw_result.county_ocd_id, juris_ocd)
+            return "ocd-division/country:us/state:md/sldl:%s" % juris_ocd
+        elif reporting_level == "precinct":
+            county_ocd_id = "/".join(raw_result.ocd_id.split('/')[:-1])
+            return "%s/precinct:%s" % (county_ocd_id, juris_ocd)
         else: 
             return None
 
@@ -566,7 +575,8 @@ class Create2000PrimaryCongressCountyResultsTransform(CreateResultsTransform):
 
     def _alter_result_fields(self, fields, raw_result):
         fields['reporting_level'] = 'county'
-        fields['ocd_id'] = self._get_ocd_id(raw_result, 'county')
+        fields['ocd_id'] = self._get_ocd_id(raw_result,
+            jurisdiction=fields['jurisdiction'], reporting_level='county')
         return fields
 
     def _create_results(self, results):

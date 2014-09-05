@@ -11,11 +11,11 @@ if sys.version_info < (2,7) or sys.version_info >= (3,):
           "It may not not work with older or newer Python distributions.")
 
 setup(
-    name='Distutils',
+    name='OpenElections Core',
     version='0.1.0',
     author='OpenElections',
     author_email='openelections@gmail.com',
     url='http://openelections.net',
-    packages=['distutils', 'distutils.command'],
+    packages=['openelex'],
     scripts=[],
 )

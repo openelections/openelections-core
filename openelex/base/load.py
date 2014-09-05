@@ -100,6 +100,9 @@ class BaseLoader(StateBase):
     def _file_handle(self):
         return open(join(self.cache.abspath, self.source), 'rU')
 
+    def _xls_file_handle(self):
+        return join(self.cache.abspath, self.source)
+
     def _build_common_election_kwargs(self):
         """
         Returns a dictionary of fields derived from the OpenElex API 
