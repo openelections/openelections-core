@@ -16,7 +16,6 @@ error message instead.
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import slugify
 from .datasource import Datasource
 
 """
@@ -31,7 +30,7 @@ TO DO:
 NOTES:
 
 1.) Loader uses two normalizing classes that normalize parts of the data.
-    In particular, we use ColumnMatch to normalize the headers of different
+    In particular, we use Normalize to normalize the headers of different
     files whose headers are generally the same, but differ in the wording.
 
     For example, some files will have all the same fields, but name them
@@ -40,7 +39,7 @@ NOTES:
     "candidate name". Because of this, we use regex to test the header row
     to find the correct field.
 
-    NormalizeRaces takes the race data and then matches it against
+    Normalize takes the race data and then matches it against
     `target_offices`, found in the WABaseLoader class. We do this because
     Washington will preface some of the positions (e.g. Governor) with
     "Washington State", and some files call the lower chamber "Representative"
@@ -143,8 +142,6 @@ class LoadResults(object):
 
         # If files are 'bad', skip them
         if any(x in generated_filename for x in bad_filenames):
-            logger.info('File {0} does not contain currently usable data.'
-                        .format(generated_filename))
             loader = SkipLoader()
 
         # If files are .xls(x), use the correct loader
@@ -225,6 +222,265 @@ class LoadResults(object):
             logger.error('\tNo raw results loaded')
 
 
+"""
+New methods to normalize headers should follow this structure:
+
+    def _*(header):
+
+
+        # Some sort of examples of what words the regex tests for
+        # Example 1
+        # Example 2
+        # etc
+
+        regex = re.compile(regex, flags)
+
+        return [
+            m.group(0) for l in header for m in [
+                regex.search(l)] if m][0]
+
+        # OR
+
+        return filter(lambda x: regex.search(x), header)[0]
+
+The filter(lambda...) is equivalent to the list comprehension, but is
+more readable. I've chosen to go with the lambda function because of
+readability, even though the list comprehension is much quicker.
+
+See: https://gist.github.com/EricLagerg/152e402e45088266e189
+
+    * For 1 iteration:
+
+      lambda: 0.000517129898071
+      list  : 0.000169992446899 <
+
+    * For 10:
+
+      lambda: 0.00197100639343
+      list  : 0.00181102752686 <
+
+    * For 100:
+
+      lambda: 0.0169317722321
+      list  : 0.0162620544434 <
+
+    * For 1,000:
+
+      lambda: 0.15958404541 <
+      list  : 0.161957025528
+
+The `header` arg will be (or at least currently is) a list of all the
+matches from testing the .csv file's header field.
+
+"""
+
+
+def normalize_party(header):
+    """
+    Regex examples:
+
+    party = true
+    party_code = true
+    party code = true
+
+    """
+
+    regex = re.compile(
+        r'.*(^party$|party.*code|candidate(_|\s+)party(_|\s)id).*',
+        re.IGNORECASE)
+
+    """
+    `return filter(lambda x: regex.search(x), header)[0]`
+    does the same as the below list comprehension
+
+    """
+
+    return filter(lambda x: regex.search(x), header)[0]
+
+
+def normalize_candidate(header):
+    """
+    Regex examples:
+
+    candidate = true
+    candidate_name = true
+    candidate_id = false
+    candidate_full_name = true
+
+    """
+
+    regex = re.compile(
+        r'.*(ballot\sname|candidate.*(name|title)|candidate$).*',
+        re.IGNORECASE)
+
+    return filter(lambda x: regex.search(x), header)[0]
+
+
+def normalize_contest(header):
+    """
+    Regex examples:
+
+    contest = true
+    race = true
+    contest_name = true
+    contest_id = false
+
+    """
+
+    regex = re.compile(
+        r'.*(^contest$|race$|race(_|\s)(title|name)|(contest.*(title|name))).*',
+        re.IGNORECASE)
+
+    return filter(lambda x: regex.search(x), header)[0]
+
+
+def normalize_precinct(header):
+    """
+    Regex examples:
+
+    precinct = true
+    precinct_name = true
+    precinct name = true
+
+    """
+
+    regex = re.compile('.*(precinct|precinct.*name).*', re.IGNORECASE)
+
+    return filter(lambda x: regex.search(x), header)[0]
+
+
+def normalize_votes(header):
+    """
+    Regex examples:
+
+    number of votes for = true
+    votes = true
+    count = true
+    total number of votes = false
+
+    """
+
+    regex = re.compile(
+        '.*(.*vote.*for|^vote|^count$|total_votes|total.*votes).*',
+        re.IGNORECASE)
+
+    return filter(lambda x: regex.search(x), header)[0]
+
+
+def normalize_index(header, method):
+    """
+    Equivalent to:
+
+    self.votes_index = self.header.index(
+        ''.join(votes(self.header)))
+    """
+
+    return header.index(''.join(method(header)))
+
+
+def normalize_races(string):
+    """
+    Normalizes races per 'target_offices'
+
+    Would appear to return a boolean, but returns the normalized
+    race result as per `target_offices`.
+
+    Although we should not provide 'N/A' in places where we don't have
+    valid data (e.g. if no party is stated, we simply don't provide the
+    party value instead of providing 'N/A' or a blank value), returning
+    'N/A' here will result in us skipping the row, since this class is
+    and only should be used *only* in the `self._skip_row` methods.
+
+    Returning anything other than one of the values in `target_offices`
+    will result in the row being skipped. Since 'N/A' isn't in
+    `target_offices`, we're fine.
+
+    """
+
+    presidential_regex = re.compile('president', re.IGNORECASE)
+    senate_regex = re.compile('(senate|senator)', re.IGNORECASE)
+    house_regex = re.compile('(house|representative)', re.IGNORECASE)
+    governor_regex = re.compile('governor', re.IGNORECASE)
+    treasurer_regex = re.compile('treasurer', re.IGNORECASE)
+    auditor_regex = re.compile('auditor', re.IGNORECASE)
+    sos_regex = re.compile('secretary', re.IGNORECASE)
+    lt_gov_regex = re.compile(r'(lt|Lt|Lieutenant)', re.IGNORECASE)
+    ospi_regex = re.compile(
+        'superintendent of public instruction',
+        re.IGNORECASE)
+    ag_regex = re.compile('attorney general', re.IGNORECASE)
+    wcpl_regex = re.compile('commissioner of public lands', re.IGNORECASE)
+    local_regex = re.compile(
+        r'(\bState\b|Washington|Washington\s+State|Local|'
+        'Legislative District)',
+        re.IGNORECASE)
+    national_regex = re.compile(
+        r'(U\.S\.|^US$|Congressional|National|United\s+States|U\.\s+S\.\s+)',
+        re.IGNORECASE)
+
+    """
+    The following chained if statements are ordered by the most frequent
+    occurrences. As of August 26th, 2014 these are the results from
+    running `egrep -rohi 'regex' . | wc -l`
+
+    I've placed Lt. Governor's regex ahead of Governor's in order to
+    be able to get the Lt. Governor's values and keep a simplified regex.
+
+    These aren't exact, but give are a rough assessment of the number
+    of occurrences.
+
+    National:  935375
+    Local:     953031
+
+    *House:    417020
+    Governor:  319836
+    CPL:       344795
+    *Senate:   186247
+    Lt. Gov.:  161537
+    SPI:       128783
+    SoS:       122404
+    Auditor:   103920
+    AG:        85059
+    President: 75183
+
+    """
+
+    if re.search(house_regex, string):
+        if re.search(national_regex, string):
+            return 'U.S. Representative'
+        elif re.search(local_regex, string):
+            return 'State Representative'
+        else:
+            return 'N/A'
+    elif re.search(governor_regex, string):
+        return 'Governor'
+    elif re.search(wcpl_regex, string):
+        return 'Commissioner of Public Lands'
+    elif re.search(senate_regex, string):
+        if re.search(national_regex, string):
+            return 'U.S. Senator'
+        elif re.search(local_regex, string):
+            return 'State Senator'
+        else:
+            return 'N/A'
+    elif re.search(lt_gov_regex, string):
+        return 'Lt. Governor'
+    elif re.search(ospi_regex, string):
+        return 'Superintendent of Public Instruction'
+    elif re.search(sos_regex, string):
+        return 'Secretary of State'
+    elif re.search(treasurer_regex, string):
+        return 'Treasurer'
+    elif re.search(auditor_regex, string):
+        return 'Auditor'
+    elif re.search(ag_regex, string):
+        return 'Attorney General'
+    elif re.search(presidential_regex, string):
+        return 'President'
+    else:
+        return 'N/A'
+
+
 class WABaseLoader(BaseLoader):
     datasource = Datasource()
 
@@ -262,265 +518,6 @@ class WABaseLoader(BaseLoader):
         return False
 
 
-class ColumnMatch:
-
-    """
-    New methods to normalize headers should follow this structure:
-
-        @classmethod
-        def _normalize_*(cls, header):
-
-
-            # Some sort of examples of what words the regex tests for
-            # Example 1
-            # Example 2
-            # etc
-
-            regex = re.compile(regex, flags)
-
-            return [
-                m.group(0) for l in header for m in [
-                    regex.search(l)] if m][0]
-
-            # OR
-
-            return filter(lambda x: regex.search(x), header)[0]
-
-    The filter(lambda...) is equivalent to the list comprehension, but is
-    more readable. I've chosen to go with the lambda function because of
-    readability, even though the list comprehension is much quicker.
-
-    See: https://gist.github.com/EricLagerg/152e402e45088266e189
-
-        * For 1 iteration:
-
-          lambda: 0.000517129898071
-          list  : 0.000169992446899 <
-
-        * For 10:
-
-          lambda: 0.00197100639343
-          list  : 0.00181102752686 <
-
-        * For 100:
-
-          lambda: 0.0169317722321
-          list  : 0.0162620544434 <
-
-        * For 1,000:
-
-          lambda: 0.15958404541 <
-          list  : 0.161957025528
-
-    The `header` arg will be (or at least currently is) a list of all the
-    matches from testing the .csv file's header field.
-
-    """
-
-    @classmethod
-    def _normalize_party(cls, header):
-        """
-        Regex examples:
-
-        party = true
-        party_code = true
-        party code = true
-
-        """
-
-        regex = re.compile(
-            r'.*(^party$|party.*code|candidate(_|\s+)party(_|\s)id).*',
-            re.IGNORECASE)
-
-        """
-        `return filter(lambda x: regex.search(x), header)[0]`
-        does the same as the below list comprehension
-
-        """
-
-        return filter(lambda x: regex.search(x), header)[0]
-
-    @classmethod
-    def _normalize_candidate(cls, header):
-        """
-        Regex examples:
-
-        candidate = true
-        candidate_name = true
-        candidate_id = false
-        candidate_full_name = true
-
-        """
-
-        regex = re.compile(
-            r'.*(ballot\sname|candidate.*(name|title)|candidate$).*',
-            re.IGNORECASE)
-
-        return filter(lambda x: regex.search(x), header)[0]
-
-    @classmethod
-    def _normalize_contest(cls, header):
-        """
-        Regex examples:
-
-        contest = true
-        race = true
-        contest_name = true
-        contest_id = false
-
-        """
-
-        regex = re.compile(
-            r'.*(^contest$|race$|race(_|\s)(title|name)|(contest.*(title|name))).*',
-            re.IGNORECASE)
-
-        return filter(lambda x: regex.search(x), header)[0]
-
-    @classmethod
-    def _normalize_precinct(cls, header):
-        """
-        Regex examples:
-
-        precinct = true
-        precinct_name = true
-        precinct name = true
-
-        """
-
-        regex = re.compile('.*(precinct|precinct.*name).*', re.IGNORECASE)
-
-        return filter(lambda x: regex.search(x), header)[0]
-
-    @classmethod
-    def _normalize_votes(cls, header):
-        """
-        Regex examples:
-
-        number of votes for = true
-        votes = true
-        count = true
-        total number of votes = false
-
-        """
-
-        regex = re.compile(
-            '.*(.*vote.*for|^vote|^count$|total_votes|total.*votes).*',
-            re.IGNORECASE)
-
-        return filter(lambda x: regex.search(x), header)[0]
-
-
-CM = ColumnMatch()
-
-
-class NormalizeRaces:
-
-    """ Normalizes races per 'target_offices' """
-
-    @classmethod
-    def _is_match(cls, string):
-        """
-        Would appear to return a boolean, but returns the normalized
-        race result as per `target_offices`.
-
-        Although we should not provide 'N/A' in places where we don't have
-        valid data (e.g. if no party is stated, we simply don't provide the
-        party value instead of providing 'N/A' or a blank value), returning
-        'N/A' here will result in us skipping the row, since this class is
-        and only should be used *only* in the `self._skip_row` methods.
-
-        Returning anything other than one of the values in `target_offices`
-        will result in the row being skipped. Since 'N/A' isn't in
-        `target_offices`, we're fine.
-
-        """
-
-        presidential_regex = re.compile('president', re.IGNORECASE)
-        senate_regex = re.compile('(senate|senator)', re.IGNORECASE)
-        house_regex = re.compile('(house|representative)', re.IGNORECASE)
-        governor_regex = re.compile('governor', re.IGNORECASE)
-        treasurer_regex = re.compile('treasurer', re.IGNORECASE)
-        auditor_regex = re.compile('auditor', re.IGNORECASE)
-        sos_regex = re.compile('secretary', re.IGNORECASE)
-        lt_gov_regex = re.compile(r'(lt|Lt|Lieutenant)', re.IGNORECASE)
-        ospi_regex = re.compile(
-            'superintendent of public instruction',
-            re.IGNORECASE)
-        ag_regex = re.compile('attorney general', re.IGNORECASE)
-        wcpl_regex = re.compile('commissioner of public lands', re.IGNORECASE)
-        local_regex = re.compile(
-            r'(\bState\b|Washington|Washington\s+State|Local|'
-            'Legislative District)',
-            re.IGNORECASE)
-        national_regex = re.compile(
-            r'(U\.S\.|^US$|Congressional|National|United\s+States|U\.\s+S\.\s+)',
-            re.IGNORECASE)
-
-        """
-        The following chained if statements are ordered by the most frequent
-        occurrences. As of August 26th, 2014 these are the results from
-        running `egrep -rohi 'regex' . | wc -l`
-
-        I've placed Lt. Governor's regex ahead of Governor's in order to
-        be able to get the Lt. Governor's values and keep a simplified regex.
-
-        These aren't exact, but give are a rough assessment of the number
-        of occurrences.
-
-        National:  935375
-        Local:     953031
-
-        *House:    417020
-        Governor:  319836
-        CPL:       344795
-        *Senate:   186247
-        Lt. Gov.:  161537
-        SPI:       128783
-        SoS:       122404
-        Auditor:   103920
-        AG:        85059
-        President: 75183
-
-        """
-
-        if re.search(house_regex, string):
-            if re.search(national_regex, string):
-                return 'U.S. Representative'
-            elif re.search(local_regex, string):
-                return 'State Representative'
-            else:
-                return 'N/A'
-        elif re.search(governor_regex, string):
-            return 'Governor'
-        elif re.search(wcpl_regex, string):
-            return 'Commissioner of Public Lands'
-        elif re.search(senate_regex, string):
-            if re.search(national_regex, string):
-                return 'U.S. Senator'
-            elif re.search(local_regex, string):
-                return 'State Senator'
-            else:
-                return 'N/A'
-        elif re.search(lt_gov_regex, string):
-            return 'Lt. Governor'
-        elif re.search(ospi_regex, string):
-            return 'Superintendent of Public Instruction'
-        elif re.search(sos_regex, string):
-            return 'Secretary of State'
-        elif re.search(treasurer_regex, string):
-            return 'Treasurer'
-        elif re.search(auditor_regex, string):
-            return 'Auditor'
-        elif re.search(ag_regex, string):
-            return 'Attorney General'
-        elif re.search(presidential_regex, string):
-            return 'President'
-        else:
-            return 'N/A'
-
-NR = NormalizeRaces()
-
-
 class SkipLoader(WABaseLoader):
 
     """
@@ -539,7 +536,7 @@ class SkipLoader(WABaseLoader):
     """
 
     def load(self):
-        logger.error('\tNothing we can do with this file')
+        logger.error('\tNothing we can do with {0}'.format(self.source))
         pass
 
 
@@ -547,7 +544,7 @@ class WALoaderPrecincts(WABaseLoader):
 
     """
     Parse Washington election results for all precinct files.
-    This class uses the ColumnMatch class to normalize the column
+    This class uses the Normalize class to normalize the column
     headers.
 
     """
@@ -575,12 +572,14 @@ class WALoaderPrecincts(WABaseLoader):
             # a method call for each line in the file
 
             self.header = [x.replace('"', '') for x in reader.fieldnames]
-            self.votes_index = CM._normalize_votes(self.header)
-            self.contest_index = CM._normalize_contest(self.header)
-            self.candidate_index = CM._normalize_candidate(self.header)
-            self.precinct_index = CM._normalize_precinct(self.header)
+            self.votes_index = normalize_votes(self.header)
+            self.contest_index = normalize_contest(self.header)
+            self.candidate_index = normalize_candidate(
+                self.header)
+            self.precinct_index = normalize_precinct(
+                self.header)
             try:
-                self.party_index = CM._normalize_party(self.header)
+                self.party_index = normalize_party(self.header)
             except IndexError:
                 pass
 
@@ -606,11 +605,10 @@ class WALoaderPrecincts(WABaseLoader):
                     try:
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
-                                NR._is_match(
-                                        row[self.contest_index]), [
-                                    int(s) for s in row[
-                                        self.contest_index].strip()
-                                    if s.isdigit()][0])})
+                                normalize_races(row[self.contest_index]),
+                                [int(s) for s in row[
+                                    self.contest_index].strip()
+                                 if s.isdigit()][0])})
                     except IndexError:
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
@@ -633,7 +631,7 @@ class WALoaderPrecincts(WABaseLoader):
             logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return NR._is_match(
+        return normalize_races(
             row[self.contest_index]) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
@@ -646,8 +644,7 @@ class WALoaderPrecincts(WABaseLoader):
         full_name = row[self.candidate_index].strip()
 
         return {
-            'full_name': full_name,
-            'name_slug': slugify(full_name, substitute='-')
+            'full_name': full_name
         }
 
 """
@@ -678,7 +675,7 @@ class WALoaderPre2007(WABaseLoader):
             self.header = [x.replace('"', '') for x in reader.fieldnames]
 
             try:
-                self.contest_index = CM._normalize_contest(self.header)
+                self.contest_index = normalize_contest(self.header)
             except IndexError:
                 pass
 
@@ -693,8 +690,7 @@ class WALoaderPre2007(WABaseLoader):
             logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return NR._is_match(
-            row['officename']) not in self.target_offices
+        return normalize_races(row['officename']) not in self.target_offices
 
     def _build_contest_kwargs(self, row, primary_type):
         """
@@ -703,7 +699,7 @@ class WALoaderPre2007(WABaseLoader):
         """
 
         kwargs = {
-            'office': NR._is_match(row['officename']),
+            'office': normalize_races(row['officename']),
             'primary_party': row['partycode'].strip()
         }
         return kwargs
@@ -714,13 +710,12 @@ class WALoaderPre2007(WABaseLoader):
 
         """
 
-        full_name = [row['firstname'].strip(), row['lastname'].strip()]
-        full_name = ' '.join(full_name).strip()
+        family_name = row['lastname'].strip()
+        given_name = row['firstname'].strip()
 
-        slug = slugify(full_name, substitute='-')
         kwargs = {
-            'full_name': full_name,
-            'name_slug': slug,
+            'family_name': family_name,
+            'given_name': given_name
         }
 
         return kwargs
@@ -758,9 +753,9 @@ class WALoaderPre2007(WABaseLoader):
         try:
             kwargs.update({
                 'district': '{0} {1}'.format(
-                    NR._is_match(row[self.contest_index]), [
-                            int(s) for s in row[self.contest_index].strip()
-                            if s.isdigit()][0])})
+                    normalize_races(row[self.contest_index]),
+                    [int(s) for s in row[self.contest_index].strip()
+                     if s.isdigit()][0])})
         except (IndexError, KeyError):
             pass
         return RawResult(**kwargs)
@@ -803,11 +798,10 @@ class WALoaderPost2007(WABaseLoader):
                     try:
                         rr_kwargs.update({
                             'district': '{0} {1}'.format(
-                                NR._is_match(
-                                    row[self.contest_index]),
+                                normalize_races(row[self.contest_index]),
                                 [int(s) for s in row[
                                     self.contest_index].strip()
-                                    if s.isdigit()][0])})
+                                 if s.isdigit()][0])})
                     except (IndexError, KeyError):
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
@@ -828,7 +822,7 @@ class WALoaderPost2007(WABaseLoader):
             logger.error('\tNo raw results loaded')
 
     def _skip_row(self, row):
-        return NR._is_match(row['Race']) not in self.target_offices
+        return normalize_races(row['Race']) not in self.target_offices
 
     def _build_contest_kwargs(self, row):
         """
@@ -857,10 +851,8 @@ class WALoaderPost2007(WABaseLoader):
 
     def _build_candidate_kwargs(self, row):
         full_name = row['Candidate'].strip()
-        slug = slugify(full_name, substitute='-')
         return {
-            'full_name': full_name,
-            'name_slug': slug
+            'full_name': full_name
         }
 
 
@@ -910,31 +902,25 @@ class WALoaderExcel(WABaseLoader):
         """
 
         self.header = sheet.row_values(0)
-        self.votes_index = self.header.index(
-            ''.join(
-                CM._normalize_votes(
-                    self.header)))
-        self.contest_index = self.header.index(
-            ''.join(
-                CM._normalize_contest(
-                    self.header)))
-        self.candidate_index = self.header.index(
-            ''.join(
-                CM._normalize_candidate(
-                    self.header)))
-        self.precinct_index = self.header.index(
-            ''.join(
-                CM._normalize_precinct(
-                    self.header)))
-        self.jurisdiction_index = self.header.index(
-            ''.join(
-                CM._normalize_precinct(
-                    self.header)))
+        self.votes_index = normalize_index(
+            self.header,
+            normalize_votes)
+        self.contest_index = normalize_index(
+            self.header,
+            normalize_contest)
+        self.candidate_index = normalize_index(
+            self.header,
+            normalize_candidate)
+        self.precinct_index = normalize_index(
+            self.header,
+            normalize_precinct)
+        self.jurisdiction_index = normalize_index(
+            self.header,
+            normalize_precinct)
         try:
-            self.party_index = self.header.index(
-                ''.join(
-                    CM._normalize_party(
-                        self.header)))
+            self.party_index = normalize_index(
+                self.header,
+                normalize_precinct)
         except IndexError:
             pass
 
@@ -973,7 +959,7 @@ class WALoaderExcel(WABaseLoader):
         RawResult.objects.insert(results)
 
     def _skip_row(self, row, sheet):
-        return NR._is_match(
+        return normalize_races(
             sheet.cell(
                 rowx=row,
                 colx=self.contest_index).value.strip()) not in self.target_offices
@@ -998,9 +984,7 @@ class WALoaderExcel(WABaseLoader):
 
     def _build_candidate_kwargs(self, row, sheet):
         full_name = sheet.cell(rowx=row, colx=self.candidate_index).value
-        slug = slugify(full_name, substitute='-')
 
         return {
-            'full_name': full_name,
-            'name_slug': slug
+            'full_name': full_name
         }
