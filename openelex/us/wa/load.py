@@ -868,7 +868,6 @@ class WALoaderExcel(WABaseLoader):
     def load(self):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
         self._common_kwargs = self._build_common_election_kwargs()
-        district_flag = 0
 
         # Set the correct reporting level based on file name
         if 'precinct' in self.mapping['generated_filename']:
@@ -952,19 +951,6 @@ class WALoaderExcel(WABaseLoader):
                     """
                     # logger.info('No party')
                     pass
-                # Get district
-                try:
-                    rr_kwargs.update({
-                        'district': '{0} {1}'.format(
-                            normalize_races(row[self.contest_index]),
-                            [int(s) for s in row[
-                                self.contest_index].strip()
-                             if s.isdigit()][0])})
-                except (IndexError, KeyError):
-                    district_flag = 1
-                results.append(RawResult(**rr_kwargs))
-            if 0 is not district_flag:
-                logger.info('Some rows did not contain district info')
         RawResult.objects.insert(results)
 
     def _skip_row(self, row, sheet):
