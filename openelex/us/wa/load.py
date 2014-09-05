@@ -29,8 +29,8 @@ TO DO:
 
 NOTES:
 
-1.) Loader uses two normalizing classes that normalize parts of the data.
-    In particular, we use Normalize to normalize the headers of different
+1.) Loader uses a few normalizing functions that normalize parts of the data.
+    In particular, we use some normalize_* to normalize the headers of different
     files whose headers are generally the same, but differ in the wording.
 
     For example, some files will have all the same fields, but name them
@@ -39,7 +39,7 @@ NOTES:
     "candidate name". Because of this, we use regex to test the header row
     to find the correct field.
 
-    Normalize takes the race data and then matches it against
+    normalize_* also takes the race data and then matches it against
     `target_offices`, found in the WABaseLoader class. We do this because
     Washington will preface some of the positions (e.g. Governor) with
     "Washington State", and some files call the lower chamber "Representative"
@@ -381,9 +381,6 @@ def normalize_index(header, method):
 def normalize_races(string):
     """
     Normalizes races per 'target_offices'
-
-    Would appear to return a boolean, but returns the normalized
-    race result as per `target_offices`.
 
     Although we should not provide 'N/A' in places where we don't have
     valid data (e.g. if no party is stated, we simply don't provide the
@@ -871,6 +868,7 @@ class WALoaderExcel(WABaseLoader):
     def load(self):
         xlsfile = xlrd.open_workbook(self._xls_file_handle())
         self._common_kwargs = self._build_common_election_kwargs()
+        district_flag = 0
 
         # Set the correct reporting level based on file name
         if 'precinct' in self.mapping['generated_filename']:
@@ -954,8 +952,19 @@ class WALoaderExcel(WABaseLoader):
                     """
                     # logger.info('No party')
                     pass
-
+                # Get district
+                try:
+                    rr_kwargs.update({
+                        'district': '{0} {1}'.format(
+                            normalize_races(row[self.contest_index]),
+                            [int(s) for s in row[
+                                self.contest_index].strip()
+                             if s.isdigit()][0])})
+                except (IndexError, KeyError):
+                    district_flag = 1
                 results.append(RawResult(**rr_kwargs))
+            if 0 is not district_flag:
+                logger.info('Some rows did not contain district info')
         RawResult.objects.insert(results)
 
     def _skip_row(self, row, sheet):
@@ -980,7 +989,8 @@ class WALoaderExcel(WABaseLoader):
             'office': sheet.cell(
                 rowx=row,
                 colx=self.contest_index).value.strip(),
-            'jurisdiction': jurisdiction}
+            'jurisdiction': jurisdiction
+        }
 
     def _build_candidate_kwargs(self, row, sheet):
         full_name = sheet.cell(rowx=row, colx=self.candidate_index).value
