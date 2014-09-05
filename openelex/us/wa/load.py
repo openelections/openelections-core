@@ -225,7 +225,7 @@ class LoadResults(object):
 """
 New methods to normalize headers should follow this structure:
 
-    def _*(cls, header):
+    def _*(header):
 
 
         # Some sort of examples of what words the regex tests for
@@ -275,7 +275,7 @@ matches from testing the .csv file's header field.
 """
 
 
-def normalize_party(cls, header):
+def normalize_party(header):
     """
     Regex examples:
 
@@ -298,7 +298,7 @@ def normalize_party(cls, header):
     return filter(lambda x: regex.search(x), header)[0]
 
 
-def normalize_candidate(cls, header):
+def normalize_candidate(header):
     """
     Regex examples:
 
@@ -316,7 +316,7 @@ def normalize_candidate(cls, header):
     return filter(lambda x: regex.search(x), header)[0]
 
 
-def normalize_contest(cls, header):
+def normalize_contest(header):
     """
     Regex examples:
 
@@ -334,7 +334,7 @@ def normalize_contest(cls, header):
     return filter(lambda x: regex.search(x), header)[0]
 
 
-def normalize_precinct(cls, header):
+def normalize_precinct(header):
     """
     Regex examples:
 
@@ -349,7 +349,7 @@ def normalize_precinct(cls, header):
     return filter(lambda x: regex.search(x), header)[0]
 
 
-def normalize_votes(cls, header):
+def normalize_votes(header):
     """
     Regex examples:
 
@@ -367,7 +367,7 @@ def normalize_votes(cls, header):
     return filter(lambda x: regex.search(x), header)[0]
 
 
-def normalize_index(cls, header, method):
+def normalize_index(header, method):
     """
     Equivalent to:
 
@@ -378,7 +378,7 @@ def normalize_index(cls, header, method):
     return header.index(''.join(method(header)))
 
 
-def normalize_races(cls, string):
+def normalize_races(string):
     """
     Normalizes races per 'target_offices'
 
@@ -801,7 +801,7 @@ class WALoaderPost2007(WABaseLoader):
                                 normalize_races(row[self.contest_index]),
                                 [int(s) for s in row[
                                     self.contest_index].strip()
-                                    if s.isdigit()][0])})
+                                 if s.isdigit()][0])})
                     except (IndexError, KeyError):
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
