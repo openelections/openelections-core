@@ -63,7 +63,7 @@ class WVBaseLoader(BaseLoader):
 
 class WVLoader(WVBaseLoader):
     """
-    Parse West Virginia election results for all elections after 2011.
+    Parse West Virginia election results for all elections after 2006.
 
     """
     def load(self):
@@ -123,8 +123,7 @@ class WVLoader(WVBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
-            'ocd_id': "{}/precinct:{}".format(county_ocd_id,
-                ocd_type_id(precinct)),
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['PartyName'].strip(),
             'votes': self._votes(row['Votes']),
             'vote_breakdowns': {},
