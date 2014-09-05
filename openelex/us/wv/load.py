@@ -119,7 +119,7 @@ class WVLoader(WVBaseLoader):
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
         precinct = str(row['Precinct'])
-        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'] == row['CountyName']][0]['ocd_id']
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['CountyName'].upper()][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
