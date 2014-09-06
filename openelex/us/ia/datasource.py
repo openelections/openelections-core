@@ -41,16 +41,12 @@ class Datasource(BaseDatasource):
                 # the direct links attribute of the election
                 meta_entries.extend(self._direct_links_metadata(election))
 
-            if slug == 'ia-2006-11-07-general':
-                meta_entries.extend(self._build_metadata_2006_general(election))
-            elif slug == 'ia-2010-06-08-primary':
-                meta_entries.extend(self._build_metadata_2010_primary(election))
-            elif slug == 'ia-2010-11-02-general':
-                meta_entries.extend(self._build_metadata_2010_general(election))
-            elif slug == 'ia-2012-06-05-primary':
-                meta_entries.extend(self._build_metadata_2012_primary(election))
-            elif slug == 'ia-2012-11-06-general':
-                meta_entries.extend(self._build_metadata_2012_general(election))
+            # Regular primary and general elections starting in 2006 have
+            # precinct-level Excel results
+            if (int(year) >= 2006 and
+                  election['race_type'] in ('primary','general') and
+                  not election['special']):
+                meta_entries.extend(self._precinct_xls_metadata(election))
 
         return meta_entries
 
@@ -70,6 +66,8 @@ class Datasource(BaseDatasource):
                 'office': path['office'],
                 'office_district': path['district'],
             }
+            if path['jurisdiction']:
+                filename_kwargs['jurisdiction'] = path['jurisdiction']
             meta_entries.append({
                 'generated_filename': self._standardized_filename(election,
                     **filename_kwargs),
@@ -127,6 +125,7 @@ class Datasource(BaseDatasource):
         meta_entries = []
         year = election['start_date'].split('-')[0]
         base_url = self._precinct_xls_base_url(election)
+        extension = self._precinct_xls_extension(election)
 
         if year == '2006':
             name_suffix = "%20County"
@@ -134,11 +133,12 @@ class Datasource(BaseDatasource):
             name_suffix = ""
 
         for county in self._counties():
-            raw_filename = "{}{}.xls".format(county['name'], name_suffix)
+            raw_filename = "{}{}.{}".format(county['name'], name_suffix,
+                extension)
             meta_entries.append({
                 "generated_filename": self._standardized_filename(election,
                     reporting_level='precinct', jurisdiction=county['name'],
-                    extension='.xls'),
+                    extension='.'+extension),
                 'raw_url': base_url + '/' + raw_filename,
                 'ocd_id': county['ocd_id'],
                 'name': county['name'], 
@@ -163,12 +163,22 @@ class Datasource(BaseDatasource):
 
         return '/'.join(bits)
 
-    def _build_metadata_2006_general(self, election):
-        return self._precinct_xls_metadata(election)
+    def _precinct_xls_extension(self, election):
+        """
+        Get the file extension for an election's precinct-level Excel files
+
+        Returns:
+            Either "xls" or "xlsx"
+
+        """
+        year = election['start_date'].split('-')[0]
+        if int(year) >= 2014:
+            return "xlsx"
+        else:
+            return "xls"
 
     def _build_metadata_2008_general(self, election):
-        meta_entries = self._precinct_xls_metadata(election)
-
+        meta_entries = []
         # In addition to the results in Excel format at 
         # http://sos.iowa.gov/elections/results/xls/2008/Lyon.xls
         # There are also precinct-level results in PDF format that include
@@ -187,15 +197,3 @@ class Datasource(BaseDatasource):
             })
 
         return meta_entries
-
-    def _build_metadata_2010_primary(self, election):
-        return self._precinct_xls_metadata(election)
-
-    def _build_metadata_2010_general(self, election):
-        return self._precinct_xls_metadata(election)
-
-    def _build_metadata_2012_primary(self, election):
-        return self._precinct_xls_metadata(election)
-
-    def _build_metadata_2012_general(self, election):
-        return self._precinct_xls_metadata(election)
