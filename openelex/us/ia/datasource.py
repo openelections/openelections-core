@@ -2,6 +2,7 @@ from urlparse import urlsplit
 import os.path
 
 from openelex.base.datasource import BaseDatasource
+from openelex.lib import build_github_url
 
 class Datasource(BaseDatasource):
     BASE_URL = 'http://sos.iowa.gov/elections'
@@ -13,19 +14,21 @@ class Datasource(BaseDatasource):
         return mappings
 
     def filename_url_pairs(self, year=None):
-        # TODO: Update once preprocessed data is available
-        return [(mapping['generated_filename'], mapping['raw_url']) 
-                for mapping in self.mappings(year)
-                if not mapping['raw_url'].endswith(".pdf")]
+        return [(mapping['generated_filename'], self._url_for_fetch(mapping))
+                for mapping in self.mappings(year)]
+
+    def _url_for_fetch(self, mapping):
+        try:
+            return mapping['pre_processed_url']
+        except KeyError: 
+            return mapping['raw_url']
 
     def unprocessed_filename_url_pairs(self, year=None):
-        # TODO: Update once preprocessed data is available 
-        return [(mapping['generated_filename'], mapping['raw_url'])
+        return [(mapping['generated_filename'].replace(".csv", ".pdf"), mapping['raw_url'])
                 for mapping in self.mappings(year)
-                if mapping['raw_url'].endswith(".pdf")]
+                if 'pre_processed_url' in mapping]
 
     def _build_metadata(self, year, elections):
-        # TODO: Update once preprocessed data is available 
         meta_entries = []
 
         for election in elections:
@@ -48,7 +51,20 @@ class Datasource(BaseDatasource):
                   not election['special']):
                 meta_entries.extend(self._precinct_xls_metadata(election))
 
-        return meta_entries
+        return self._add_preprocessed_urls(meta_entries)
+
+    def _add_preprocessed_urls(self, meta_entries):
+        new_entries = []
+        for meta_entry in meta_entries:
+            ext = self._filename_extension(meta_entry['raw_url'])
+            if ext == ".pdf":
+                meta_entry['generated_filename'] = meta_entry['generated_filename'].replace(".pdf", ".csv")
+                meta_entry['pre_processed_url'] = build_github_url(self.state,
+                    meta_entry['generated_filename'])
+               
+            new_entries.append(meta_entry)
+
+        return new_entries
 
     def _url_paths_metadata(self, election):
         meta_entries = []
