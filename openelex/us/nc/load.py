@@ -12,8 +12,8 @@ North Carolina elections have a mixture of CSV, tab-delimited text and Excel fil
 counties, and includes all contests in that county.
 
 Although the CSV files have a `district` column, the district information is contained in the `contest` column and needs to be parsed out. The 
-Excel files cover separate offices and have sheets for individual contests.
-
+Excel files cover separate offices and have sheets for individual contests. CSV files also have totals for one-stop, absentee, provisional and 
+transfer votes, which appear as "precincts" in the data.
 """
 
 class LoadResults(object):
@@ -86,31 +86,30 @@ class NCCsvLoader(NCBaseLoader):
                 # Skip non-target offices
                 if self._skip_row(row): 
                     continue
-                elif any(s in self.mapping['generated_filename'] for s in ['2008', '2010', '2011']):
-                    if row['Type'] == 'County':
-                        results.append(self._prep_county_result(row))
-                    else:
-                        continue
-                else:
-                    results.append(self._prep_precinct_result(row))
+                results.append(self._prep_precinct_result(row))
             RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        if any(o in row['contest'] for o in target_offices):
+        if any(o in row['contest'] for o in self.target_offices):
             return False
         else:
             return True
 
     def _build_contest_kwargs(self, row, primary_type):
+        if 'DISTRICT' in row['contest']:
+            office, district = row['contest'].split(' DISTRICT ')
+        else:
+            office = row['contest'].strip()
+            district = None
         kwargs = {
-            'office': row['OfficeDescription'].strip(),
-            'district': row['District'].strip(),
-            'primary_party': row['PartyName'].strip()
+            'office': office,
+            'district': district,
+            'primary_party': row['party'].strip()
         }
         return kwargs
 
     def _build_candidate_kwargs(self, row):
-        full_name = row['Name'].strip()
+        full_name = row['choice'].strip()
         slug = slugify(full_name, substitute='-')
         kwargs = {
             'full_name': full_name,
@@ -131,15 +130,15 @@ class NCCsvLoader(NCBaseLoader):
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
-        precinct = str(row['Precinct'])
-        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['CountyName'].upper()][0]['ocd_id']
+        precinct = str(row['precinct'])
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
-            'party': row['PartyName'].strip(),
-            'votes': self._votes(row['Votes']),
-            'vote_breakdowns': {},
+            'party': row['party'].strip(),
+            'votes': self._votes(row['total votes']),
+            'vote_breakdowns': { 'election_day': self._votes((row['Election Day'])), 'one_stop': self._votes(row['One Stop']), 'absentee_mail': self._votes(row['Absentee by Mail']), 'provisional': self._votes(row['Provisional'])},
         })
         return RawResult(**kwargs)
 
@@ -178,7 +177,7 @@ class NCCsvLoader(NCBaseLoader):
         return write_in
 
 
-class WVLoaderPre2008(WVBaseLoader):
+class WVLoaderPre2008(NCBaseLoader):
     """
     Loads West Virginia results for 2000-2006.
 
