@@ -1,3 +1,4 @@
+import getpass
 import glob
 import os.path
 import posixpath
@@ -7,6 +8,14 @@ from blinker import signal
 import github3
 
 from openelex import COUNTRY_DIR
+from openelex import settings
+
+try:
+    # Python 2
+    prompt = raw_input
+except NameError:
+    # Python 3
+    prompt = input
 
 RAW_PREFIX = 'raw'
 CLEAN_PREFIX = 'clean'
@@ -130,16 +139,14 @@ class BasePublisher(object):
         """
         raise NotImplemented("You must implement this method in a subclass")
 
+    def get_credentials(self):
+        pass
+
 
 class GitHubPublisher(BasePublisher):
     """
     Publisher that pushes files to GitHub pages
     """
-
-    def __init__(self, username, password):
-        self._username = username
-        self._password = password
-
     @classmethod
     def results_repo_name(cls, state):
         """
@@ -155,7 +162,9 @@ class GitHubPublisher(BasePublisher):
         return "openelections-results-{}".format(state.lower())
         
     def publish(self, state, datefilter=None, raw=False):
-        gh = github3.login(self._username, self._password)
+        username, password = self.get_credentials()
+        gh = github3.login(username, password,
+            two_factor_callback=self.prompt_two_factor_auth_code)
         repo = gh.repository("openelections", self.results_repo_name(state))
         for filename in self.get_filenames(state, datefilter, raw):
             self.publish_file(repo, filename)
@@ -229,6 +238,30 @@ class GitHubPublisher(BasePublisher):
                 return hsh.sha
         else:
             return None
+
+    def get_credentials(self):
+        try:
+            # Prefer the username and personal access token defined in 
+            # openelex.settings
+            username = settings.GITHUB_USERNAME
+            password = settings.GITHUB_ACCESS_TOKEN
+        except AttributeError:
+            # If the settings aren't defined prompt the user for their
+            # username and password.
+            username = prompt("GitHub username: ")
+            password = getpass.getpass("GitHub password: ")
+
+        return username, password
+
+    @classmethod
+    def prompt_two_factor_auth_code(cls):
+        code = ''
+        while not code:
+            # The user could accidentally press Enter before
+            # being ready,
+            # let's protect them from doing that.
+            code = prompt('Enter 2FA code: ')
+            return code
 
 
 def published_url(state, filename, raw=False):
