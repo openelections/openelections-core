@@ -25,9 +25,11 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2004', '2008', '2010', '2012']):
+        if any(s in election_id for s in ['20081104__nc__general__precinct', '2010', '2012']):
             loader = NCCsvLoader()
-        elif any(s in election_id for s in ['2002', '2006', '2000-11-07']):
+        elif '2004' in election_id:
+            loader = NCCsv2004Loader()
+        elif any(s in election_id for s in ['2002', '2006', '2000-11-07', '2008']):
             loader = NCTextLoader()
         else:
             loader = NCXlsLoader()
@@ -138,7 +140,7 @@ class NCCsvLoader(NCBaseLoader):
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['party'].strip(),
             'votes': self._votes(row['total votes']),
-            'vote_breakdowns': { 'election_day': self._votes((row['Election Day'])), 'one_stop': self._votes(row['One Stop']), 'absentee_mail': self._votes(row['Absentee by Mail']), 'provisional': self._votes(row['Provisional'])},
+            'vote_breakdowns': self._breakdowns(row, kwargs),
         })
         return RawResult(**kwargs)
 
@@ -168,6 +170,13 @@ class NCCsvLoader(NCBaseLoader):
             # Count'y convert value from string   
             return 0
 
+    def _breakdowns(self, row, kwargs):
+        if any(s in kwargs['election_id'] for s in ['2010', '2012']):
+            breakdows = { 'election_day': self._votes((row['Election Day'])), 'one_stop': self._votes(row['One Stop']), 'absentee_mail': self._votes(row['Absentee by Mail']), 'provisional': self._votes(row['Provisional'])}
+        else:
+            breakdows = { 'election_day': self._votes((row['Election Day'])), 'absentee_onestop': self._votes(row['Absentee / One Stop']), 'provisional': self._votes(row['Provisional'])}
+        return breakdows
+
     def _writein(self, row):
         # sometimes write-in field not present
         try:
@@ -177,15 +186,10 @@ class NCCsvLoader(NCBaseLoader):
         return write_in
 
 
-class WVLoaderPre2008(NCBaseLoader):
+class NCTextLoader(NCBaseLoader):
     """
-    Loads West Virginia results for 2000-2006.
+    Loads North Carolina results in tab-delimited format.
 
-    Format:
-
-    West Virginia has PDF files that have been converted to CSV files with office names that correspond
-    to those used for elections after 2006. Header rows are identical except for statewide offices that
-    do not contain districts.
     """
 
     def load(self):
