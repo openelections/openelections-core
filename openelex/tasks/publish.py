@@ -1,4 +1,3 @@
-import getpass
 
 from blinker import signal
 from invoke import task
@@ -41,7 +40,5 @@ def publish(state, datefilter=None, raw=False):
     pre_publish.connect(log_publish_started)
     post_publish = signal('post_publish')
     post_publish.connect(log_publish_finished)
-    username = raw_input("GitHub username: ")
-    password = getpass.getpass("GitHub password: ")
-    publisher = GitHubPublisher(username, password)
+    publisher = GitHubPublisher()
     publisher.publish(state, datefilter=datefilter, raw=raw)

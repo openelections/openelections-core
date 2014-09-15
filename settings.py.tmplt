@@ -4,6 +4,13 @@ from mongoengine import connect
 AWS_ACCESS_KEY_ID = ''
 AWS_SECRET_ACCESS_KEY =''
 
+# GitHub credentials for publishing baked results
+#GITHUB_USERNAME = ''
+# Generate a new personal access token for this application.
+# Instructions are at
+# https://help.github.com/articles/creating-an-access-token-for-command-line-use
+#GITHUB_ACCESS_TOKEN = ''
+
 MONGO = {
     'openelex': {
         'host': '127.0.0.1',

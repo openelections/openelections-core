@@ -124,13 +124,24 @@ You can also get help on particular commands, e.g. `invoke --help cache.clear`.
 
 #### Configuring services (optional)
 
-`openelex/settings.py` can be configured for MongoDB and AWS. You only need to set these configs if you plan to archive files on your own S3 account, or write data loaders.
+If you are going to load results, you need to configure MongoDB connections in
+`openelex/settings.py`.
+
+If you want to archive results files to your own S3 account or are a core
+contributor who needs to publish baked results to one of the GitHub repositories, you will need to define further settings.
 
 To configure S3 to cache your raw results, update these values in `openelex/settings.py`:
 
 ```python
 AWS_ACCESS_KEY_ID = ''
 AWS_SECRET_ACCESS_KEY =''
+```
+
+To set GitHub credentials, you must first create a [personal access token](https://help.github.com/articles/creating-an-access-token-for-command-line-use) and then uncomment and set these values in `openelex/settings.py`:
+
+```python
+GITHUB_USERNAME = ''
+GITHUB_ACCESS_TOKEN = ''
 ```
 
 #### Install MongoDB (optional)
