@@ -25,8 +25,10 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['20081104__nc__general__precinct', '2010', '2012']):
+        if any(s in election_id for s in ['nc-2008-11-04-general', '2010', '2012']):
             loader = NCCsvLoader()
+        elif election_id == 'nc-2008-05-06-primary':
+            loader = NCTsv2008Loader()
         elif '2004' in election_id:
             loader = NCCsv2004Loader()
         elif any(s in election_id for s in ['2002', '2006', '2000-11-07', '2008']):
@@ -73,6 +75,19 @@ class NCBaseLoader(BaseLoader):
         This should be implemented in subclasses.
         """
         return False
+
+    def _votes(self, val):
+        """
+        Returns cleaned version of votes or 0 if it's a non-numeric value.
+        """
+        if val.strip() == '':
+            return 0
+
+        try:
+            return int(float(val))
+        except ValueError:
+            # Count'y convert value from string   
+            return 0
 
 
 class NCCsvLoader(NCBaseLoader):
@@ -157,19 +172,6 @@ class NCCsvLoader(NCBaseLoader):
         })
         return RawResult(**kwargs)
 
-    def _votes(self, val):
-        """
-        Returns cleaned version of votes or 0 if it's a non-numeric value.
-        """
-        if val.strip() == '':
-            return 0
-
-        try:
-            return int(float(val))
-        except ValueError:
-            # Count'y convert value from string   
-            return 0
-
     def _breakdowns(self, row, kwargs):
         if any(s in kwargs['election_id'] for s in ['2010', '2012']):
             breakdows = { 'election_day': self._votes((row['Election Day'])), 'one_stop': self._votes(row['One Stop']), 'absentee_mail': self._votes(row['Absentee by Mail']), 'provisional': self._votes(row['Provisional'])}
@@ -185,6 +187,88 @@ class NCCsvLoader(NCBaseLoader):
             write_in = None
         return write_in
 
+class NCTsv2008Loader(NCBaseLoader):
+    """
+    Loads North Carolina 2008 primary tab-delimited results.
+    """
+
+    def load(self):
+        headers = [
+            'county',
+            'date',
+            'precinct',
+            'contest',
+            'choice',
+            'party',
+            'election_day',
+            'absentee',
+            'provisional',
+            'total_votes'
+        ]
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'precinct'
+        # Store result instances for bulk loading
+        results = []
+
+        with self._file_handle as csvfile:
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames = headers, encoding='latin-1')
+            for row in reader:
+                if self._skip_row(row):
+                    continue
+                results.append(self._prep_precinct_result(row))
+        RawResult.objects.insert(results)
+
+    def _skip_row(self, row):
+        if any(o in row['contest'] for o in self.target_offices):
+            return False
+        else:
+            return True
+
+    def _base_kwargs(self, row):
+        "Build base set of kwargs for RawResult"
+        # TODO: Can this just be called once?
+        kwargs = self._build_common_election_kwargs()
+        contest_kwargs = self._build_contest_kwargs(row)
+        candidate_kwargs = self._build_candidate_kwargs(row)
+        kwargs.update(contest_kwargs)
+        kwargs.update(candidate_kwargs)
+        return kwargs
+
+    def _build_contest_kwargs(self, row):
+        if 'DISTRICT' in row['contest']:
+            office = row['contest'].split(' DISTRICT ')[0]
+            district = row['contest'].split(' DISTRICT ')[1].split(' - ')[0]
+        else:
+            office = row['contest'].split(' - ')[0]
+            district = None
+        kwargs = {
+            'office': office,
+            'district': district,
+            'primary_party': row['party'].strip()
+        }
+        return kwargs
+
+    def _build_candidate_kwargs(self, row):
+        return {
+            'full_name': row['choice'].strip()
+        }
+
+    def _prep_precinct_result(self, row):
+        kwargs = self._base_kwargs(row)
+        precinct = str(row['precinct'])
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'precinct',
+            'jurisdiction': precinct,
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
+            'party': row['party'].strip(),
+            'votes': self._votes(row['total_votes']),
+            'vote_breakdowns': self._breakdowns(row, kwargs)
+        })
+        return RawResult(**kwargs)
+
+    def _breakdowns(self, row, kwargs):
+        return { 'election_day': self._votes(row['election_day']), 'absentee_mail': self._votes(row['absentee']), 'provisional': self._votes(row['provisional'])}
 
 class NCTextLoader(NCBaseLoader):
     """
