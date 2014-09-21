@@ -29,10 +29,8 @@ class LoadResults(object):
             loader = NCCsvLoader()
         elif election_id == 'nc-2008-05-06-primary':
             loader = NCTsv2008Loader()
-        elif '2004' in election_id:
-            loader = NCCsv2004Loader()
-        elif any(s in election_id for s in ['2002', '2006', '2000-11-07', '2008']):
-            loader = NCTsvLoader()
+        elif any(s in election_id for s in ['2004', '2006', '2000-11-07', '2008']):
+            loader = NCTextLoader()
         else:
             loader = NCXlsLoader()
         loader.run(mapping)
@@ -266,10 +264,10 @@ class NCTsv2008Loader(NCBaseLoader):
     def _breakdowns(self, row, kwargs):
         return { 'election_day': self._votes(row['election_day']), 'absentee_mail': self._votes(row['absentee']), 'provisional': self._votes(row['provisional'])}
 
-class NCTsvLoader(NCBaseLoader):
+class NCTextLoader(NCBaseLoader):
     """
-    Loads North Carolina results in tab-delimited format.
-
+    Loads North Carolina results in tab-delimited format (although 2004 are CSV, but same headers).
+    Absentee, provisional and 'transfer' vote totals are also included, but as "precincts" so need to be handled.
     """
 
     def load(self):
@@ -277,9 +275,11 @@ class NCTsvLoader(NCBaseLoader):
         self._common_kwargs['reporting_level'] = 'precinct'
         # Store result instances for bulk loading
         results = []
-
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, delimiter='\t', encoding='latin-1')
+            if '2004' in self.mapping['election']:
+                reader = unicodecsv.DictReader(csvfile, delimiter=',', encoding='latin-1')
+            else:
+                reader = unicodecsv.DictReader(csvfile, delimiter='\t', encoding='latin-1')
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -294,10 +294,10 @@ class NCTsvLoader(NCBaseLoader):
 
     def _build_contest_kwargs(self, row):
         if 'DISTRICT' in row['contest_name']:
-            office = row['contest_name'].split(' DISTRICT ')[0]
-            district = row['contest_name'].split(' DISTRICT ')[1].split(' - ')[0]
+            office = row['contest_name'].split(' DISTRICT ')[0].strip()
+            district = row['contest_name'].split(' DISTRICT ')[1].split(' - ')[0].strip()
         else:
-            office = row['contest_name'].split(' - ')[0]
+            office = row['contest_name'].split(' - ')[0].strip()
             district = None
         kwargs = {
             'office': office,
@@ -318,7 +318,7 @@ class NCTsvLoader(NCBaseLoader):
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
-        precinct = str(row['precinct'])
+        precinct = str(row['precinct']).strip()
         county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'precinct',
