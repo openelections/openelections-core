@@ -32,7 +32,7 @@ class LoadResults(object):
         elif '2004' in election_id:
             loader = NCCsv2004Loader()
         elif any(s in election_id for s in ['2002', '2006', '2000-11-07', '2008']):
-            loader = NCTextLoader()
+            loader = NCTsvLoader()
         else:
             loader = NCXlsLoader()
         loader.run(mapping)
@@ -59,6 +59,7 @@ class NCBaseLoader(BaseLoader):
         'NC TREASURER',
         'NC HOUSE OF REPRESENTATIVES',
         'NC STATE SENATE',
+        'NC STATE HOUSE'
     ])
 
     district_offices = set([
@@ -66,6 +67,7 @@ class NCBaseLoader(BaseLoader):
         'US CONGRESS',
         'NC HOUSE OF REPRESENTATIVES',
         'NC STATE SENATE',
+        'NC STATE HOUSE'
     ])
 
     def _skip_row(self, row):
@@ -89,6 +91,15 @@ class NCBaseLoader(BaseLoader):
             # Count'y convert value from string   
             return 0
 
+    def _base_kwargs(self, row):
+        "Build base set of kwargs for RawResult"
+        # TODO: Can this just be called once?
+        kwargs = self._build_common_election_kwargs()
+        contest_kwargs = self._build_contest_kwargs(row)
+        candidate_kwargs = self._build_candidate_kwargs(row)
+        kwargs.update(contest_kwargs)
+        kwargs.update(candidate_kwargs)
+        return kwargs
 
 class NCCsvLoader(NCBaseLoader):
     """
@@ -133,16 +144,6 @@ class NCCsvLoader(NCBaseLoader):
             #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
             'name_slug': slug,
         }
-        return kwargs
-
-    def _base_kwargs(self, row):
-        "Build base set of kwargs for RawResult"
-        # TODO: Can this just be called once?
-        kwargs = self._build_common_election_kwargs()
-        contest_kwargs = self._build_contest_kwargs(row, kwargs['primary_type'])
-        candidate_kwargs = self._build_candidate_kwargs(row)
-        kwargs.update(contest_kwargs)
-        kwargs.update(candidate_kwargs)
         return kwargs
 
     def _prep_precinct_result(self, row):
@@ -224,16 +225,6 @@ class NCTsv2008Loader(NCBaseLoader):
         else:
             return True
 
-    def _base_kwargs(self, row):
-        "Build base set of kwargs for RawResult"
-        # TODO: Can this just be called once?
-        kwargs = self._build_common_election_kwargs()
-        contest_kwargs = self._build_contest_kwargs(row)
-        candidate_kwargs = self._build_candidate_kwargs(row)
-        kwargs.update(contest_kwargs)
-        kwargs.update(candidate_kwargs)
-        return kwargs
-
     def _build_contest_kwargs(self, row):
         if 'DISTRICT' in row['contest']:
             office = row['contest'].split(' DISTRICT ')[0]
@@ -249,9 +240,14 @@ class NCTsv2008Loader(NCBaseLoader):
         return kwargs
 
     def _build_candidate_kwargs(self, row):
-        return {
-            'full_name': row['choice'].strip()
+        full_name = row['choice'].strip()
+        slug = slugify(full_name, substitute='-')
+        kwargs = {
+            'full_name': full_name,
+            #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
+            'name_slug': slug,
         }
+        return kwargs
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
@@ -270,68 +266,65 @@ class NCTsv2008Loader(NCBaseLoader):
     def _breakdowns(self, row, kwargs):
         return { 'election_day': self._votes(row['election_day']), 'absentee_mail': self._votes(row['absentee']), 'provisional': self._votes(row['provisional'])}
 
-class NCTextLoader(NCBaseLoader):
+class NCTsvLoader(NCBaseLoader):
     """
     Loads North Carolina results in tab-delimited format.
 
     """
 
     def load(self):
-        headers = [
-            'year',
-            'election',
-            'office',
-            'party',
-            'district',
-            'candidate',
-            'county',
-            'votes',
-            'winner'
-        ]
         self._common_kwargs = self._build_common_election_kwargs()
-        self._common_kwargs['reporting_level'] = 'county'
+        self._common_kwargs['reporting_level'] = 'precinct'
         # Store result instances for bulk loading
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t', encoding='latin-1')
             for row in reader:
                 if self._skip_row(row):
                     continue
-                if row['county'].strip() == 'Totals':
-                    total_votes = int(row['votes'].strip())
-                    contest_winner = row['winner'].strip()
-                else:
-                    rr_kwargs = self._common_kwargs.copy()
-                    rr_kwargs['primary_party'] = row['party'].strip()
-                    rr_kwargs.update(self._build_contest_kwargs(row))
-                    rr_kwargs.update(self._build_candidate_kwargs(row))
-                    jurisdiction = row['county'].strip()
-                    rr_kwargs.update({
-                        'party': row['party'].strip(),
-                        'jurisdiction': jurisdiction,
-                        'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
-                            ocd_type_id(jurisdiction)),
-                        'office': row['office'].strip(),
-                        'district': row['district'].strip(),
-                        'votes': int(row['votes'].strip()),
-                        'winner': row['winner'].strip(),
-                        'total_votes': total_votes,
-                        'contest_winner': contest_winner
-                    })
-                    results.append(RawResult(**rr_kwargs))
+                results.append(self._prep_precinct_result(row))
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        return row['office'].strip() not in self.target_offices
+        if any(o in row['contest_name'] for o in self.target_offices):
+            return False
+        else:
+            return True
 
     def _build_contest_kwargs(self, row):
-        return {
-            'office': row['office'].strip(),
-            'district': row['district'].strip(),
+        if 'DISTRICT' in row['contest_name']:
+            office = row['contest_name'].split(' DISTRICT ')[0]
+            district = row['contest_name'].split(' DISTRICT ')[1].split(' - ')[0]
+        else:
+            office = row['contest_name'].split(' - ')[0]
+            district = None
+        kwargs = {
+            'office': office,
+            'district': district,
+            'primary_party': row['party_cd'].strip()
         }
+        return kwargs
 
     def _build_candidate_kwargs(self, row):
-        return {
-            'full_name': row['candidate'].strip()
+        full_name = row['name_on_ballot'].strip()
+        slug = slugify(full_name, substitute='-')
+        kwargs = {
+            'full_name': full_name,
+            #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
+            'name_slug': slug,
         }
+        return kwargs
+
+    def _prep_precinct_result(self, row):
+        kwargs = self._base_kwargs(row)
+        precinct = str(row['precinct'])
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'precinct',
+            'jurisdiction': precinct,
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
+            'party': row['party_cd'].strip(),
+            'votes': self._votes(row['ballot_count'])
+        })
+        return RawResult(**kwargs)
