@@ -56,7 +56,7 @@ class Datasource(BaseDatasource):
             else:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    if result['date'] in ('2000-11-07', '2002-11-05', '2002-09-10', '2006-09-12', '2006-11-07', '2006-05-30', '2008-05-06'):
+                    if result['date'] in ('2000-11-07', '2002-11-05', '2002-09-10', '2006-05-02', '2006-09-12', '2006-11-07', '2006-05-30', '2008-05-06'):
                         format = '.txt'
                     else:
                         format = '.csv'
