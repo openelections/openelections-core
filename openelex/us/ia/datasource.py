@@ -68,7 +68,8 @@ class Datasource(BaseDatasource):
 
     def _url_paths_metadata(self, election):
         meta_entries = []
-        url_paths = self._url_paths_for_election(election['slug'])
+        url_paths = [up for up in self._url_paths_for_election(election['slug'])
+                     if not up['skip_loading'].lower() == "true"]
 
         for path in url_paths:
             winners_file = path['winners'].lower() == "true"
