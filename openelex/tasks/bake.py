@@ -241,12 +241,52 @@ def statuses_for_state(state):
             'gov': election['gov'],
             'state_officers': election['state_officers'],
             'state_leg': election['state_leg'],
-            'state_level_status': election['state_level_status'],
-            'county_level_status': election['county_level_status'],
-            'precinct_level_status': election['precinct_level_status'],
-            'cong_dist_level_status': election['cong_dist_level_status'],
-            'state_leg_level_status': election['state_leg_level_status'],
+            'state_level_status': reporting_level_status(election, 'state'),
+            'county_level_status': reporting_level_status(election, 'county'), 
+            'precinct_level_status': reporting_level_status(election,
+                'precinct'),
+            'cong_dist_level_status': reporting_level_status(election,
+                'cong_dist'),
+            'state_leg_level_status': reporting_level_status(election,
+                'state_leg'),
         }
         statuses.append(status)
 
     return statuses
+
+def reporting_level_status(election, reporting_level):
+    """
+    Get the availability of results for a reporting level
+
+    This uses provisional logic to prepare the metadata for the website
+    launch for ONA 2014.  It is designed to show the likely availability of
+    results with a minimum of backfilling the '{reporting_level}_level_status'.
+    As we progress, we should just use the value of the 
+    '{reporting_level}_level_status' fields.
+
+    Args:
+        election (dict): Election dict as returned by ``get_elections()``
+        reporting_level (string): Reporting level ID.  Should be "state",
+            "county", "precinct", "cong_dist" or "state_leg"
+
+    Returns:
+        Slug string representing the availability of results at this reporting
+        level.  See hub.models.Election.LEVEL_STATUS_CHOICES in the dashboard
+        app (https://github.com/openelections/dashboard) for values.
+
+    """
+    level_status = election[reporting_level + '_level_status']
+    levels = ('county', 'precinct', 'cong_dist', 'state_leg')
+
+    for level in levels:
+        # If any of the level status fields are set to a non-default value 
+        # (None or an empty  string). Just return this value.
+        if election[level + '_level_status']:
+            return level_status
+
+    # The level status has not been explicitly set.  Look at the 
+    # {reporting_level}_level field
+    if election[reporting_level + '_level']:
+        return 'yes'
+    else:
+        return 'no'
