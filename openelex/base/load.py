@@ -100,7 +100,8 @@ class BaseLoader(StateBase):
     def _file_handle(self):
         return open(join(self.cache.abspath, self.source), 'rU')
 
-    def _xls_file_handle(self):
+    @property
+    def _xls_file_path(self):
         return join(self.cache.abspath, self.source)
 
     def _build_common_election_kwargs(self):

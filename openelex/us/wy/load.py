@@ -99,13 +99,13 @@ class WYLoader(WYBaseLoader):
     """
     def load(self):
         year = int(re.search(r'\d{4}', self.election_id).group())
-        xlsfile = xlrd.open_workbook(self._xls_file_handle())
-        if 'primary' in self._xls_file_handle():
+        xlsfile = xlrd.open_workbook(self._xls_file_path)
+        if 'primary' in self._xls_file_path:
             primary = True
             if year == 2004:
                 party = None # get party from individual sheets
             else:
-                party = self._party_from_filehandle(self._xls_file_handle())
+                party = self._party_from_filepath(self._xls_file_path)
         else:
             primary = False
             party = None
@@ -185,8 +185,8 @@ class WYLoader(WYBaseLoader):
                 sheets = [xlsfile.sheet_by_name('Party_PbP_Candidates_Summary')]
         return sheets
 
-    def _party_from_filehandle(self, file):
-        return file.split("__")[2].title()
+    def _party_from_filepath(self, path):
+        return path.split("__")[2].title()
 
     def _skip_row(self, row):
         if row == []:
