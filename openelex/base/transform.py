@@ -65,13 +65,16 @@ class FunctionWrappingTransform(Transform):
 class Registry(StateBase):
 
     _registry = {}
+    _registry_raw = {}
 
-    def register(self, state, transform, validators=[]):
+    def register(self, state, transform, validators=[], raw=False):
+        registry = self._get_registry(raw)
+
         try:
-            state_xforms = self._registry[state]
+            state_xforms = registry[state]
         except KeyError:
-            self._registry[state] = OrderedDict()
-            state_xforms = self._registry[state]
+            registry[state] = OrderedDict()
+            state_xforms = registry[state]
 
         try:
             if issubclass(transform, Transform):
@@ -84,16 +87,25 @@ class Registry(StateBase):
         transform_obj.add_validation(*validators)
         state_xforms[transform_obj.name] = transform_obj 
 
-    def get(self, state, name):
+    def get(self, state, name, raw=False):
+        registry = self._get_registry(raw)
+
         try:
-            transform = self._registry[state][name]
+            transform = registry[state][name]
         except KeyError:
             err_msg = "Transform (%s) not registered for %s" % (name, state)
             raise KeyError(err_msg)
         return transform
 
-    def all(self, state):
-        return self._registry[state].values()
+    def all(self, state, raw=False):
+        registry = self._get_registry(raw)
+        return registry[state].values()
+
+    def _get_registry(self, raw=False):
+        if raw:
+            return self._registry_raw
+        else:
+            return self._registry
 
 
 # Global object for registering transform functions

@@ -22,3 +22,12 @@ class TestTransformRegistry(TestCase):
 
         transform()
         mock_transform.assert_called_once_with()
+
+    def test_register_raw(self):
+        mock_transform = Mock(return_value=None)
+        mock_transform.__name__ = 'mock_transform'
+
+        registry.register("XX", mock_transform, raw=True)
+        transform = registry.get("XX", "mock_transform", raw=True)
+        transform()
+        mock_transform.assert_called_once_with()

@@ -58,7 +58,21 @@ is used in results.
 * none_of_above - Results for this Candidate record represents aggregate
                   vote totals for an explicit vote for no person.
 
+"""
 
+VOTES_TYPE_CHOICES = (
+   '',
+   'absentee',
+   'provisional',
+   'absentee_provisional'
+   'over',
+   'under',
+   'straight_party',
+)
+"""
+Coded types of vote tallies, other than that can appear in source result 
+files when votes represent something other than the votes received by
+a candidate in a particular jurisdiction.
 """
 
 # Model mixins
@@ -129,8 +143,15 @@ class RawResult(TimestampMixin, DynamicDocument):
     jurisdiction = StringField(required=True, help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number."
             "Or default to state + office/district, if not present in data.")
     ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
-    # See https://github.com/openelections/core/issues/46
     votes = IntField(required=True, help_text="Raw vote count for this jurisdiction")
+    votes_type = StringField(choices=VOTES_TYPE_CHOICES,
+       help_text="If the votes field reflects votes other than the votes "
+       "cast for a candidate in a jurisdiction, such as "
+       "absentee or provisional votes, this field describes the type of "
+       "votes.  Otherwise, leave empty.")
+    # TODO: total_votes and vote_breakdowns can probably be deprecated now that
+    # we have the votes_type field.  Once loaders have been updated to reflect
+    # this, we should remove these fields
     total_votes = IntField(help_text="Total candidate votes contest-wide, if provided in raw results.")
     vote_breakdowns = DictField(help_text="Vote totals for election day (absentee, provisional, etc.), if provided in raw results")
     winner = StringField(help_text="Winner flag, if provided in raw results.")
