@@ -167,7 +167,7 @@ class PreprocessedResultsLoader(BaseLoader):
         kwargs.update(contest_kwargs)
         kwargs.update(candidate_kwargs)
         try:
-            kwargs['jurisdiction'] = self._clean_jurisdiction(row['jurisdiction'].strip())
+            kwargs['jurisdiction'] = row['jurisdiction'].strip()
 
         except KeyError:
             # Some statewide results, often special elections, don't have
@@ -184,22 +184,19 @@ class PreprocessedResultsLoader(BaseLoader):
 
         return kwargs
 
-    def _clean_jurisdiction(self, jurisdiction):
-        """Clean the jurisdiction field a bit"""
-        # TODO: Do this in a Raw Transform
-        # See https://github.com/openelections/core/issues/206
-        if jurisdiction == "VanBuren":
-            return "Van Buren"
-        else:
-            return jurisdiction
-
     def _prep_county_result(self, row):
         kwargs = self._base_kwargs(row)
         kwargs['reporting_level'] = 'county'
         # Use kwargs['jurisdiction'] instead of row['jurisdiction'] because
         # the value in the kwargs dict will already have been cleaned to
         # enable proper lookup.
-        kwargs['ocd_id'] = self._lookup_county_ocd_id(kwargs['jurisdiction'])
+        try:
+            kwargs['ocd_id'] = self._lookup_county_ocd_id(kwargs['jurisdiction'])
+        except KeyError:
+            # Some county names are mispelled, such as "Van Buren" County
+            # being mispelled "VanBuren" in the 2000-11-07 general election
+            # county-level results file.
+            pass
 
         return RawResult(**kwargs)
 
