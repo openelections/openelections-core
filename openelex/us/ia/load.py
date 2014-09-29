@@ -27,7 +27,7 @@ class LoadResults(object):
         '20020122__ia__special__general__state_house__28__county.csv',
         '20020219__ia__special__general__state_senate__39__county.csv',
         '20020312__ia__special__general__state_senate__10__state.csv',
-        '20021105__ia__general__precinct.csv', 
+        '20021105__ia__general__precinct.csv',
         '20030114__ia__special__general__state_senate__26__county.csv',
         '20030211__ia__special__general__state_house__62__county.csv',
         '20030805__ia__special__general__state_house__100__county.csv',
@@ -39,7 +39,6 @@ class LoadResults(object):
     def run(self, mapping):
         generated_filename = mapping['generated_filename']
 
-        print(generated_filename)
         if generated_filename in self.SKIP_FILES:
             loader = SkipLoader()
         elif ('precinct' in generated_filename and
@@ -50,9 +49,11 @@ class LoadResults(object):
 
         loader.run(mapping)
 
+
 class SkipLoader(object):
     def run(self, mapping):
         logging.warn("Skipping file {}".format(mapping['generated_filename']))
+
 
 class PreprocessedResultsLoader(BaseLoader):
     """
@@ -69,7 +70,7 @@ class PreprocessedResultsLoader(BaseLoader):
       ``candidate`` column.
     * Many results files contain racewide totals.  These will have a value of
       something like "Totals" in the jurisdiction field.
-    
+
     """
     datasource = Datasource()
 
@@ -110,7 +111,7 @@ class PreprocessedResultsLoader(BaseLoader):
             return row['jurisdiction'].strip().upper() in ["TOTALS", "TOTAL"]
         except KeyError:
             # No jurisdiction column means racewide result
-            return True 
+            return True
 
     def _build_contest_kwargs(self, row, primary_type):
         kwargs = {
@@ -138,7 +139,7 @@ class PreprocessedResultsLoader(BaseLoader):
         try:
             kwargs['full_name'] = row['candidate'].strip()
 
-            # As far as I can tell, there aren't any fields identifying a 
+            # As far as I can tell, there aren't any fields identifying a
             # candidate as a write-in candidate.  However, there are
             # pseudo-candidate tallies of the combined votes for all write-in
             # candidates.  I guess this should set the write_in flag on the
@@ -146,7 +147,7 @@ class PreprocessedResultsLoader(BaseLoader):
             if re.search(r'Write[- ]In', row['candidate']):
                 kwargs['write_in']  = True
         except KeyError:
-            # Some results files, such as the 2000-11-07 general election's 
+            # Some results files, such as the 2000-11-07 general election's
             # precinct-level results don't have candidates, only the party
             # of the candidate
             pass
@@ -167,7 +168,7 @@ class PreprocessedResultsLoader(BaseLoader):
         kwargs.update(candidate_kwargs)
         try:
             kwargs['jurisdiction'] = self._clean_jurisdiction(row['jurisdiction'].strip())
-            
+
         except KeyError:
             # Some statewide results, often special elections, don't have
             # jurisdiction fields
@@ -291,6 +292,9 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         'Governor and Lieutenant Governor|'
         'Secretary of State|Secretary of Agriculture|'
         'Treasurer of State|State Representative|State Senator|'
+                        # TODO: Create separate RawResult records for absentee
+                        # and provisional votes.
+                        # See https://github.com/openelections/core/issues/211
         'United States Representative|United States Senator|'
         'President/Vice President)'
         '(\s+District\s+(?P<district>\d+)|)')
@@ -310,13 +314,13 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
 
     def _results(self, mapping):
         results = []
-        county = mapping['name'] 
+        county = mapping['name']
         county_ocd_id = mapping['ocd_id']
         office = None
         district = None
         candidates_next = False
         base_kwargs = self._build_common_election_kwargs()
-        row_num = -1 
+        row_num = -1
 
         for row in self._rows():
             row_num += 1
@@ -350,7 +354,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                 continue
 
             if cell0 and cell1 == '':
-                if row_num == 0: 
+                if row_num == 0:
                     # County header, skip it
                     continue
 
@@ -388,6 +392,9 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                     if cell0 == "Totals":
                         # Add absentee, provisional votes to vote breakdowns
                         # for county totals
+                        # TODO: Create separate RawResult records for absentee
+                        # and provisional votes.
+                        # See https://github.com/openelections/core/issues/211
                         row_results = self._add_vote_breakdowns(row_results,
                             absentee, provisional)
 
@@ -439,7 +446,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         i = 1
         jurisdiction = row[0]
         if jurisdiction == "Totals":
-            # Total of all precincts is a county-level result 
+            # Total of all precincts is a county-level result
             jurisdiction = county
             ocd_id = county_ocd_id
             reporting_level = 'county'
@@ -455,10 +462,10 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         for candidate in candidates:
             if candidate != "":
                 results.append(RawResult(
-                    full_name=candidate,    
+                    full_name=candidate,
                     votes=row[i],
                     jurisdiction=jurisdiction,
-                    ocd_id=ocd_id, 
+                    ocd_id=ocd_id,
                     reporting_level=reporting_level,
                     **common_kwargs
                 ))
@@ -500,18 +507,16 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
 
         for row in self._rows():
             cell0 = row[0].strip()
-            cell2 = row[2].strip()
+            cell3 = row[2].strip()
 
             if cell0 == "Race":
-                # Skip the first 3 columns, which are column headings,
-                # "Race", "County", "Precinct"
-                candidates = row[3:]
+                candidates = self._parse_candidates(row)
                 office = None
                 district = None
                 party = None
                 continue
             elif cell3 == "ABSENTEE":
-                absentee = row[3:]
+                absentee = self._parse_absentee(row, candidates)
                 continue
 
             # This is a results row
@@ -529,18 +534,23 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
                   'district': district,
                   'party': party,
                 }
+                if 'primary' in mapping['election']:
+                    common_kwargs['primary_party'] = party
                 common_kwargs.update(base_kwargs)
 
-
-            row_results = self._parse_results_row(row, candidates, county,
+            row_results = self._parse_result_row(row, candidates, county,
                 county_ocd_id, **common_kwargs)
 
             if cell0 == "Grand Totals":
+
+                # TODO: Create separate RawResult records for absentee
+                # and provisional votes.
+                # See https://github.com/openelections/core/issues/211
                 row_results = self._add_vote_breakdowns(row_results,
                     absentee)
 
             results.extend(row_results)
-        
+
         return results
 
     def _parse_office_party(self, val):
@@ -555,6 +565,55 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
 
         return office, district, party
 
-    def _parse_results_row(self, row, candidates, county, county_ocd_id,
-        **common_kwargs):
-        pass
+    def _parse_result_row(self, row, candidates, county, county_ocd_id,
+            **common_kwargs):
+        results = []
+        i = 0
+
+        if row[0] == "Grand Totals":
+            # Total of all precincts is a county-level result
+            jurisdiction = county
+            reporting_level = 'county'
+        else:
+            jurisdiction = row[2]
+            reporting_level = 'precinct'
+
+        # Iterate through the vote columns.  Skip the first 3 colums (Race,
+        # County, Precinct) and the last one (Final Data?)
+        for col in row[3:3 + len(candidates)]: 
+            results.append(RawResult(
+                jurisdiction=jurisdiction,
+                reporting_level=reporting_level,
+                full_name=candidates[i],
+                votes=col,
+                **common_kwargs
+            ))
+            i += 1
+
+        return results
+
+    def _parse_candidates(self, row):
+        candidates = []
+        for col in row[3:]:
+            col_clean = col.strip()
+            if col_clean == "Final Data?":
+                return candidates
+
+            candidates.append(col_clean)
+
+        raise AssertionError("Unexpected candidate columns")
+            
+    def _parse_absentee(self, row, candidates):
+        return row[3:3 + len(candidates)]
+
+    def _add_vote_breakdowns(self, results, absentee, provisional=None):
+        i = 0
+        for result in results:
+            result.vote_breakdowns = {}
+            result.vote_breakdowns['absentee'] = absentee[i]
+
+            if provisional:
+                result.vote_breakdowns['provisional'] =  provisional[i]
+            i += 1
+
+        return results

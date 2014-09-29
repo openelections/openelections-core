@@ -14,7 +14,7 @@ class LoaderPrepMixin(object):
         return next(m for m in mappings if m['generated_filename'] == filename)
 
     def _prep_loader_attrs(self, mapping):
-        # HACK: set loader's mapping attribute 
+        # HACK: set loader's mapping attribute
         # so we can test if loader._file_handle exists.  This
         # usually happens in the loader's run() method.
         self.loader.source = mapping['generated_filename']
@@ -46,7 +46,7 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
         ag_results = [r for r in self.loader._results(mapping)
                       if r.office == "Attorney General"]
         self.assertEqual(len(ag_results), 30)
-        
+
         result = ag_results[0]
         self.assertEqual(result.source, mapping['generated_filename'])
         self.assertEqual(result.election_id, mapping['election'])
@@ -73,19 +73,19 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
 
         # District attribute should get set on offices with
         # a district
-        result = next(r for r in self.loader._results(mapping) 
+        result = next(r for r in self.loader._results(mapping)
                       if r.office == "State Representative")
         self.assertTrue(re.match(r'\d+', result.district))
 
     def test_results_2008(self):
         filename = '20080603__ia__primary__adair__precinct.xls'
         mapping = self._get_mapping(filename)
-        # HACK: set loader's mapping attribute 
+        # HACK: set loader's mapping attribute
         # so we can test if loader._file_handle exists.  This
         # usually happens in the loader's run() method.
         self._prep_loader_attrs(mapping)
 
-        senate_results = [r for r in self.loader._results(mapping) 
+        senate_results = [r for r in self.loader._results(mapping)
                           if r.office == "United States Senator"]
         self.assertEqual(len(senate_results), 36)
         result = senate_results[0]
@@ -114,7 +114,7 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
                 expected_office = office
                 expected_district = None
 
-            office_out, district = self.loader._parse_office(office_in) 
+            office_out, district = self.loader._parse_office(office_in)
             self.assertEqual(office_out, expected_office)
             self.assertEqual(district, expected_district)
 
@@ -175,12 +175,13 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
         mapping = self._get_mapping(filename)
         self._prep_loader_attrs(mapping)
 
-        us_rep_dist_5_rep_results = [r for r in self.loader_results
+        results = self.loader._results(mapping)
+        us_rep_dist_5_rep_results = [r for r in results 
             if (r.office == "U.S. REPRESENTATIVE" and
-                r.district == "5" and 
+                r.district == "5" and
                 r.primary_party == "REPUBLICAN")]
 
-        self.assertEqual(len(us_rep_dist_5_rep_results), 35)
+        self.assertEqual(len(us_rep_dist_5_rep_results), 30)
         result = us_rep_dist_5_rep_results[0]
         self.assertEqual(result.source, mapping['generated_filename'])
         self.assertEqual(result.election_id, mapping['election'])
@@ -223,3 +224,103 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
             self.assertEqual(office, office_expected)
             self.assertEqual(district, district_expected)
             self.assertEqual(party, party_expected)
+
+    def test_parse_candidates(self):
+        row = [
+            'Race',
+            'County',
+            'Precinct',
+            'ROXANNE CONLIN',
+            'THOMAS L. FIEGEN',
+            'BOB KRAUSE',
+            'WRITE-IN',
+            'Over Votes',
+            'Under Votes',
+            'Precinct Totals',
+            'Final Data?',
+        ]
+        candidates = self.loader._parse_candidates(row)
+        self.assertEqual(candidates[0], 'ROXANNE CONLIN')
+        self.assertEqual(candidates[-1], 'Precinct Totals')
+
+    def test_parse_absentee(self):
+        candidates = [
+            'ROXANNE CONLIN',
+            'THOMAS L. FIEGEN',
+            'BOB KRAUSE',
+            'WRITE-IN',
+            'Over Votes',
+            'Under Votes',
+            'Precinct Totals',
+        ]
+        row = [
+            'U.S. SENATOR - DEMOCRATIC PARTY',
+            'Adair',
+            'ABSENTEE',
+            16,
+            0,
+            8,
+            0,
+            1,
+            1,
+            26,
+            'Y',
+        ]
+        absentee = self.loader._parse_absentee(row, candidates)
+        self.assertEqual(absentee[0], 16)
+        self.assertEqual(absentee[-1], 26)
+
+    def test_parse_result_row(self):
+        candidates = [
+            'ROXANNE CONLIN',
+            'THOMAS L. FIEGEN',
+            'BOB KRAUSE',
+            'WRITE-IN',
+            'Over Votes',
+            'Under Votes',
+            'Precinct Totals',
+        ]
+        row = [
+            'U.S. SENATOR - DEMOCRATIC PARTY',
+            'Adair',
+            '1 NW',
+            30,
+            6,
+            4,
+            0,
+            0,
+            1,
+            41,
+            'Y',
+        ]
+        county = "Adair"
+        county_ocd_id = "ocd-division/country:us/state:ia/county:adair"
+
+        results = self.loader._parse_result_row(row, candidates, county,
+            county_ocd_id)
+        self.assertEqual(len(results), len(candidates))
+        result = results[0]
+        self.assertEqual(result.jurisdiction, row[2])
+        self.assertEqual(result.full_name, candidates[0])
+        self.assertEqual(result.votes, row[3])
+
+        row = [
+            'Grand Totals',
+            '',
+            '',
+            132,
+            17,
+            25,
+            0,
+            1,
+            8,
+            183,
+            '',
+        ]
+        results = self.loader._parse_result_row(row, candidates, county,
+            county_ocd_id)
+        self.assertEqual(len(results), len(candidates))
+        result = results[0]
+        self.assertEqual(result.jurisdiction, "Adair")
+        self.assertEqual(result.full_name, candidates[0])
+        self.assertEqual(result.votes, row[3])
