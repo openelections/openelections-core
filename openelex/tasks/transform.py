@@ -6,9 +6,10 @@ from .utils import load_module, split_args
 from validate import run_validation
 
 @task(help={
-    'state':'(required) Two-letter state postal, e.g. NY',
+    'state': '(required) Two-letter state postal, e.g. NY',
+    'raw': 'List raw transforms',
 })
-def list(state):
+def list(state, raw=False):
     """
     Show available transformations on data loaded in MongoDB.
 
@@ -36,7 +37,7 @@ class IncludeExcludeError(Exception):
     pass
 
 
-def _select_transforms(state, include=None, exclude=None):
+def _select_transforms(state, include=None, exclude=None, raw=False):
     """
     Select transforms to run or reverse based on state and a list of transform
     names to include or exclude.
@@ -46,7 +47,7 @@ def _select_transforms(state, include=None, exclude=None):
 
     # Iniitialize transforms for the state in global registry
     state_mod = load_module(state, ['transform'])
-    transforms = state_mod.transform.registry.all(state)
+    transforms = state_mod.transform.registry.all(state, raw=raw)
     run_transforms = []
 
     # Filter transformations based in include/exclude flags
@@ -71,15 +72,16 @@ def _select_transforms(state, include=None, exclude=None):
     'include': 'Transforms to run (comma-separated list)',
     'exclude': 'Transforms to skip (comma-separated list)',
     'no_reverse': "Don't reverse before running this transform, even if it is set to auto-reverse", 
+    'raw': 'Transforms to run are raw transforms',
 })
-def run(state, include=None, exclude=None, no_reverse=False):
+def run(state, include=None, exclude=None, no_reverse=False, raw=False):
     """
     Run transformations on data loaded in MongoDB.
 
     State is required. Optionally provide to limit transforms that are performed.
     """
     try:
-        run_transforms = _select_transforms(state, include, exclude)
+        run_transforms = _select_transforms(state, include, exclude, raw)
     except IncludeExcludeError as e:
         sys.exit(e)
 
@@ -101,15 +103,16 @@ def run(state, include=None, exclude=None, no_reverse=False):
     'state': 'Two-letter state-abbreviation, e.g. NY',
     'include': 'Transforms to reverse (comma-separated list)',
     'exclude': 'Transforms to skip (comma-separated list)',
+    'raw': 'Transforms to reverse are raw transforms',
 })
-def reverse(state, include=None, exclude=None):
+def reverse(state, include=None, exclude=None, raw=False):
     """
     Reverse a previously run transformation.
 
     State is required. Optionally provide to limit transforms that are performed.
     """
     try:
-        run_transforms = _select_transforms(state, include, exclude)
+        run_transforms = _select_transforms(state, include, exclude, raw)
     except IncludeExcludeError as e:
         sys.exit(e)
 
