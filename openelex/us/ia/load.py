@@ -1,3 +1,4 @@
+import logging
 import re
 
 import unicodecsv
@@ -8,7 +9,6 @@ from openelex.lib.text import ocd_type_id
 from openelex.models import RawResult
 from openelex.us.ia.datasource import Datasource
 
-import logging
 
 class LoadResults(object):
     """
@@ -88,8 +88,26 @@ class PreprocessedResultsLoader(BaseLoader):
                     # racewide result
                     results.append(self._prep_racewide_result(row))
                 elif 'precinct' in self.source:
+                    # TODO: Handle absentee and provisional votes in these
+                    # results.  These are in:
+                    # 20001107__ia__general__precinct.csv
+                    # 20041102__ia__general__precinct.csv
                     results.append(self._prep_precinct_result(row))
                 elif 'county' in self.source:
+                    # TODO: Handle over and under votes in these results.
+                    # These are in:
+                    # 20061107__ia__general__county.csv
+                    # 20061107__ia__general__governor__county.csv
+                    # 20080603__ia__primary__county.csv
+                    # 20081104__ia__general__county.csv
+                    # 20090901__ia__special__general__state_house__90__county.csv
+                    # 20091124__ia__special__general__state_house__33__county.csv
+                    # 20101102__ia__general__county.csv
+                    # 20101102__ia__general__governor__county.csv
+                    # 20101102__ia__general__state_house.csv
+                    # 20101102__ia__general__state_senate.csv
+                    # 20101102__ia__general__us_house_of_representatives__county.csv
+                    # 20101102__ia__general__us_senate__county.csv
                     results.append(self._prep_county_result(row))
                 else:
                     raise Exception("Unknown reporting level for result")
@@ -151,7 +169,6 @@ class PreprocessedResultsLoader(BaseLoader):
             # precinct-level results don't have candidates, only the party
             # of the candidate
             pass
-
 
         return kwargs
 
@@ -277,7 +294,7 @@ class ExcelPrecinctResultLoader(BaseLoader):
         return workbook.sheets()[0]
 
     def _get_workbook(self):
-        return xlrd.open_workbook(self._xls_file_handle())
+        return xlrd.open_workbook(self._xls_file_path)
 
 
 class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
@@ -289,9 +306,6 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         'Governor and Lieutenant Governor|'
         'Secretary of State|Secretary of Agriculture|'
         'Treasurer of State|State Representative|State Senator|'
-                        # TODO: Create separate RawResult records for absentee
-                        # and provisional votes.
-                        # See https://github.com/openelections/core/issues/211
         'United States Representative|United States Senator|'
         'President/Vice President)'
         '(\s+District\s+(?P<district>\d+)|)')
@@ -307,6 +321,16 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
     values in the second through fifth rows.  They describe the order of
     the rows in the following sections.  We should ignore them when
     processing the results.
+    """
+
+    COUNTY_JURISDICTIONS = (
+        "Totals",
+        "ABSENTEE PRECINCT",
+        "PROVISIONAL PRECINCT",
+    )
+    """
+    Values in the jurisdiction column that indicate that the votes are a
+    total for all the county's precincts rather than a specific precinct.
     """
 
     def _results(self, mapping):
@@ -376,29 +400,11 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
             if cell0 != " "and cell1 != "":
                 # Result row
 
-                if cell0 == 'ABSENTEE PRECINCT':
-                    absentee = [row[i] for i in range(1, len(row))
-                                if candidates[i-1] != ""]
-                elif cell0 == 'PROVISIONAL PRECINCT':
-                    provisional = [row[i] for i in range(1, len(row))
-                                if candidates[i-1] != ""]
-                else:
-                    row_results = self._parse_result_row(row, candidates,
-                        county, county_ocd_id, **common_kwargs)
-
-                    if cell0 == "Totals":
-                        # Add absentee, provisional votes to vote breakdowns
-                        # for county totals
-                        # TODO: Create separate RawResult records for absentee
-                        # and provisional votes.
-                        # See https://github.com/openelections/core/issues/211
-                        row_results = self._add_vote_breakdowns(row_results,
-                            absentee, provisional)
-
-                    results.extend(row_results)
+                row_results = self._parse_result_row(row, candidates, county,
+                    county_ocd_id, **common_kwargs)
+                results.extend(row_results)
 
         return results
-
 
     def _parse_office(self, s):
         """
@@ -441,13 +447,14 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         results = []
         assert len(candidates) == len(row) - 1
         i = 1
-        jurisdiction = row[0]
-        if jurisdiction == "Totals":
+        raw_jurisdiction = row[0]
+        if raw_jurisdiction in self.COUNTY_JURISDICTIONS:
             # Total of all precincts is a county-level result
             jurisdiction = county
             ocd_id = county_ocd_id
             reporting_level = 'county'
         else:
+            jurisdiction = raw_jurisdiction
             try:
                 ocd_id = county_ocd_id + '/' + ocd_type_id(jurisdiction)
             except TypeError:
@@ -461,6 +468,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                 results.append(RawResult(
                     full_name=candidate,
                     votes=row[i],
+                    votes_type=self._votes_type(candidate, raw_jurisdiction),
                     jurisdiction=jurisdiction,
                     ocd_id=ocd_id,
                     reporting_level=reporting_level,
@@ -471,17 +479,25 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
 
         return results
 
-    def _add_vote_breakdowns(self, results, absentee, provisional):
-        i = 0
-        for result in results:
-            result.vote_breakdowns = {}
-            result.vote_breakdowns['absentee'] = absentee[i]
+    @classmethod
+    def _votes_type(cls, candidate, jurisdiction):
+        # TODO: Need to figure out how to handle results that are
+        # over/under votes for absentee ballots
+        # See
+        # https://github.com/openelections/core/issues/211#issuecomment-57338832
+        if "absentee" in jurisdiction.lower():
+            return 'absentee'
 
-            if provisional:
-                result.vote_breakdowns['provisional'] =  provisional[i]
-            i += 1
+        if "provisional" in jurisdiction.lower():
+            return 'provisional'
 
-        return results
+        if candidate == "OverVote":
+            return 'over'
+
+        if candidate == "UnderVote":
+            return 'under'
+
+        return ''
 
 
 class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
@@ -504,16 +520,12 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
 
         for row in self._rows():
             cell0 = row[0].strip()
-            cell3 = row[2].strip()
 
             if cell0 == "Race":
                 candidates = self._parse_candidates(row)
                 office = None
                 district = None
                 party = None
-                continue
-            elif cell3 == "ABSENTEE":
-                absentee = self._parse_absentee(row, candidates)
                 continue
 
             # This is a results row
@@ -538,14 +550,6 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
             row_results = self._parse_result_row(row, candidates, county,
                 county_ocd_id, **common_kwargs)
 
-            if cell0 == "Grand Totals":
-
-                # TODO: Create separate RawResult records for absentee
-                # and provisional votes.
-                # See https://github.com/openelections/core/issues/211
-                row_results = self._add_vote_breakdowns(row_results,
-                    absentee)
-
             results.extend(row_results)
 
         return results
@@ -567,22 +571,25 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
         results = []
         i = 0
 
-        if row[0] == "Grand Totals":
+        raw_jurisdiction = row[2]
+        if row[0] == "Grand Totals" or raw_jurisdiction == "ABSENTEE":
             # Total of all precincts is a county-level result
             jurisdiction = county
             reporting_level = 'county'
         else:
-            jurisdiction = row[2]
+            jurisdiction = raw_jurisdiction
             reporting_level = 'precinct'
 
         # Iterate through the vote columns.  Skip the first 3 colums (Race,
         # County, Precinct) and the last one (Final Data?)
         for col in row[3:3 + len(candidates)]: 
+            candidate = candidates[i]
             results.append(RawResult(
                 jurisdiction=jurisdiction,
                 reporting_level=reporting_level,
-                full_name=candidates[i],
+                full_name=candidate,
                 votes=col,
+                votes_type=self._votes_type(candidate, raw_jurisdiction),
                 **common_kwargs
             ))
             i += 1
@@ -599,18 +606,20 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
             candidates.append(col_clean)
 
         raise AssertionError("Unexpected candidate columns")
-            
-    def _parse_absentee(self, row, candidates):
-        return row[3:3 + len(candidates)]
 
-    def _add_vote_breakdowns(self, results, absentee, provisional=None):
-        i = 0
-        for result in results:
-            result.vote_breakdowns = {}
-            result.vote_breakdowns['absentee'] = absentee[i]
+    @classmethod
+    def _votes_type(cls, candidate, jurisdiction):
+        # TODO: Need to figure out how to handle results that are
+        # over/under votes for absentee ballots
+        # See
+        # https://github.com/openelections/core/issues/211#issuecomment-57338832
+        if "absentee" in jurisdiction.lower():
+            return 'absentee'
 
-            if provisional:
-                result.vote_breakdowns['provisional'] =  provisional[i]
-            i += 1
+        if candidate == "Over Votes":
+            return 'over'
 
-        return results
+        if candidate == "Under Votes":
+            return 'under'
+
+        return ''

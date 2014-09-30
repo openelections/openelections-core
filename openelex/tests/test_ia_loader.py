@@ -45,9 +45,10 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
 
         ag_results = [r for r in self.loader._results(mapping)
                       if r.office == "Attorney General"]
-        self.assertEqual(len(ag_results), 30)
+        self.assertEqual(len(ag_results), 40)
 
-        result = ag_results[0]
+        result = next(r for r in ag_results 
+                      if r.reporting_level == 'precinct')
         self.assertEqual(result.source, mapping['generated_filename'])
         self.assertEqual(result.election_id, mapping['election'])
         self.assertEqual(result.state, "IA")
@@ -60,16 +61,24 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
         self.assertEqual(result.full_name, "TOM MILLER")
         self.assertEqual(result.votes, 369)
 
-        # There should be a county-level result
+        # There should be some county-level results
         county_ag_results = [r for r in ag_results
             if r.reporting_level == 'county']
-        self.assertEqual(len(county_ag_results), 5)
+        self.assertEqual(len(county_ag_results), 15)
         result = county_ag_results[0]
+        result = next(r for r in county_ag_results
+                      if r.votes_type == "" and
+                      r.full_name == "TOM MILLER")
         self.assertEqual(result.jurisdiction, "Adair")
         self.assertEqual(result.votes, 2298)
-        self.assertEqual(result.vote_breakdowns['absentee'],
-            524)
-        self.assertEqual(result.vote_breakdowns['provisional'], 0)
+        result = next(r for r in county_ag_results
+                      if r.votes_type == "absentee" and
+                      r.full_name == "TOM MILLER")
+        self.assertEqual(result.votes, 524)
+        result = next(r for r in county_ag_results
+                      if r.votes_type == "provisional" and
+                      r.full_name == "TOM MILLER")
+        self.assertEqual(result.votes, 0)
 
         # District attribute should get set on offices with
         # a district
@@ -87,8 +96,9 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
 
         senate_results = [r for r in self.loader._results(mapping)
                           if r.office == "United States Senator"]
-        self.assertEqual(len(senate_results), 36)
-        result = senate_results[0]
+        self.assertEqual(len(senate_results), 42)
+        result = next(r for r in senate_results
+                      if r.reporting_level == 'precinct')
         self.assertEqual(result.full_name, "TOM HARKIN")
         self.assertEqual(result.jurisdiction, "ADAIR COMMUNITY CENTRE")
 
@@ -165,6 +175,124 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
 
         self.assertEqual(len(results), result_i)
 
+    def test_parse_result_row_pseudo_candidates(self):
+        candidates = [
+            "NANCY BOETTGER",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "OverVote",
+            "UnderVote",
+            "Scattering",
+            "Totals",
+        ]
+        row = [
+            "ADAIR COMMUNITY CENTRE",
+            377,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            100,
+            5,
+            482,
+        ]
+        results = self.loader._parse_result_row(row, candidates,
+            county='', county_ocd_id='')
+        result = next(r for r in results if r.full_name == "OverVote")
+        self.assertEqual(result.votes_type, 'over')
+        result = next(r for r in results if r.full_name == "UnderVote")
+        self.assertEqual(result.votes_type, 'under')
+
+    def test_parse_result_row_absentee(self):
+        candidates = [
+            "NANCY BOETTGER",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "OverVote",
+            "UnderVote",
+            "Scattering",
+            "Totals",
+        ]
+        row = [
+            'ABSENTEE PRECINCT',
+            483,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            249,
+            7,
+            739,
+        ]
+        county = 'Adair'
+        county_ocd_id= 'ocd-division/country:us/state:ia/county:adair'
+        results = self.loader._parse_result_row(row, candidates,
+            county=county, county_ocd_id=county_ocd_id)
+        result = results[0]
+        self.assertEqual(result.reporting_level, 'county')
+        self.assertEqual(result.jurisdiction, county)
+        self.assertEqual(result.ocd_id, county_ocd_id)
+        self.assertEqual(result.votes_type, 'absentee')
+
+    def test_parse_result_row_provisional(self):
+        candidates = [
+            "NANCY BOETTGER",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "OverVote",
+            "UnderVote",
+            "Scattering",
+            "Totals",
+        ]
+        row = [
+            'PROVISIONAL PRECINCT',
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]
+        county = 'Adair'
+        county_ocd_id= 'ocd-division/country:us/state:ia/county:adair'
+        results = self.loader._parse_result_row(row, candidates,
+            county=county, county_ocd_id=county_ocd_id)
+        result = results[0]
+        self.assertEqual(result.reporting_level, 'county')
+        self.assertEqual(result.jurisdiction, county)
+        self.assertEqual(result.ocd_id, county_ocd_id)
+        self.assertEqual(result.votes_type, 'provisional')
+
+    def test_votes_type(self):
+        # candidate, jurisdiction, expected
+        test_vals = (
+            ('NANCY BOETTGER', 'ABSENTEE PRECICNT', 'absentee'),
+            ('NANCY BOETTGER', 'PROVISIONAL PRECINCT', 'provisional'),
+            ('OverVote', 'ADAIR COMMUNITY CENTRE', 'over'),
+            ('UnderVote', 'ADAIR COMMUNITY CENTRE', 'under'),
+        )
+
+        for candidate, jurisdiction, expected in test_vals:
+            votes_type = self.loader._votes_type(candidate, jurisdiction)
+            self.assertEqual(votes_type, expected)
+
 
 class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
     def setUp(self):
@@ -181,7 +309,7 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
                 r.district == "5" and
                 r.primary_party == "REPUBLICAN")]
 
-        self.assertEqual(len(us_rep_dist_5_rep_results), 30)
+        self.assertEqual(len(us_rep_dist_5_rep_results), 35)
         result = us_rep_dist_5_rep_results[0]
         self.assertEqual(result.source, mapping['generated_filename'])
         self.assertEqual(result.election_id, mapping['election'])
@@ -243,33 +371,6 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
         self.assertEqual(candidates[0], 'ROXANNE CONLIN')
         self.assertEqual(candidates[-1], 'Precinct Totals')
 
-    def test_parse_absentee(self):
-        candidates = [
-            'ROXANNE CONLIN',
-            'THOMAS L. FIEGEN',
-            'BOB KRAUSE',
-            'WRITE-IN',
-            'Over Votes',
-            'Under Votes',
-            'Precinct Totals',
-        ]
-        row = [
-            'U.S. SENATOR - DEMOCRATIC PARTY',
-            'Adair',
-            'ABSENTEE',
-            16,
-            0,
-            8,
-            0,
-            1,
-            1,
-            26,
-            'Y',
-        ]
-        absentee = self.loader._parse_absentee(row, candidates)
-        self.assertEqual(absentee[0], 16)
-        self.assertEqual(absentee[-1], 26)
-
     def test_parse_result_row(self):
         candidates = [
             'ROXANNE CONLIN',
@@ -304,6 +405,17 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
         self.assertEqual(result.full_name, candidates[0])
         self.assertEqual(result.votes, row[3])
 
+    def test_parse_result_row_grand_totals(self):
+        candidates = [
+            'ROXANNE CONLIN',
+            'THOMAS L. FIEGEN',
+            'BOB KRAUSE',
+            'WRITE-IN',
+            'Over Votes',
+            'Under Votes',
+            'Precinct Totals',
+        ]
+
         row = [
             'Grand Totals',
             '',
@@ -317,6 +429,8 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
             183,
             '',
         ]
+        county = "Adair"
+        county_ocd_id = "ocd-division/country:us/state:ia/county:adair"
         results = self.loader._parse_result_row(row, candidates, county,
             county_ocd_id)
         self.assertEqual(len(results), len(candidates))
@@ -324,3 +438,51 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
         self.assertEqual(result.jurisdiction, "Adair")
         self.assertEqual(result.full_name, candidates[0])
         self.assertEqual(result.votes, row[3])
+
+    def test_parse_result_row_grand_absentee(self):
+        candidates = [
+            'ROXANNE CONLIN',
+            'THOMAS L. FIEGEN',
+            'BOB KRAUSE',
+            'WRITE-IN',
+            'Over Votes',
+            'Under Votes',
+            'Precinct Totals',
+        ]
+
+        row = [
+            'U.S. SENATOR - DEMOCRATIC PARTY',
+            'Adair',
+            'ABSENTEE',
+            16,
+            0,
+            8,
+            0,
+            1,
+            1,
+            26,
+            'Y',
+        ]
+
+        county = "Adair"
+        county_ocd_id = "ocd-division/country:us/state:ia/county:adair"
+        results = self.loader._parse_result_row(row, candidates, county,
+            county_ocd_id)
+        self.assertEqual(len(results), len(candidates))
+        result = results[0]
+        self.assertEqual(result.jurisdiction, "Adair")
+        self.assertEqual(result.full_name, candidates[0])
+        self.assertEqual(result.votes, row[3])
+        self.assertEqual(result.votes_type, 'absentee')
+
+    def test_votes_type(self):
+        # candidate, jurisdiction, expected
+        test_vals = (
+            ('ROXANNE CONLIN', 'ABSENTEE', 'absentee'),
+            ('Over Votes', '1 NW', 'over'),
+            ('Under Votes', '1 NW', 'under'),
+        )
+
+        for candidate, jurisdiction, expected in test_vals:
+            votes_type = self.loader._votes_type(candidate, jurisdiction)
+            self.assertEqual(votes_type, expected)
