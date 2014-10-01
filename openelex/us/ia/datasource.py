@@ -152,6 +152,12 @@ class Datasource(BaseDatasource):
         for county in self._counties():
             raw_filename = "{}{}.{}".format(county['name'], name_suffix,
                 extension)
+            if (year == '2010' and election['race_type'] == 'general' and
+                    raw_filename == "Linn.xls"):
+                # The precinct-level result file for Linn County in the 
+                # 2010-11-02 general election inexplicably has a .xlsx
+                # extension.
+                raw_filename = "Linn.xlsx"
             meta_entries.append({
                 "generated_filename": self._standardized_filename(election,
                     reporting_level='precinct', jurisdiction=county['name'],
