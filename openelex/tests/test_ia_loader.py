@@ -4,7 +4,9 @@ from unittest import TestCase
 
 from openelex.lib.text import ocd_type_id
 from openelex.us.ia.load import (ExcelPrecinctResultLoader,
-    ExcelPrecinctPre2010ResultLoader, ExcelPrecinctPost2010ResultLoader)
+    ExcelPrecinctPre2010ResultLoader, ExcelPrecinct2010PrimaryResultLoader,
+    ExcelPrecinct2010GeneralResultLoader,
+    LoadResults, PreprocessedResultsLoader)
 
 
 class LoaderPrepMixin(object):
@@ -20,6 +22,54 @@ class LoaderPrepMixin(object):
         self.loader.source = mapping['generated_filename']
         self.loader.election_id = mapping['election']
         self.loader.timestamp = datetime.datetime.now()
+
+
+class TestLoadResults(TestCase):
+    def setUp(self):
+        self.loader = LoadResults()
+
+    def test_get_loader(self):
+        mapping = {
+            'election': u'ia-2000-01-04-special-general',
+            'generated_filename': u'20000104__ia__special__general__state_house__53.csv',
+            'name': 'Iowa',
+            'ocd_id': 'ocd-division/country:us/state:ia',
+            'pre_processed_url': 'https://raw.githubusercontent.com/openelections/openelections-data-ia/master/20000104__ia__special__general__state_house__53.csv',
+            'raw_url': u'http://sos.iowa.gov/elections/pdf/results/2000s/2000HD53.pdf'
+        }
+        loader = self.loader._get_loader(mapping)
+        self.assertEqual(loader.__class__, PreprocessedResultsLoader)
+
+        mapping = {
+            'election': u'ia-2008-06-03-primary',
+            'generated_filename': u'20080603__ia__primary__wright__precinct.xls',
+            'name': u'Wright',
+            'ocd_id': u'ocd-division/country:us/state:ia/county:wright',
+            'raw_url': u'http://sos.iowa.gov/elections/results/xls/2008/Wright.xls'
+        }
+        loader = self.loader._get_loader(mapping)
+        self.assertEqual(loader.__class__, ExcelPrecinctPre2010ResultLoader)
+
+        mapping = {
+            'election': u'ia-2010-06-08-primary',
+            'generated_filename': u'20100608__ia__primary__wright__precinct.xls',
+            'name': u'Wright',
+            'ocd_id': u'ocd-division/country:us/state:ia/county:wright',
+            'raw_url': u'http://sos.iowa.gov/elections/results/xls/2010/primary/Wright.xls'
+        }
+        loader = self.loader._get_loader(mapping)
+        self.assertEqual(loader.__class__, ExcelPrecinct2010PrimaryResultLoader)
+
+        mapping = {
+            'election': u'ia-2010-11-02-general',
+             'generated_filename': u'20101102__ia__general__adair__precinct.xls',
+             'name': u'Adair',
+             'ocd_id': u'ocd-division/country:us/state:ia/county:adair',
+             'raw_url': u'http://sos.iowa.gov/elections/results/xls/2010/general/Adair.xls'
+        }
+        loader = self.loader._get_loader(mapping)
+        self.assertEqual(loader.__class__, ExcelPrecinct2010GeneralResultLoader)
+        # BOOKMARK
 
 
 class TestExcelPrecinctResultLoader(LoaderPrepMixin, TestCase):
@@ -47,7 +97,7 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
                       if r.office == "Attorney General"]
         self.assertEqual(len(ag_results), 40)
 
-        result = next(r for r in ag_results 
+        result = next(r for r in ag_results
                       if r.reporting_level == 'precinct')
         self.assertEqual(result.source, mapping['generated_filename'])
         self.assertEqual(result.election_id, mapping['election'])
@@ -294,9 +344,9 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
             self.assertEqual(votes_type, expected)
 
 
-class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
+class TestExcelPrecinct2010PrimaryResultLoader(LoaderPrepMixin, TestCase):
     def setUp(self):
-        self.loader = ExcelPrecinctPost2010ResultLoader()
+        self.loader = ExcelPrecinct2010PrimaryResultLoader()
 
     def test_results(self):
         filename = '20100608__ia__primary__adair__precinct.xls'
@@ -304,7 +354,7 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
         self._prep_loader_attrs(mapping)
 
         results = self.loader._results(mapping)
-        us_rep_dist_5_rep_results = [r for r in results 
+        us_rep_dist_5_rep_results = [r for r in results
             if (r.office == "U.S. REPRESENTATIVE" and
                 r.district == "5" and
                 r.primary_party == "REPUBLICAN")]
@@ -486,3 +536,35 @@ class TestExcelPrecinctPost2010ResultLoader(LoaderPrepMixin, TestCase):
         for candidate, jurisdiction, expected in test_vals:
             votes_type = self.loader._votes_type(candidate, jurisdiction)
             self.assertEqual(votes_type, expected)
+
+
+class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
+    def setUp(self):
+        self.loader = ExcelPrecinct2010GeneralResultLoader()
+
+    def test_parse_result_row_skip(self):
+        rows = [
+            [u'Arcadia Precinct ', u'Race Statistics ', u'Number of Precincts ', u'Polling', 1.0],
+            [u'Arcadia Precinct ', u'U.S. Senator ', u'Times Counted ', u'Total', 269.0],
+            [u'Ewoldt Precinct ', u'Sup Crt Judge Ternus ', u'Yes ', u'Polling ', 157.0]
+        ]
+        county = None
+        county_ocd_id = None
+        for row in rows:
+            self.assertEqual(self.loader._parse_result_row(row, county,
+                county_ocd_id), None)
+
+    def test_parse_result_row(self):
+        county = "Carroll"
+        county_ocd_id='ocd-division/country:us/state:ia/county:carroll'
+        row = [u'Carroll Ward Three & S1/2 Maple River Twp. ', u'Secretary of State ', u'Michael A. Mauro ', u'Total ', 431.0]
+        expected_ocd_id = county_ocd_id + '/' + ocd_type_id(row[0].strip())
+        result = self.loader._parse_result_row(row, county, county_ocd_id)
+
+        self.assertEqual(result.jurisdiction, row[0].strip())
+        self.assertEqual(result.ocd_id, expected_ocd_id)
+        self.assertEqual(result.reporting_level, 'precinct')
+        self.assertEqual(result.office, row[1].strip())
+        self.assertEqual(result.full_name, row[2].strip())
+        self.assertEqual(result.votes, row[4])
+        self.assertEqual(result.votes_type, '')

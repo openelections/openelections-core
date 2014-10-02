@@ -37,17 +37,33 @@ class LoadResults(object):
     ]
 
     def run(self, mapping):
+        loader = self._get_loader(mapping)
+        loader.run(mapping)
+
+    def _get_loader(self, mapping):
+        election_id = mapping['election']
+        election_year = int(election_id[3:7])
         generated_filename = mapping['generated_filename']
 
         if generated_filename in self.SKIP_FILES:
-            loader = SkipLoader()
+            return SkipLoader()
         elif ('precinct' in generated_filename and
-                generated_filename.endswith('xls')):
-            loader = ExcelPrecinctResultLoader()
+              generated_filename.endswith('xls') and
+              election_year < 2010):
+            return ExcelPrecinctPre2010ResultLoader()
+        elif ('precinct' in generated_filename and
+              generated_filename.endswith('xls') and
+              election_year == 2010 and
+              'primary' in election_id):
+            return ExcelPrecinct2010PrimaryResultLoader()
+        elif ('precinct' in generated_filename and
+              generated_filename.endswith('xls') and
+              election_year == 2010 and
+              'general' in election_id):
+            return ExcelPrecinct2010GeneralResultLoader()
+        # BOOKMARK
         elif 'pre_processed_url' in mapping:
-            loader = PreprocessedResultsLoader()
-
-        loader.run(mapping)
+            return PreprocessedResultsLoader()
 
 
 class SkipLoader(object):
@@ -388,8 +404,6 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
 
                 candidates_next = True
                 candidates = None
-                absentee = None
-                provisional = None
                 common_kwargs = {
                   'office': office,
                   'district': district,
@@ -399,7 +413,6 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
 
             if cell0 != " "and cell1 != "":
                 # Result row
-
                 row_results = self._parse_result_row(row, candidates, county,
                     county_ocd_id, **common_kwargs)
                 results.extend(row_results)
@@ -500,7 +513,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         return ''
 
 
-class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
+class ExcelPrecinct2010PrimaryResultLoader(ExcelPrecinctResultLoader):
     """
     Parse precinct-level results in Excel format in the structure used
     including and after 2010
@@ -582,7 +595,7 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
 
         # Iterate through the vote columns.  Skip the first 3 colums (Race,
         # County, Precinct) and the last one (Final Data?)
-        for col in row[3:3 + len(candidates)]: 
+        for col in row[3:3 + len(candidates)]:
             candidate = candidates[i]
             results.append(RawResult(
                 jurisdiction=jurisdiction,
@@ -623,3 +636,99 @@ class ExcelPrecinctPost2010ResultLoader(ExcelPrecinctResultLoader):
             return 'under'
 
         return ''
+
+
+class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
+    _county_re = re.compile(r'(?P<county>[A-Za-z ]+) County')
+    _office_re = re.compile(r'(?P<office>U.S. Senator|U.S. Representative|'
+        'Governor/Lt. Governor|Secretary of State|Auditor of State|'
+        'Treasurer of State|Secretary of Agriculture|Attorney General|'
+        'State Rep)'
+        '(\s+Dist (?P<district>\d+)|)')
+
+    _skip_candidates = (
+        'Number of Precincts for Race',
+        'Number of Precincts Reporting',
+        'Registered Voters',
+        'Times Counted',
+        'Times Blank Voted',
+    )
+
+    def _results(self, mapping):
+        results = []
+        county = mapping['name']
+        county_ocd_id = mapping['ocd_id']
+        base_kwargs = self._build_common_election_kwargs()
+
+        for row in self._rows():
+            cell0 = row[0].strip()
+
+            if self._county_re.match(cell0):
+                continue
+
+            if cell0 == "Precinct":
+                continue
+
+            # This is a results row
+            result = self._parse_result_row(row, county, county_ocd_id,
+                **base_kwargs)
+
+            if result:
+                results.append(result)
+
+        return result
+
+    def _parse_result_row(self, row, county, county_ocd_id, **common_kwargs):
+        m = self._office_re.match(row[1].strip())
+        if not m:
+            return None
+
+        candidate = row[2].strip()
+
+        if candidate in self._skip_candidates:
+            return None
+
+        office = m.group('office')
+        district = m.group('district')
+        jurisdiction = row[0].strip()
+
+        if jurisdiction == "Election Total":
+            reporting_level = 'county'
+            ocd_id = county_ocd_id
+            jurisdiction = county
+        else:
+            reporting_level = 'precinct'
+            ocd_id = county_ocd_id + '/' + ocd_type_id(jurisdiction)
+
+        return RawResult(
+          full_name=candidate,
+          office=office,
+          district=district,
+          votes=row[4],
+          votes_type=self._votes_type(row[3].strip()),
+          reporting_level=reporting_level,
+          jurisdiction=jurisdiction,
+          ocd_id=ocd_id,
+          **common_kwargs
+        )
+
+    def _votes_type(self, val):
+        if val in ("Polling", "Absentee"):
+            return val.lower()
+
+        # Otherwise, assume normal vote totals
+        return ""
+
+
+    # BOOKMARK
+
+# TODO: Handle these counties who have a structure of precinct-level files
+# that is different from all the other ones.  Sadly, they each differ from
+# each other.
+# Audubon
+# Clinton
+# Grundy
+# Henry
+# Johnson
+# Louisa
+# Poweshiek
