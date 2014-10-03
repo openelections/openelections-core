@@ -65,9 +65,6 @@ VOTES_TYPE_CHOICES = (
    'absentee',
    'provisional',
    'absentee_provisional'
-   'over',
-   'under',
-   'straight_party',
 )
 """
 Coded types of vote tallies, other than that can appear in source result 
