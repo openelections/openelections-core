@@ -34,6 +34,18 @@ class LoadResults(object):
         '20030826__ia__special__general__state_house__30__county.csv',
         '20040203__ia__special__general__state_senate__30__county.csv',
         '20091124__ia__special__general__state_house__33__precinct.csv',
+        # The following files have significantly different structure than the
+        # rest of the 2010 general election precinct-level files.  Skip them
+        # for now.
+        #
+        # TODO: Write separate loader classes for these
+        '20101102__ia__general__audubon__precinct.xls',
+        '20101102__ia__general__clinton__precinct.xls',
+        '20101102__ia__general__grundy__precinct.xls',
+        '20101102__ia__general__henry__precinct.xls',
+        '20101102__ia__general__johnson__precinct.xls',
+        '20101102__ia__general__louisa__precinct.xls',
+        '20101102__ia__general__poweshiek__precinct.xls',
     ]
 
     def run(self, mapping):
@@ -61,7 +73,7 @@ class LoadResults(object):
               election_year == 2010 and
               'general' in election_id):
             return ExcelPrecinct2010GeneralResultLoader()
-        # BOOKMARK
+        # TODO: Add conditions to select other result loaders
         elif 'pre_processed_url' in mapping:
             return PreprocessedResultsLoader()
 
@@ -640,8 +652,9 @@ class ExcelPrecinct2010PrimaryResultLoader(ExcelPrecinctResultLoader):
 
 class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
     _county_re = re.compile(r'(?P<county>[A-Za-z ]+) County')
-    _office_re = re.compile(r'(?P<office>U.S. Senator|U.S. Representative|'
-        'Governor/Lt. Governor|Secretary of State|Auditor of State|'
+    _office_re = re.compile(r'(?P<office>U\.{0,1}S\.{0,1} Senator|'
+        'U\.{0,1}S\.{0,1} Rep(resentative|)|'
+        'Governor/Lt\.{0,1} Governor|Secretary of State|Auditor of State|'
         'Treasurer of State|Secretary of Agriculture|Attorney General|'
         'State Rep)'
         '(\s+Dist (?P<district>\d+)|)')
@@ -679,13 +692,30 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
         return result
 
     def _parse_result_row(self, row, county, county_ocd_id, **common_kwargs):
+        results = []
+
+        num_cols = len(row)
+        assert num_cols == 5 or num_cols == 6
+
+        # There are two different, but similar layouts for results files.  
+        # One puts total, polling and absentee votes in separate rows.
+        # Another puts the total, polling and absentee votes
+        # in separate columns.  An example of this is 
+        # 20101102__ia__general__wapello__precinct.xls
+        if num_cols == 6:
+            vote_breakdowns_in_cols = True
+        else:
+            vote_breakdowns_in_cols = False
+
         m = self._office_re.match(row[1].strip())
         if not m:
+            logging.warn("Skipping office '{}'".format(row[1].strip()))
             return None
 
         candidate = row[2].strip()
 
         if candidate in self._skip_candidates:
+            logging.warn("Skipping candidate '{}'".format(candidate))
             return None
 
         office = m.group('office')
@@ -699,18 +729,49 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
         else:
             reporting_level = 'precinct'
             ocd_id = county_ocd_id + '/' + ocd_type_id(jurisdiction)
-
-        return RawResult(
-          full_name=candidate,
-          office=office,
-          district=district,
-          votes=row[4],
-          votes_type=self._votes_type(row[3].strip()),
-          reporting_level=reporting_level,
-          jurisdiction=jurisdiction,
-          ocd_id=ocd_id,
-          **common_kwargs
+      
+        # These fields will be the same regardless of the layout of the results
+        result_kwargs = dict(
+            full_name=candidate,
+            office=office,
+            district=district,
+            reporting_level=reporting_level,
+            jurisdiction=jurisdiction,
+            ocd_id=ocd_id,
+            **common_kwargs
         )
+
+        if not vote_breakdowns_in_cols:
+            # Separate row for each vote breakdown type
+            votes = row[4]
+            votes_type = self._votes_type(row[3].strip())
+        else:
+            # Each vote breakdown type has its own column in the same row
+            votes = row[5]
+            votes_type = ''
+
+        results.append(RawResult(
+          votes=votes,
+          votes_type=votes_type,
+          **result_kwargs
+        ))
+
+        if vote_breakdowns_in_cols:
+            # When each vote breakdown type has its own column in the same row
+            # add the election day (polling) and absentee results as well
+            results.append(RawResult(
+              votes=row[3],
+              votes_type='polling',
+              **result_kwargs
+            ))
+
+            results.append(RawResult(
+              votes=row[4],
+              votes_type='absentee',
+              **result_kwargs
+            ))
+
+        return results
 
     def _votes_type(self, val):
         if val in ("Polling", "Absentee"):
@@ -719,16 +780,3 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
         # Otherwise, assume normal vote totals
         return ""
 
-
-    # BOOKMARK
-
-# TODO: Handle these counties who have a structure of precinct-level files
-# that is different from all the other ones.  Sadly, they each differ from
-# each other.
-# Audubon
-# Clinton
-# Grundy
-# Henry
-# Johnson
-# Louisa
-# Poweshiek

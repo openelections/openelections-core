@@ -559,8 +559,11 @@ class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
         county_ocd_id='ocd-division/country:us/state:ia/county:carroll'
         row = [u'Carroll Ward Three & S1/2 Maple River Twp. ', u'Secretary of State ', u'Michael A. Mauro ', u'Total ', 431.0]
         expected_ocd_id = county_ocd_id + '/' + ocd_type_id(row[0].strip())
-        result = self.loader._parse_result_row(row, county, county_ocd_id)
+        
+        results = self.loader._parse_result_row(row, county, county_ocd_id)
+        self.assertEqual(len(results), 1)
 
+        result = results[0]
         self.assertEqual(result.jurisdiction, row[0].strip())
         self.assertEqual(result.ocd_id, expected_ocd_id)
         self.assertEqual(result.reporting_level, 'precinct')
@@ -568,3 +571,33 @@ class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
         self.assertEqual(result.full_name, row[2].strip())
         self.assertEqual(result.votes, row[4])
         self.assertEqual(result.votes_type, '')
+
+    def test_parse_result_row_multiple(self):
+        """
+        Test parsing a result row when the absentee and election day votes
+        are in different columns instead of different rows. 
+
+        """
+        county = "Wapello"
+        county_ocd_id='ocd-division/country:us/state:ia/county:wapello'
+        row = [u'Precinct 1', u'US Senator', u'Chuck Grassley', 230.0, 127.0, 357.0]
+        expected_ocd_id = county_ocd_id + '/' + ocd_type_id(row[0].strip())
+
+        results = self.loader._parse_result_row(row, county, county_ocd_id)
+        self.assertEqual(len(results), 3)
+
+        for result in results:
+            self.assertEqual(result.jurisdiction, row[0].strip())
+            self.assertEqual(result.ocd_id, expected_ocd_id)
+            self.assertEqual(result.reporting_level, 'precinct')
+            self.assertEqual(result.office, row[1].strip())
+            self.assertEqual(result.full_name, row[2].strip())
+
+        result = next(r for r in results if r.votes_type == 'polling')
+        self.assertEqual(result.votes, row[3])
+
+        result = next(r for r in results if r.votes_type == 'absentee')
+        self.assertEqual(result.votes, row[4])
+
+        result = next(r for r in results if r.votes_type == '')
+        self.assertEqual(result.votes, row[5])
