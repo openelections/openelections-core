@@ -129,6 +129,22 @@ class BaseDatasource(StateBase):
         """
         raise NotImplementedError()
 
+    def mapping_for_file(self, filename):
+        """Get the mapping for a generated filename"""
+        year = self._filename_year(filename)
+        try:
+            return next(m for m in self.mappings(year)
+                        if m['generated_filename'] == filename)
+        except StopIteration:
+            msg = "Mapping for standardized filename {} could not be found"
+            msg = msg.format(filename)
+            raise LookupError(msg)
+
+    @classmethod
+    def _filename_year(cls, filename):
+        """Extract the year of the election from a standardized filename"""
+        return filename[0:4]
+
     def target_urls(self, year=None):
         """
         Retrieve source data URLs.
