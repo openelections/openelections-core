@@ -201,7 +201,7 @@ class LoadResults(object):
         Because of the if/else flow, sometimes we'll end up with multiple
         UnboundLocalErrors. This should be changed so we only get the error
         once.
-        
+
         """
 
         try:
@@ -950,6 +950,16 @@ class WALoaderExcel(WABaseLoader):
 
                     """
                     # logger.info('No party')
+                    pass
+                try:
+                    rr_kwargs.update({
+                            'district': '{0} {1}'.format(
+                                normalize_races(
+                                    sheet.cell(
+                                        rowx=row, colx=self.contest_index)).value.strip(), [
+                                    int(s) for s in sheet.cell(
+                                        rowx=row, colx=self.contest_index).value.strip() if s.isdigit()][0])})
+                except TypeError:
                     pass
         RawResult.objects.insert(results)
 
