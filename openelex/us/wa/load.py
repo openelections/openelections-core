@@ -866,7 +866,7 @@ class WALoaderExcel(WABaseLoader):
     jurisdiction_index = ''
 
     def load(self):
-        xlsfile = xlrd.open_workbook(self._xls_file_handle())
+        xlsfile = xlrd.open_workbook(self._xls_file_path)
         self._common_kwargs = self._build_common_election_kwargs()
 
         # Set the correct reporting level based on file name
