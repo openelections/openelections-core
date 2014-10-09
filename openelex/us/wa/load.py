@@ -88,7 +88,8 @@ class LoadResults(object):
 
         bad_filenames = [
 
-            # The below are .csv
+            # These files are missing from the state's webserver
+            # See https://github.com/openelections/core/issues/212
 
             '20090818__wa__primary__pierce__county.csv',
             '20090818__wa__primary__ferry__county.csv',
@@ -98,30 +99,28 @@ class LoadResults(object):
             '20090818__wa__primary__kitsap__county.csv',
             '20090818__wa__primary__kittitas__county.csv',
 
-            # The below are .xls
+            # The below are Excel (.xls) files that have results spread across
+            # multiple worksheets and in different structures from each other
 
-            '20080219__wa__primary__benton__precinct.xls',
-            '20081104__wa__general__kittitas__precinct.xls',
-            '20081104__wa__general__precinct.xls',
-            '20081104__wa__general__kitsap__precinct.xls',
-            '20091103__wa__general__clark__precinct.xls',
-            '20120807__wa__primary__congressional_district.xls',
-            '20120807__wa__primary__state_legislative.xls',
-            '20121106__wa__general__congressional_district.xls',
-            '20121106__wa__general__state_legislative.xls',
-            '20080219__wa__primary__adams__precinct.xls',
-            '20070821__wa__primary__county.xls',
-            '20091103__wa__general__kitsap__precinct.xls',
             '20070821__wa__primary.xls',
+            '20070821__wa__primary__county.xls',
+            '20080219__wa__primary__adams__precinct.xls',
+            '20080219__wa__primary__benton__precinct.xls',
+            '20080219__wa__primary__congressional_district_state_legislative.xls'
+            '20080219__wa__primary__douglas__precinct.xls',
             '20080219__wa__primary__kitsap__precinct.xls',
-            '20081104__wa__general__congressional_district.xls',
-            '20081104__wa__general__state_legislative.xls',
-            '20081104__wa__general__adams__precinct.xls',
-            '20081104__wa__general__franklin__precinct.xls',
-            '20081104__wa__general__pierce__precinct.xls',
             '20080819__wa__primary__kitsap__precinct.xls',
             '20080819__wa__primary__pierce__precinct.xls',
-            '20080219__wa__primary__douglas__precinct.xls',
+            '20081104__wa__general__congressional_district.xls',
+            '20081104__wa__general__adams__precinct.xls',
+            '20091103__wa__general__clark__precinct.xls',
+            '20081104__wa__general__franklin__precinct.xls',
+            '20081104__wa__general__kittitas__precinct.xls',
+            '20081104__wa__general__kitsap__precinct.xls',
+            '20081104__wa__general__pierce__precinct.xls',
+            '20081104__wa__general__precinct.xls',
+            '20081104__wa__general__state_legislative.xls',
+            '20091103__wa__general__kitsap__precinct.xls',
             '20091103__wa__general__pierce__precinct.xls',
             '20101102__wa__general__kittitas___precinct.xls',
             '20101102__wa__general__san_juan___precinct.xls',
@@ -129,7 +128,10 @@ class LoadResults(object):
             '20100817__wa__primary__congressional_district.xls',
             '20111108__wa__general__clark___precinct.xlsx',
             '20111108__wa__general__spokane___precinct.xlsx',
-            '20080219__wa__primary__congressional_district_state_legislative.xls'
+            '20120807__wa__primary__congressional_district.xls',
+            '20120807__wa__primary__state_legislative.xls',
+            '20121106__wa__general__congressional_district.xls',
+            '20121106__wa__general__state_legislative.xls',
         ]
 
         """
