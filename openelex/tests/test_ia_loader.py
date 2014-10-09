@@ -5,15 +5,13 @@ from unittest import TestCase
 from openelex.lib.text import ocd_type_id
 from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinctPre2010ResultLoader, ExcelPrecinct2010PrimaryResultLoader,
-    ExcelPrecinct2010GeneralResultLoader,
-    LoadResults, PreprocessedResultsLoader)
+    ExcelPrecinct2010GeneralResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
 
 
 class LoaderPrepMixin(object):
     def _get_mapping(self, filename):
-        yr = filename[:4]
-        mappings = self.loader.datasource.mappings(yr)
-        return next(m for m in mappings if m['generated_filename'] == filename)
+        return self.loader.datasource.mapping_for_file(filename)
 
     def _prep_loader_attrs(self, mapping):
         # HACK: set loader's mapping attribute
@@ -69,7 +67,36 @@ class TestLoadResults(TestCase):
         }
         loader = self.loader._get_loader(mapping)
         self.assertEqual(loader.__class__, ExcelPrecinct2010GeneralResultLoader)
-        # BOOKMARK
+
+        mapping = {
+            'election': u'ia-2012-11-06-general',
+            'generated_filename': u'20121106__ia__general__adair__precinct.xls',
+            'name': u'Adair',
+            'ocd_id': u'ocd-division/country:us/state:ia/county:adair',
+            'raw_url': u'http://sos.iowa.gov/elections/results/xls/2012/general/Adair.xls'
+        }
+        loader = self.loader._get_loader(mapping)
+        self.assertEqual(loader.__class__, ExcelPrecinct2012ResultLoader)
+
+        mapping = {
+            'election': u'ia-2012-11-06-general',
+            'generated_filename': u'20121106__ia__general__adair__precinct.xls',
+            'name': u'Adair',
+            'ocd_id': u'ocd-division/country:us/state:ia/county:adair',
+            'raw_url': u'http://sos.iowa.gov/elections/results/xls/2012/general/Adair.xls'
+        }
+        loader = self.loader._get_loader(mapping)
+        self.assertEqual(loader.__class__, ExcelPrecinct2012ResultLoader)
+
+        mapping = {
+            'election': u'ia-2014-06-03-primary',
+            'generated_filename': u'20140603__ia__primary__adair__precinct.xlsx',
+            'name': u'Adair',
+            'ocd_id': u'ocd-division/country:us/state:ia/county:adair',
+            'raw_url': u'http://sos.iowa.gov/elections/results/xls/2014/primary/Adair.xlsx'
+        }
+        loader = self.loader._get_loader(mapping)
+        self.assertEqual(loader.__class__, ExcelPrecinct2014ResultLoader)
 
 
 class TestExcelPrecinctResultLoader(LoaderPrepMixin, TestCase):
@@ -559,7 +586,7 @@ class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
         county_ocd_id='ocd-division/country:us/state:ia/county:carroll'
         row = [u'Carroll Ward Three & S1/2 Maple River Twp. ', u'Secretary of State ', u'Michael A. Mauro ', u'Total ', 431.0]
         expected_ocd_id = county_ocd_id + '/' + ocd_type_id(row[0].strip())
-        
+
         results = self.loader._parse_result_row(row, county, county_ocd_id)
         self.assertEqual(len(results), 1)
 
@@ -575,7 +602,7 @@ class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
     def test_parse_result_row_multiple(self):
         """
         Test parsing a result row when the absentee and election day votes
-        are in different columns instead of different rows. 
+        are in different columns instead of different rows.
 
         """
         county = "Wapello"
@@ -601,3 +628,310 @@ class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
 
         result = next(r for r in results if r.votes_type == '')
         self.assertEqual(result.votes, row[5])
+
+
+class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
+    def setUp(self):
+        self.loader = ExcelPrecinct2012ResultLoader()
+
+    def test_results_primary(self):
+        filename = '20120605__ia__primary__adair__precinct.xls'
+        mapping = self._get_mapping(filename)
+        self._prep_loader_attrs(mapping)
+
+        results = self.loader._results(mapping)
+        state_senate_district_10_rep_results = [r for r in results
+            if (r.office == "State Senator" and
+                r.district == "10" and
+                r.primary_party == "R")]
+        self.assertEqual(len(state_senate_district_10_rep_results), 42)
+
+        result = next(r for r in state_senate_district_10_rep_results
+                      if r.jurisdiction == "District 1NW")
+        self.assertEqual(result.source, mapping['generated_filename'])
+        self.assertEqual(result.election_id, mapping['election'])
+        self.assertEqual(result.state, "IA")
+        self.assertEqual(result.election_type, "primary")
+        self.assertEqual(result.district, "10")
+        self.assertEqual(result.party, "R")
+        self.assertEqual(result.jurisdiction, "District 1NW")
+        self.assertEqual(result.reporting_level, 'precinct')
+        self.assertEqual(result.full_name, "Jake Chapman")
+        self.assertEqual(result.votes, 39)
+
+    def test_results_general(self):
+        filename = '20121106__ia__general__adair__precinct.xls'
+        mapping = self._get_mapping(filename)
+        self._prep_loader_attrs(mapping)
+
+        results = self.loader._results(mapping)
+        state_rep_district_20_results = [r for r in results
+            if (r.office == "State Representative" and r.district == "20")]
+        precinct_2ne_results = [r for r in state_rep_district_20_results
+            if r.jurisdiction == "2NE"]
+        self.assertEqual(len(precinct_2ne_results), 18)
+        absentee_results = [r for r in state_rep_district_20_results if r.votes_type == 'absentee']
+        self.assertEqual(len(absentee_results), 36)
+        county_results = [r for r in state_rep_district_20_results if r.reporting_level == 'county']
+        self.assertEqual(len(county_results), 18)
+
+        result = state_rep_district_20_results[0]
+        self.assertEqual(result.full_name, "Clel Baudler")
+        self.assertEqual(result.party, "Republican")
+        self.assertEqual(result.primary_party, None)
+        self.assertEqual(result.state, "IA")
+        self.assertEqual(result.election_type, 'general')
+        self.assertEqual(result.office, "State Representative")
+        self.assertEqual(result.district, "20")
+        self.assertEqual(result.reporting_level, 'precinct')
+        self.assertEqual(result.votes, 400)
+        self.assertEqual(result.votes_type, 'election_day')
+
+        result = state_rep_district_20_results[-1]
+        self.assertEqual(result.full_name, "Total")
+        self.assertEqual(result.party, None)
+        self.assertEqual(result.primary_party, None)
+        self.assertEqual(result.state, "IA")
+        self.assertEqual(result.election_type, 'general')
+        self.assertEqual(result.office, "State Representative")
+        self.assertEqual(result.district, "20")
+        self.assertEqual(result.reporting_level, 'county')
+        self.assertEqual(result.votes, 4020)
+        self.assertEqual(result.votes_type, '')
+
+
+    def test_page_header_row(self):
+        row = ['', '', '', u'ADAIR COUNTY ELECTION CANVASS SUMMARY\n2012 IOWA PRIMARY ELECTION', '', '', '', '', '', '', ''];
+        self.assertEqual(self.loader._page_header_row(row), True)
+
+        row = ['', '', '', '', u'ADAIR COUNTY ELECTION CANVASS SUMMARY\n2012 IOWA GENERAL ELECTION', '', '', '', '', '', '', '', '', '', '', '', '', '']
+        self.assertEqual(self.loader._page_header_row(row), True)
+
+    def test_empty_row(self):
+        row = ['', '', '', '', '', u'President/Vice President', '', '', '', '', '', '', '', '', '', '', '', u'\n\n\nTotal']
+        self.assertEqual(self.loader._empty_row(row), False)
+
+        row = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+        self.assertEqual(self.loader._empty_row(row), True)
+
+    def test_parse_office_row(self):
+        row = ['', '', '', '', '', u'U.S. House of Representatives \nDistrict 3 - R', '', '', '', u'\n\n\nTotal', '']
+        office, district, primary_party = self.loader._parse_office_row(row)
+        self.assertEqual(office, "U.S. House of Representatives")
+        self.assertEqual(district, "3")
+        self.assertEqual(primary_party, "R")
+
+        row = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+        office, district, primary_party = self.loader._parse_office_row(row)
+        self.assertEqual(office, None)
+        self.assertEqual(district, None)
+        self.assertEqual(primary_party, None)
+
+        row = ['', '', '', '', '', u'President/Vice President', '', '', '', '', '', '', '', '', '', '', '', u'\n\n\nTotal']
+        office, district, primary_party = self.loader._parse_office_row(row)
+        self.assertEqual(office, "President/Vice President")
+        self.assertEqual(district, None)
+        self.assertEqual(primary_party, None)
+
+    def test_parse_candidates_row(self):
+        row = [u'Precinct', '', '', '', '', '', '', '', '', '', '']
+        candidates = self.loader._parse_candidates_row(row)
+        self.assertEqual(candidates, None)
+
+        row = ['', '', '', '', '', u' Jake Chapman', u' Matthew T. Mardesen', u'Write-In', u' Under Votes', u' Over Votes', '']
+        candidates = self.loader._parse_candidates_row(row)
+        self.assertEqual(len(candidates), 5)
+        candidate, party = candidates[0]
+        self.assertEqual(candidate, "Jake Chapman")
+        self.assertEqual(party, None)
+        candidate, party = candidates[-1]
+        self.assertEqual(candidate, "Over Votes")
+        self.assertEqual(party, None)
+
+        row = [u'Precinct', '', '', '', '', u' Clel Baudler\nRepublican', u' Greg Nepstad\nDemocratic', u'Write-In', u' Under Votes', u' Over Votes', '', '', '', '', '', '', '', '']
+        candidates = self.loader._parse_candidates_row(row)
+        self.assertEqual(len(candidates), 5)
+        candidate, party = candidates[0]
+        self.assertEqual(candidate, "Clel Baudler")
+        self.assertEqual(party, "Republican")
+        candidate, party = candidates[-1]
+        self.assertEqual(candidate, "Over Votes")
+        self.assertEqual(party, None)
+
+    def test_parse_jurisdiction(self):
+        # Primary election examples
+        prev_reporting_level = None
+        row = [u'Absentee', '', '', '', '', 8.0, 1.0, 1.0, 0.0, 10.0, '']
+        jurisdiction, level = self.loader._parse_jurisdiction(row,
+            prev_reporting_level)
+        self.assertEqual(jurisdiction, row[0])
+        self.assertEqual(level, 'county')
+
+        prev_reporting_level = 'precinct'
+        row = [u'District 1NW', '', '', '', '', 10.0, 0.0, 2.0, 0.0, 12.0, '']
+        jurisdiction, level = self.loader._parse_jurisdiction(row,
+            prev_reporting_level)
+        self.assertEqual(jurisdiction, row[0])
+        self.assertEqual(level, 'precinct')
+
+        prev_reporting_level = 'precinct'
+        row = [u'            Total ', '', '', '', '', 56.0, 1.0, 4.0, 0.0, 61.0, '']
+        jurisdiction, level = self.loader._parse_jurisdiction(row,
+            prev_reporting_level)
+        self.assertEqual(jurisdiction, row[0].strip())
+        self.assertEqual(level, 'county')
+
+        # General election examples
+        prev_reporting_level = 'precinct'
+        row = [u'3SW', '', u'Election Day', '', '', 411.0, 17.0, 69.0, 0.0, 497.0, '', '', '', '', '', '', '', '']
+        jurisdiction, level = self.loader._parse_jurisdiction(row,
+            prev_reporting_level)
+        self.assertEqual(jurisdiction, row[0])
+        self.assertEqual(level, 'precinct')
+
+        prev_reporting_level = 'precinct'
+        row = ['', '', u'Election Day', '', '', 411.0, 17.0, 69.0, 0.0, 497.0, '', '', '', '', '', '', '', '']
+        jurisdiction, level = self.loader._parse_jurisdiction(row,
+            prev_reporting_level)
+        self.assertEqual(jurisdiction, row[0])
+        self.assertEqual(level, 'county')
+
+        prev_reporting_level = 'precinct'
+        row = ['', '', u'Absentee', '', '', 251.0, 3.0, 144.0, 0.0, 398.0, '', '', '', '', '', '', '', '']
+        jurisdiction, level = self.loader._parse_jurisdiction(row,
+            prev_reporting_level)
+        self.assertEqual(jurisdiction, row[0])
+        self.assertEqual(level, 'precinct')
+
+        prev_reporting_level = 'county'
+        row = ['', '', u'Absentee', '', '', 1103.0, 17.0, 570.0, 0.0, 1690.0, '', '', '', '', '', '', '', '']
+        jurisdiction, level = self.loader._parse_jurisdiction(row,
+            prev_reporting_level)
+        self.assertEqual(jurisdiction, row[0])
+        self.assertEqual(level, 'county')
+
+    def test_parse_result_row_primary(self):
+        county = "Adair"
+        county_ocd_id = 'ocd-division/country:us/state:ia/county:adair'
+
+        common_kwargs = {
+            'reporting_level': 'precinct',
+            'jurisdiction': 'District 1NW',
+        }
+        candidates = [
+            ('Jake Chapman', None),
+            ('Matthew T. Mardesen', None),
+            ('Write-In', None),
+            ('Under Votes', None),
+            ('Over Votes', None),
+            ('Total', None)
+        ]
+        row = [u'District 1NW', '', '', '', '', 39.0, 19.0, 0.0, 0.0, 0.0, 58.0]
+        results = self.loader._parse_result_row(row, candidates, county,
+            county_ocd_id, **common_kwargs)
+        self.assertEqual(len(results), len(candidates))
+        result = results[0]
+        self.assertEqual(result.full_name, candidates[0][0])
+        self.assertEqual(result.votes, row[5])
+        self.assertEqual(result.reporting_level, "precinct")
+        self.assertEqual(result.jurisdiction, row[0])
+        result = results[-1]
+        self.assertEqual(result.full_name, candidates[-1][0])
+        self.assertEqual(result.votes, row[-1])
+
+    def test_fix_row(self):
+        row = [u'District 1NW', '', '', '', '', 39.0, 19.0, 0.0, 0.0, 0.0, 58.0]
+        self.assertEqual(self.loader._fix_row(row), row)
+
+        row = [u'ABSENTEE 1', '', '', '', '', 26.0, 35.0, 0.0, 35.0, 1.0, 12.0, '', '', 0.0, '', u'ABSENTEE 1', '', '', '', '', 0.0, '', 0.0, '', '', 109.0] 
+        fixed = row[0:14] + row[16:]
+        self.assertEqual(self.loader._fix_row(row), fixed)
+
+    def test_parse_results_row_general(self):
+        county = "Adair"
+        county_ocd_id = 'ocd-division/country:us/state:ia/county:adair'
+
+        candidates = [
+            ('Tom Latham', 'Republican'),
+            ('Leonard Boswell', 'Democratic'),
+            ('David Rosenfeld', 'Socialist Workers Party'),
+            ('Scott G. Batcher', 'Nominated by Petition'),
+            ('Write-In', None),
+            ('Under Votes', None),
+            ('Over Votes', None),
+            ('Total', None),
+        ]
+        common_kwargs = {
+            'jurisdiction': '1NW',
+            'reporting_level': 'precinct',
+        }
+        row = [u'1NW', '', u'Election Day', '', '', 366.0, 140.0, 13.0, 13.0, 0.0, 11.0, 0.0, 543.0, '', '', '', '', '']
+        results = self.loader._parse_result_row(row, candidates, county,
+            county_ocd_id, **common_kwargs)
+        self.assertEqual(len(results), len(candidates))
+        result = results[0]
+        self.assertEqual(result.full_name, candidates[0][0])
+        self.assertEqual(result.votes, row[5])
+        self.assertEqual(result.reporting_level, "precinct")
+        self.assertEqual(result.jurisdiction, row[0])
+        result = results[-1]
+        self.assertEqual(result.full_name, candidates[-1][0])
+        self.assertEqual(result.votes, row[-6])
+
+        row = ['', '', u'Total', '', '', 546.0, 221.0, 17.0, 22.0, 0.0, 23.0, 1.0, 830.0, '', '', '', '', '']
+        results = self.loader._parse_result_row(row, candidates, county,
+            county_ocd_id, **common_kwargs)
+        self.assertEqual(len(results), len(candidates))
+        result = results[0]
+        self.assertEqual(result.full_name, candidates[0][0])
+        self.assertEqual(result.votes, row[5])
+        self.assertEqual(result.reporting_level, "precinct")
+        self.assertEqual(result.jurisdiction, common_kwargs['jurisdiction'])
+        result = results[-1]
+        self.assertEqual(result.full_name, candidates[-1][0])
+        self.assertEqual(result.votes, row[-6])
+
+    def test_is_last_contest_row(self):
+        row = [u'            Total ', '', '', '', '', 622.0, 3.0, 144.0, 0.0, 769.0, '', '', '', '', '', '', '', '', '', '', '']
+        reporting_level = 'county'
+        self.assertEqual(self.loader._is_last_contest_result(row,
+            reporting_level), True)
+
+        row = [u'Lorimor City Hall', '', '', '', '', 44.0, 0.0, 1.0, 0.0, 45.0, '', '', '', '', '', '', '', '', '', '', '']
+        reporting_level = 'precinct'
+        self.assertEqual(self.loader._is_last_contest_result(row,
+            reporting_level), False)
+
+        row = ['', '', u'Total', '', '', 2192.0, 2335.0, 2449.0, 2352.0, 26.0, 804623.0, 1.0, 813978.0, '', '', '', '', '']
+        reporting_level = 'county'
+        self.assertEqual(self.loader._is_last_contest_result(row,
+            reporting_level), True)
+
+        row = ['', '', u'Total', '', '', 2192.0, 2335.0, 2449.0, 2352.0, 26.0, 804623.0, 1.0, 813978.0, '', '', '', '', '']
+        reporting_level = 'precinct'
+        self.assertEqual(self.loader._is_last_contest_result(row,
+            reporting_level), False)
+
+        row = ['', '', u'Absentee', '', '', 878.0, 979.0, 993.0, 985.0, 15.0, 1523.0, 1.0, 5374.0, '', '', '', '', '']
+        reporting_level = 'county'
+        self.assertEqual(self.loader._is_last_contest_result(row,
+            reporting_level), False)
+
+    def test_parse_votes_type(self):
+        row = [u'Absentee', '', '', '', '', 8.0, 1.0, 1.0, 0.0, 10.0, '']
+        self.assertEqual(self.loader._parse_votes_type(row), 'absentee')
+
+        row = [u'District 1NW', '', '', '', '', 10.0, 0.0, 2.0, 0.0, 12.0, '']
+        self.assertEqual(self.loader._parse_votes_type(row), '')
+
+        row = [u'            Total ', '', '', '', '', 56.0, 1.0, 4.0, 0.0, 61.0, '']
+        self.assertEqual(self.loader._parse_votes_type(row), '')
+
+        row = [u'3SW', '', u'Election Day', '', '', 411.0, 17.0, 69.0, 0.0, 497.0, '', '', '', '', '', '', '', '']
+        self.assertEqual(self.loader._parse_votes_type(row), 'election_day')
+
+        row = ['', '', u'Absentee', '', '', 251.0, 3.0, 144.0, 0.0, 398.0, '', '', '', '', '', '', '', '']
+        self.assertEqual(self.loader._parse_votes_type(row), 'absentee')
+
+        row = ['', '', u'Total', '', '', 2659.0, 1219.0, 5.0, 133.0, 4.0, 4020.0, '', '', '', '', '', '', '']
+        self.assertEqual(self.loader._parse_votes_type(row), '')

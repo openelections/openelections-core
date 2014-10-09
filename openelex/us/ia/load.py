@@ -36,8 +36,8 @@ class LoadResults(object):
         '20091124__ia__special__general__state_house__33__precinct.csv',
         '20100608__ia__primary__county.csv',
         # The following files have significantly different structure than the
-        # rest of the 2010 general election precinct-level files.  Skip them
-        # for now.
+        # rest of the 2010 general election precinct-level files and from
+        # each other.  Skip them for now.
         #
         # TODO: Write separate loader classes for these
         '20101102__ia__general__audubon__precinct.xls',
@@ -45,9 +45,6 @@ class LoadResults(object):
         '20101102__ia__general__grundy__precinct.xls',
         '20101102__ia__general__henry__precinct.xls',
         '20101102__ia__general__johnson__precinct.xls',
-        # Linn is an xlsx file and has problems similar to
-        # https://github.com/openelections/core/issues/202
-        '20101102__ia__general__linn__precinct.xls',
         '20101102__ia__general__louisa__precinct.xls',
         '20101102__ia__general__poweshiek__precinct.xls',
     ]
@@ -77,9 +74,16 @@ class LoadResults(object):
               election_year == 2010 and
               'general' in election_id):
             return ExcelPrecinct2010GeneralResultLoader()
-        # TODO: Add conditions to select other result loaders
+        elif (election_year == 2012 and generated_filename.endswith('xls')):
+            return ExcelPrecinct2012ResultLoader()
+        elif (election_year == 2014 and generated_filename.endswith('xlsx')
+              and 'primary' in election_id):
+            return ExcelPrecinct2014ResultLoader()
         elif 'pre_processed_url' in mapping:
             return PreprocessedResultsLoader()
+
+        raise ValueError("Could not get appropriate loader for file {}".format(
+            generated_filename))
 
 
 class SkipLoader(object):
@@ -421,8 +425,8 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                 candidates_next = True
                 candidates = None
                 common_kwargs = {
-                  'office': office,
-                  'district': district,
+                    'office': office,
+                    'district': district,
                 }
                 common_kwargs.update(base_kwargs)
                 continue
@@ -840,3 +844,295 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
 
         # Otherwise, assume normal vote totals
         return ""
+
+class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):
+    """
+    Parse 2012 primary and general election precinct-level results
+
+    Some notes about these files:
+
+    In the primary, the primary party is indicated as "D" or "R" and is
+    included in the same cell as the office, e.g.
+    "U.S. House of Representatives District 3 - D"
+
+    The structure of a single contest's record group looks like this:
+
+    Office
+    Candidates
+    "Precinct" heading row
+    Absentee pseudo-precinct result row
+    Per-precinct results rows
+    County total result row
+
+    """
+    offices = [
+        "U.S. House of Representatives",
+        "State Senator",
+        "State Representative",
+        "President/Vice President",
+    ]
+    _office_re = re.compile('(?P<office>{offices})'
+        '(\s+District (?P<district>\d+)){{0,1}}'
+        '(?:\s+-\s+(?P<party>D|R)){{0,1}}'.format(offices='|'.join(offices)),
+        re.IGNORECASE)
+
+    # HACK: LIst of Polk County precincts to reflect header
+    POLK_PRECINCTS = [
+        'ABSENTEE 1',
+        'ALLEMAN-1',
+        'ANKENY-1',
+        'ANKENY-10',
+        'ANKENY-11',
+        'ANKENY-12',
+        'ANKENY-13',
+        'ANKENY-2',
+        'ANKENY-3',
+        'ANKENY-4',
+        'ANKENY-5',
+        'DOUGLAS-1',
+        'SPECIAL',
+        'Total',
+    ]
+
+    def _results(self, mapping):
+        results = []
+
+        county = mapping['name']
+        county_ocd_id = mapping['ocd_id']
+        in_contest_results = False
+        base_kwargs = self._build_common_election_kwargs()
+        sheet = self._get_sheet()
+
+        for row in self._rows(sheet):
+            if self._empty_row(row) or self._page_header_row(row):
+                continue
+
+            if row[0] == "Precinct" and 'primary' in mapping['election']:
+                # Primary results have a "Precinct" column heading row.
+                # Skip it.
+                continue
+
+            office, district, primary_party = self._parse_office_row(row)
+            if office:
+                in_contest_results = True
+                common_kwargs = {
+                    'office': office,
+                    'district': district,
+                    'reporting_level': None,
+                }
+                if primary_party:
+                    common_kwargs['primary_party'] = primary_party
+                common_kwargs.update(base_kwargs)
+                candidates = None
+                continue
+
+            if candidates is None:
+                new_candidates = self._parse_candidates_row(row)
+                if new_candidates:
+                    candidates = new_candidates + [('Total', None)]
+                    continue
+
+            if not in_contest_results:
+                continue
+
+            # A bit of acrobatics because the general election results
+            # have separate rows for election day, absentee and
+            # total results
+            jurisdiction, level = self._parse_jurisdiction(row,
+                common_kwargs['reporting_level'])
+            if jurisdiction != '':
+                common_kwargs['jurisdiction'] = jurisdiction
+            common_kwargs['reporting_level'] = level
+            if common_kwargs['reporting_level'] == 'county':
+                common_kwargs['jurisdiction'] = county
+
+            row_results = self._parse_result_row(row, candidates, county,
+                county_ocd_id, **common_kwargs)
+
+            if row_results:
+                results.extend(row_results)
+
+            if self._is_last_contest_result(row, common_kwargs['reporting_level']):
+                in_contest_results = False
+
+        return results
+
+    def _page_header_row(self, row):
+        if ("ELECTION CANVASS SUMMARY" in row[4] or
+            "ELECTION CANVASS SUMMARY" in row[3]):
+            return True
+        else:
+            return False
+
+    def _empty_row(self, row):
+        for col in row:
+            if col != '':
+                return False
+
+        return True
+
+    def _parse_office_row(self, row):
+        """
+        Parse the office, district and primary party from a spreadsheet row
+
+        Args:
+            row (list): Columns in spreadsheet row
+
+        Returns:
+            Tuple representing office, district and primary party. If the row
+            does not match an office, the office tuple component will be None.
+            If there is no district corresponding to the office, or no primary
+            party, those components will be None.
+
+        """
+        office = None
+        district = None
+        primary_party = None
+        m = None
+        # Get first nonempty column in row
+        try:
+            col = next(c for c in row if c != '')
+        except StopIteration:
+            # No nonempty columns, return all None
+            return office, district, primary_party
+
+        m = self._office_re.search(col)
+        if not m:
+            # First nonempty column doesn't match an office of interest.
+            # Return all None
+            return office, district, primary_party
+
+        office = m.group('office')
+        district = m.group('district')
+        primary_party = m.group('party')
+
+        return office, district, primary_party
+
+    def _parse_candidates_row(self, row):
+        """
+        Parse candidates and parties from spreadsheet row
+
+        Args:
+            row (list): Columns in spreadsheet row
+
+        Returns:
+            List of tuples representing candidate name, party pairs.
+            None if the row doesn't match a list of canidates.
+            If there is no party information in this row, which is the case
+            in a primary election, the party member of the tuple will be None.
+
+        """
+        if row[0] not in ('', "Precinct"):
+            return None
+
+        candidates = []
+
+        for col in row[1:]:
+            col = col.strip()
+            if col == '':
+                continue
+
+            bits = col.split('\n')
+            candidate = bits[0]
+            party = None
+            if len(bits) > 1:
+                party = bits[1]
+
+            candidates.append((candidate, party))
+
+        if len(candidates):
+            return candidates
+        else:
+            return None
+
+    def _parse_jurisdiction(self, row, prev_reporting_level):
+        jurisdiction = row[0].strip()
+        cell2 = row[2].strip()
+        reporting_level = 'precinct'
+
+        if (jurisdiction in ("Absentee", "Total") or
+            (jurisdiction == "" and cell2 == "Election Day") or
+            (prev_reporting_level == 'county' and cell2 in ("Absentee", "Total"))):
+            reporting_level = 'county'
+
+        return jurisdiction, reporting_level
+
+    def _parse_result_row(self, row, candidates, county, county_ocd_id, **common_kwargs):
+        results = []
+        candidate_index = 0
+        fixed_row = self._fix_row(row)
+
+        for col in fixed_row[3:]:
+            if col != '':
+                party = candidates[candidate_index][1]
+
+                if common_kwargs['reporting_level'] == 'county':
+                    ocd_id = county_ocd_id
+                else:
+                    ocd_id = county_ocd_id + '/' + ocd_type_id(common_kwargs['jurisdiction'])
+
+                if (party is None and 'primary_party' in common_kwargs
+                        and common_kwargs['primary_party']):
+                    party = common_kwargs['primary_party']
+
+                results.append(RawResult(
+                    full_name=candidates[candidate_index][0],
+                    votes=col,
+                    votes_type=self._parse_votes_type(fixed_row),
+                    party=party,
+                    ocd_id=ocd_id,
+                    **common_kwargs
+                ))
+
+                candidate_index += 1
+
+        return results
+
+    def _fix_row(self, row):
+        """
+        Fix row that has repeated jurisdiction column
+        
+        This only occurs in the Polk County Primary results file.
+        """
+        try:
+            if len(row) > 15 and (row[15].strip() in self.POLK_PRECINCTS):
+                return row[0:14] + row[16:]
+        except AttributeError:
+            pass
+
+        return row
+
+    def _is_last_contest_result(self, row, reporting_level):
+        cell0 = row[0].strip()
+        cell2 = row[2].strip()
+
+        if cell0 == "Total":
+            return True
+
+        if reporting_level == 'county' and cell2 == "Total":
+            return True
+
+        return False
+
+    def _parse_votes_type(self, row):
+        cell0 = row[0].strip()
+        cell2 = row[2].strip()
+
+        if cell0 == "Absentee" or cell2 == "Absentee":
+            return 'absentee'
+
+        if cell2 == "Election Day":
+            return 'election_day'
+
+        return ''
+
+
+class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
+    """
+    Parse 2014 primary precinct-level results
+
+    At the time of authoring, the 2014 general election results were not
+    yet available
+    """
+    # TODO: See if 2014 general election results follow same format as
+    # the primary results
