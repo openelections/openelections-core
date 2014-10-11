@@ -786,7 +786,7 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
             # add the election day (polling) and absentee results as well
             results.append(RawResult(
               votes=self._get_polling_votes(row, race_offset),
-              votes_type='polling',
+              votes_type='election_day',
               **result_kwargs
             ))
 
@@ -803,8 +803,8 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
         Detect whether vote breakdowns are in separate rows or columns
 
         There are two different, but similar layouts for results files.
-        One puts total, polling and absentee votes in separate rows.
-        Another puts the total, polling and absentee votes
+        One puts total, election day and absentee votes in separate rows.
+        Another puts the total, election day and absentee votes
         in separate columns.  An example of this is
         20101102__ia__general__wapello__precinct.xls
 
