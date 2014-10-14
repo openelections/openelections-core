@@ -93,7 +93,7 @@ class LoadResults(object):
             '20070821__wa__primary__county.xls',
             '20080219__wa__primary__adams__precinct.xls',
             '20080219__wa__primary__benton__precinct.xls',
-            '20080219__wa__primary__congressional_district_state_legislative.xls'
+            '20080219__wa__primary__congressional_district_state_legislative.xls',
             '20080219__wa__primary__douglas__precinct.xls',
             '20080219__wa__primary__kitsap__precinct.xls',
             '20080819__wa__primary__kitsap__precinct.xls',
