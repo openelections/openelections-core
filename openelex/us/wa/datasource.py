@@ -6,6 +6,21 @@ from openelex.lib import build_github_url
 from openelex.lib.text import ocd_type_id
 
 class Datasource(BaseDatasource):
+    NO_2009_PRIMARY_RESULTS_COUNTIES = [
+        'Pierce',
+        'Ferry',
+        'Wahkiakum',
+        'Whatcom',
+        'Pend Oreille',
+        'Kitsap',
+        'Kittitas',
+    ]
+    """
+    Counties that don't have 2009 primary election results.
+
+    See https://github.com/openelections/core/issues/212
+    """
+
     def mappings(self, year=None):
         mappings = []
         for yr, elecs in self.elections(year).items():
@@ -148,6 +163,10 @@ class Datasource(BaseDatasource):
         meta_entries = []
 
         for county in self._counties():
+            if (election['slug'] == "wa-2009-08-18-primary" and
+                    county['name'] in self.NO_2009_PRIMARY_RESULTS_COUNTIES):
+                continue
+
             generated_filename = self._standardized_filename(election,
                 extension=".csv", reporting_level='county',
                 jurisdiction=county['name'], office=office)

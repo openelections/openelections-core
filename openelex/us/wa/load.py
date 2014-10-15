@@ -76,9 +76,8 @@ class LoadResults(object):
         election = mapping['election']
 
         """
-        bad_filenames[] holds the list of files who have content that's not
-        actual information (e.g. a mess of HTML from a file that moved on the
-        remote server) or are hard to use (e.g. an .xls file with 10 sheets).
+        bad_filenames[] holds the list of files who have content that's 
+        hard to use (e.g. an .xls file with 10 sheets).
 
         The edge cases will be taken care of later. The cases where there is
         zero actual usable data will have to be rectified outside of the
@@ -87,18 +86,6 @@ class LoadResults(object):
         """
 
         bad_filenames = [
-
-            # These files are missing from the state's webserver
-            # See https://github.com/openelections/core/issues/212
-
-            '20090818__wa__primary__pierce__county.csv',
-            '20090818__wa__primary__ferry__county.csv',
-            '20090818__wa__primary__wahkiakum__county.csv',
-            '20090818__wa__primary__whatcom__county.csv',
-            '20090818__wa__primary__pend_oreille__county.csv',
-            '20090818__wa__primary__kitsap__county.csv',
-            '20090818__wa__primary__kittitas__county.csv',
-
             # The below are Excel (.xls) files that have results spread across
             # multiple worksheets and in different structures from each other
 
@@ -106,7 +93,7 @@ class LoadResults(object):
             '20070821__wa__primary__county.xls',
             '20080219__wa__primary__adams__precinct.xls',
             '20080219__wa__primary__benton__precinct.xls',
-            '20080219__wa__primary__congressional_district_state_legislative.xls'
+            '20080219__wa__primary__congressional_district_state_legislative.xls',
             '20080219__wa__primary__douglas__precinct.xls',
             '20080219__wa__primary__kitsap__precinct.xls',
             '20080819__wa__primary__kitsap__precinct.xls',
