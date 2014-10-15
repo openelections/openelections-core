@@ -312,7 +312,7 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
             739,
         ]
         county = 'Adair'
-        county_ocd_id= 'ocd-division/country:us/state:ia/county:adair'
+        county_ocd_id = 'ocd-division/country:us/state:ia/county:adair'
         results = self.loader._parse_result_row(row, candidates,
             county=county, county_ocd_id=county_ocd_id)
         result = results[0]
@@ -935,3 +935,134 @@ class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
 
         row = ['', '', u'Total', '', '', 2659.0, 1219.0, 5.0, 133.0, 4.0, 4020.0, '', '', '', '', '', '', '']
         self.assertEqual(self.loader._parse_votes_type(row), '')
+
+
+class TestExcellPrecinct2014Loader(LoaderPrepMixin, TestCase):
+    def setUp(self):
+        self.loader = ExcelPrecinct2014ResultLoader()
+
+    def test_parse_jurisdictions(self):
+        row = [u'RaceTitle', u' CandidateName', u' PoliticalPartyName', '', u' Adair-1 NW Polling', u' Adair-2 NE Polling', u' Adair-3 SW Polling', u' Adair-4 SE Polling', u' Adair-5 GF Polling', u' Adair-Absentee Absentee', u' Adair Total'] 
+        expected = [
+            ('Adair-1 NW Polling', 'precinct', 'election_day'),
+            ('Adair-2 NE Polling', 'precinct', 'election_day'),
+            ('Adair-3 SW Polling', 'precinct', 'election_day'),
+            ('Adair-4 SE Polling', 'precinct', 'election_day'),
+            ('Adair-5 GF Polling', 'precinct', 'election_day'),
+            ('Adair-Absentee Absentee', 'county', 'absentee'),
+            ('Adair Total', 'county', 'total'),
+        ]
+        jurisdictions = self.loader._parse_jurisdictions(row)
+        self.assertEqual(jurisdictions, expected)
+
+        row = [u'RaceTitle', u' CandidateName', u' PoliticalPartyName', u' Clay-Douglas/Peterson Absentee', u' Clay-Douglas/Peterson Polling', u' Clay-Douglas/Peterson Total', u' Clay-Garfield/Herdland Absentee', u' Clay-Garfield/Herdland Polling', u' Clay-Garfield/Herdland Total', u' Clay-Lake/Freeman Absentee', u' Clay-Lake/Freeman Polling', u' Clay-Lake/Freeman Total', u' Clay-Lincoln/Clay Absentee', u' Clay-Lincoln/Clay Polling', u' Clay-Lincoln/Clay Total', u' Clay-Logan/Gillett Grove Absentee', u' Clay-Logan/Gillett Grove Polling', u' Clay-Logan/Gillett Grove Total', u' Clay-Spencer Ward 1 Absentee', u' Clay-Spencer Ward 1 Polling', u' Clay-Spencer Ward 1 Total', u' Clay-Spencer Ward 2 Absentee', u' Clay-Spencer Ward 2 Polling', u' Clay-Spencer Ward 2 Total', u' Clay-Spencer Ward 3 Absentee', u' Clay-Spencer Ward 3 Polling', u' Clay-Spencer Ward 3 Total', u' Clay-Spencer Ward 4 Absentee', u' Clay-Spencer Ward 4 Polling', u' Clay-Spencer Ward 4 Total', u' Clay-Spencer Ward 5 Absentee', u' Clay-Spencer Ward 5 Polling', u' Clay-Spencer Ward 5 Total', u' Clay-Summit/Riverton/Sioux/Meadow Absentee', u' Clay-Summit/Riverton/Sioux/Meadow Polling', u' Clay-Summit/Riverton/Sioux/Meadow Total', u' Clay-Waterford/Lone Tree Absentee', u' Clay-Waterford/Lone Tree Polling', u' Clay-Waterford/Lone Tree Total', u' Clay Total'] 
+
+
+        expected = [
+            ('Clay-Douglas/Peterson Absentee', 'precinct', 'absentee'),
+            ('Clay-Douglas/Peterson Polling', 'precinct', 'election_day'),
+            ('Clay-Douglas/Peterson Total', 'precinct', 'total'),
+            ('Clay-Garfield/Herdland Absentee', 'precinct', 'absentee'),
+            ('Clay-Garfield/Herdland Polling', 'precinct', 'election_day'),
+            ('Clay-Garfield/Herdland Total', 'precinct', 'total'),
+            ('Clay-Lake/Freeman Absentee', 'precinct', 'absentee'),
+            ('Clay-Lake/Freeman Polling', 'precinct', 'election_day'),
+            ('Clay-Lake/Freeman Total', 'precinct', 'total'),
+            ('Clay-Lincoln/Clay Absentee', 'precinct', 'absentee'),
+            ('Clay-Lincoln/Clay Polling', 'precinct', 'election_day'),
+            ('Clay-Lincoln/Clay Total', 'precinct', 'total'),
+            ('Clay-Logan/Gillett Grove Absentee', 'precinct', 'absentee'),
+            ('Clay-Logan/Gillett Grove Polling', 'precinct', 'election_day'),
+            ('Clay-Logan/Gillett Grove Total', 'precinct', 'total'),
+            ('Clay-Spencer Ward 1 Absentee', 'precinct', 'absentee'),
+            ('Clay-Spencer Ward 1 Polling', 'precinct', 'election_day'),
+            ('Clay-Spencer Ward 1 Total', 'precinct', 'total'),
+            ('Clay-Spencer Ward 2 Absentee', 'precinct', 'absentee'),
+            ('Clay-Spencer Ward 2 Polling', 'precinct', 'election_day'),
+            ('Clay-Spencer Ward 2 Total', 'precinct', 'total'),
+            ('Clay-Spencer Ward 3 Absentee', 'precinct', 'absentee'),
+            ('Clay-Spencer Ward 3 Polling', 'precinct', 'election_day'),
+            ('Clay-Spencer Ward 3 Total', 'precinct', 'total'),
+            ('Clay-Spencer Ward 4 Absentee', 'precinct', 'absentee'),
+            ('Clay-Spencer Ward 4 Polling', 'precinct', 'election_day'),
+            ('Clay-Spencer Ward 4 Total', 'precinct', 'total'),
+            ('Clay-Spencer Ward 5 Absentee', 'precinct', 'absentee'),
+            ('Clay-Spencer Ward 5 Polling', 'precinct', 'election_day'),
+            ('Clay-Spencer Ward 5 Total', 'precinct', 'total'),
+            ('Clay-Summit/Riverton/Sioux/Meadow Absentee', 'precinct', 'absentee'),
+            ('Clay-Summit/Riverton/Sioux/Meadow Polling', 'precinct',
+             'election_day'),
+            ('Clay-Summit/Riverton/Sioux/Meadow Total', 'precinct', 'total'),
+            ('Clay-Waterford/Lone Tree Absentee', 'precinct', 'absentee'),
+            ('Clay-Waterford/Lone Tree Polling', 'precinct', 'election_day'),
+            ('Clay-Waterford/Lone Tree Total', 'precinct', 'total'),
+            ('Clay Total', 'county', 'total'),
+        ]
+
+    def test_parse_jurisdiction(self):
+        test_data = [
+            ('Adair-1 NW Polling', 'precinct', 'election_day'),
+            ('Adair-Absentee Absentee', 'county', 'absentee'),
+            ('Adair Total', 'county', 'total'),
+            ('Clay-Waterford/Lone Tree Absentee', 'precinct', 'absentee'),
+            ('Clay-Waterford/Lone Tree Polling', 'precinct', 'election_day'),
+            ('Clay-Waterford/Lone Tree Total', 'precinct', 'total'),
+            ('Clay Total', 'county', 'total'),
+        ]
+        for expected in test_data:
+            val = expected[0]
+            result = self.loader._parse_jurisdiction(val)
+            self.assertEqual(result, expected)
+
+    def test_parse_result_row(self):
+        county = "Adair"
+        county_ocd_id = 'ocd-division/country:us/state:ia/county:adair'
+        jurisdictions = [
+            ('Adair-1 NW Polling', 'precinct', 'election_day'),
+            ('Adair-2 NE Polling', 'precinct', 'election_day'),
+            ('Adair-3 SW Polling', 'precinct', 'election_day'),
+            ('Adair-4 SE Polling', 'precinct', 'election_day'),
+            ('Adair-5 GF Polling', 'precinct', 'election_day'),
+            ('Adair-Absentee Absentee', 'county', 'absentee'),
+            ('Adair Total', 'county', 'total'),
+        ]
+        common_kwargs = {
+          'election_type': 'primary',        
+        }
+
+        row = [u'U.S. Senator - Rep', u' Sam Clovis', u' Republican Party', '', 15.0, 13.0, 13.0, 3.0, 10.0, 8.0, 62.0] 
+        results = self.loader._parse_result_row(row, jurisdictions,            
+            county, county_ocd_id, **common_kwargs)
+        self._test_result_common_fields(row, jurisdictions, results)
+        self._test_result_at_index(row, jurisdictions, results, 0)
+        self._test_result_at_index(row, jurisdictions, results, -2)
+        self._test_result_at_index(row, jurisdictions, results, -1)
+
+        row = [u'U.S. Rep. Dist. 3 - Rep', u' Robert Cramer', u' Republican Party', '', 26.0, 15.0, 14.0, 14.0, 20.0, 20.0, 109.0]
+        results = self.loader._parse_result_row(row, jurisdictions,            
+            county, county_ocd_id, **common_kwargs)
+        self._test_result_common_fields(row, jurisdictions, results, '3')
+
+    def _test_result_common_fields(self, row, jurisdictions, results,
+            district=None):
+        """Test that fields common to all results from a row are correct"""
+        self.assertEqual(len(results), len(jurisdictions))
+        full_name = row[1].strip()
+        party = row[2].strip()
+        primary_party = party[0:3]
+        for result in results:
+            self.assertEqual(result.full_name, full_name)
+            self.assertEqual(result.party, party)
+            self.assertEqual(result.primary_party, primary_party)
+            self.assertEqual(result.district, district)
+
+    def _test_result_at_index(self, row, jurisdictions, results, i):
+        """Test that a result at an index is well formed"""
+        result = results[i]
+        vote_index = i if i < 0 else i + 4
+        votes_type = ('' if jurisdictions[i][2] == 'total' 
+                      else jurisdictions[i][2])
+        self.assertEqual(result.jurisdiction, jurisdictions[i][0])
+        self.assertEqual(result.reporting_level, jurisdictions[i][1])
+        self.assertEqual(result.votes_type, votes_type)
+        self.assertEqual(result.votes, row[vote_index])

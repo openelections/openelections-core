@@ -322,12 +322,12 @@ class ExcelPrecinctResultLoader(BaseLoader):
         for row_index in xrange(sheet.nrows):
             yield [r for r in sheet.row_values(row_index)]
 
-    def _get_sheet(self, workbook=None):
+    def _get_sheet(self, workbook=None, sheet_index=0):
         """Return the sheet of interest from the workbook"""
         if workbook is None:
             workbook = self._get_workbook()
 
-        return workbook.sheets()[0]
+        return workbook.sheets()[sheet_index]
 
     def _get_workbook(self):
         return xlrd.open_workbook(self._xls_file_path)
@@ -876,7 +876,7 @@ class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):
         '(?:\s+-\s+(?P<party>D|R)){{0,1}}'.format(offices='|'.join(offices)),
         re.IGNORECASE)
 
-    # HACK: LIst of Polk County precincts to reflect header
+    # HACK: List of Polk County precincts to reflect header
     POLK_PRECINCTS = [
         'ABSENTEE 1',
         'ALLEMAN-1',
@@ -1132,7 +1132,168 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
     Parse 2014 primary precinct-level results
 
     At the time of authoring, the 2014 general election results were not
-    yet available
+    yet available.
+
+    The 2014 primary results files have the following format:
+
+    The first row is a header row.
+
+    All following rows are result rows.
+
+    The columns are as follows:
+
+    * Office
+    * Candidate
+    * Candidate Party
+    * Votes for each precinct with separate columns for polling, absentee and
+      total votes.
+    * A total column for the county.
     """
     # TODO: See if 2014 general election results follow same format as
     # the primary results
+
+    offices = [
+        'U.S. Senator',
+        'U.S. Rep.',
+        'Governor',
+        'Secretary of State',
+        'Auditor of State',
+        'Treasurer of State',
+        'Secretary of Agriculture',
+        'Attorney General',
+        'State Rep.',
+        'State Senator',
+    ]
+    _office_re = re.compile('(?P<office>{offices})'
+        '(\s+Dist\. (?P<district>\d+)){{0,1}}'
+        '(?:\s+-\s+(?P<party>Dem|Rep)){{0,1}}'.format(offices='|'.join(offices)),
+        re.IGNORECASE
+    )
+
+    def _results(self, mapping):
+        results = []
+        county = mapping['name']
+        county_ocd_id = mapping['ocd_id']
+        base_kwargs = self._build_common_election_kwargs()
+        if county == "Van Buren":
+            # Van Buren County has an empty initial sheet
+            sheet_index = 1
+        else:
+            sheet_index = 0
+        sheet = self._get_sheet(sheet_index=sheet_index)
+
+        for row in self._rows(sheet):
+            if row[0].strip() == "RaceTitle":
+                jurisdictions = self._parse_jurisdictions(row)
+                continue
+
+            results.extend(self._parse_result_row(row, jurisdictions, county,
+                county_ocd_id, **base_kwargs))
+
+        return results
+
+    def _parse_jurisdictions(self, row):
+        """
+        Parse jurisdictions from the initial header row
+
+        Args:
+            row (list): List of spreadsheet column values
+
+        Returns:
+            List of tuples with the first value representing the name of the
+            jurisdiction (precinct or county), the second the reporting level
+            of the jurisdiction and the third representing the
+            type of vote (absentee, election day, total).
+
+        """
+        jurisdictions = []
+        for cell in row:
+            cell = cell.strip()
+            if cell == "":
+                continue
+
+            if cell in ("RaceTitle", "CandidateName", "PoliticalPartyName"):
+                continue
+
+            jurisdictions.append(self._parse_jurisdiction(cell))
+
+        return jurisdictions
+
+    def _parse_jurisdiction(self, val):
+        """
+        Parse jurisdiction information from a single column's data
+
+        Args:
+            val (str): Spreadsheet cell containing a jurisdiction name.
+
+        Returns:
+            A tuple with the first value representing the name of the
+            jurisdiction (precinct or county), the second the reporting level
+            of the jurisdiction and the third representing the
+            type of vote (absentee, election day, total).
+
+
+        """
+        jurisdiction = val
+        reporting_level = 'precinct'
+        votes_type = 'total'
+
+        if "Absentee" in jurisdiction:
+            votes_type = 'absentee'
+        elif "Polling" in jurisdiction:
+            votes_type = 'election_day'
+
+        if (re.match(r'\w+-Absentee Absentee', jurisdiction) or
+                re.match(r'[^-/]+ Total', jurisdiction)):
+            reporting_level = 'county'
+
+        return jurisdiction, reporting_level, votes_type
+
+    def _parse_result_row(self, row, jurisdictions, county, county_ocd_id,
+            **common_kwargs):
+        results = []
+
+        office_cell = row[0].strip()
+        m = self._office_re.match(office_cell)
+        if m is None:
+            logging.info("Skipping office '{}'".format(office_cell))
+            return results
+
+        is_primary = (common_kwargs['election_type']  == 'primary')
+        party = row[2].strip()
+        base_kwargs = {
+          'office': m.group('office'),
+          'district': m.group('district'),
+          'full_name': row[1].strip(),
+          'party': party, 
+        }
+        if is_primary:
+            # Not all rows, for instance Write-in pseudo candidates,
+            # have a party listed in the 'PoliticalPartyName' column 
+            # Use the party listed in the 'RaceTitle' column.
+            # Note that these values are Dem, Rep and we don't
+            # rewrite, saving that for transforms.
+            base_kwargs['primary_party'] = m.group('party')
+        base_kwargs.update(common_kwargs)
+        votes_start = next(i for i in range(3, len(row)) if row[i] != '')
+
+        for i, votes in enumerate(row[votes_start:]):
+            if i >= len(jurisdictions):
+                # Ignore trailing empty cells
+                break
+
+            jurisdiction, reporting_level, votes_type = jurisdictions[i]
+            # To not break backward compatibility, we use an empty string
+            # to mean total votes
+            if votes_type == 'total':
+                votes_type = ''
+
+            results.append(RawResult(
+                jurisdiction=jurisdiction,
+                reporting_level=reporting_level,
+                votes=votes,
+                votes_type=votes_type,
+                **base_kwargs 
+            ))
+
+        return results
