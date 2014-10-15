@@ -128,7 +128,10 @@ class PreprocessedResultsLoader(BaseLoader):
                     # results.  These are in:
                     # 20001107__ia__general__precinct.csv
                     # 20041102__ia__general__precinct.csv
-                    results.append(self._prep_precinct_result(row))
+                    county = None
+                    if self.mapping['name'] != 'Iowa':
+                        county = self.mapping['name']
+                    results.append(self._prep_precinct_result(row, county=county))
                 elif 'county' in self.source:
                     # TODO: Handle over and under votes in these results.
                     # These are in:
@@ -253,9 +256,11 @@ class PreprocessedResultsLoader(BaseLoader):
 
         return RawResult(**kwargs)
 
-    def _prep_precinct_result(self, row):
+    def _prep_precinct_result(self, row, county=None):
         kwargs = self._base_kwargs(row)
-        county_ocd_id = self._lookup_county_ocd_id(row['county'])
+        if county is None:
+            county = row['county']
+        county_ocd_id = self._lookup_county_ocd_id(county)
         ocd_id = "{}/precinct:{}".format(county_ocd_id,
             ocd_type_id(row['jurisdiction']))
         kwargs.update({

@@ -85,12 +85,16 @@ class Datasource(BaseDatasource):
             }
             if path['jurisdiction']:
                 filename_kwargs['jurisdiction'] = path['jurisdiction']
+                name = path['jurisdiction']
+            else:
+                name = "Iowa"
+
             meta_entries.append({
                 'generated_filename': self._standardized_filename(election,
                     **filename_kwargs),
                 'raw_url': path['url'],
                 'ocd_id': 'ocd-division/country:us/state:ia',
-                'name': "Iowa", 
+                'name': name, 
                 'election': election['slug'],
             })
 
