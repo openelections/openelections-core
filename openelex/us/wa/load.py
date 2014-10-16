@@ -216,16 +216,16 @@ class OCDMixin(object):
 
     """
 
-    def _get_ocd_id(self, jurisdiction, Precinct=False):
-        if Precinct:
+    def _get_ocd_id(self, jurisdiction, precinct=False):
+        if precinct:
             return "{}/county:{}/precinct:{}".format(
                 self.mapping['ocd_id'],
-                jurisdiction,
-                ocd_type_id(jurisdiction))
+                ocd_type_id(jurisdiction),
+                ocd_type_id(precinct))
         elif 'county' in self.mapping['ocd_id']:
             return "{}".format(self.mapping['ocd_id'])
         else:
-            return "{}/county:{}".format(self.mapping['ocd_id'], jurisdiction)
+            return "{}/county:{}".format(self.mapping['ocd_id'], ocd_type_id(jurisdiction))
 
 
 class WABaseLoader(BaseLoader):
@@ -335,7 +335,7 @@ def normalize_party(header):
     """
 
     regex = re.compile(
-        r'.*(^party$|party.*code|candidate(_|\s+)party(_|\s)id).*',
+        r'.*(\bparty\b|party.*code|candidate(_|\s+)party(_|\s)id).*',
         re.IGNORECASE)
 
     """
@@ -359,7 +359,7 @@ def normalize_candidate(header):
     """
 
     regex = re.compile(
-        r'.*(ballot\sname|candidate.*(name|title)|candidate$).*',
+        r'.*(ballot\sname|candidate.*(name|title)|candidate\b).*',
         re.IGNORECASE)
 
     return filter(lambda x: regex.search(x), header)[0]
@@ -377,7 +377,7 @@ def normalize_contest(header):
     """
 
     regex = re.compile(
-        r'.*(officeposition|^contest$|race$|race(_|\s)(title|name)|(contest.*(title|name))).*',
+        r'.*(officeposition|\bcontest\b|race\b|race(_|\s)(title|name)|(contest.*(title|name))).*',
         re.IGNORECASE)
 
     return filter(lambda x: regex.search(x), header)[0]
@@ -410,7 +410,7 @@ def normalize_votes(header):
     """
 
     regex = re.compile(
-        r'.*(.*vote.*for|^vote|^count$|total_votes|total.*votes).*',
+        r'.*(.*vote.*for|\bvote|\bcount\b|total_votes|total.*votes).*',
         re.IGNORECASE)
 
     return filter(lambda x: regex.search(x), header)[0]
@@ -480,7 +480,7 @@ def normalize_races(string):
         'Legislative District)',
         re.IGNORECASE)
     national_regex = re.compile(
-        r'(U\.S\.|^US$|Congressional|National|United\s+States|U\.\s+S\.\s+)',
+        r'(U\.S\.|\bUS\b|Congressional|National|United\s+States|U\.\s+S\.\s+)',
         re.IGNORECASE)
 
     """
@@ -546,7 +546,7 @@ def normalize_races(string):
         return 'N/A'
 
 
-class SkipLoader(OCDMixin, WABaseLoader):
+class SkipLoader(WABaseLoader):
 
     """
     A hacky workaround for all those pesky files that we can't do anything
@@ -624,8 +624,10 @@ class WALoaderPrecincts(OCDMixin, WABaseLoader):
                     rr_kwargs.update({
                         'reporting_level': 'precinct',
                         'votes': votes,
-                        'ocd_id': "{}".format(self._get_ocd_id(self.jurisdiction, Precinct=True))
+                        'ocd_id': "{}".format(self._get_ocd_id(self.jurisdiction, precinct=row[self.precinct_index]))
                     })
+                    print rr_kwargs['ocd_id']
+                    quit(rr_kwargs['ocd_id'])
                     try:
                         rr_kwargs.update({
                             'party': row[self.party_index].strip()
