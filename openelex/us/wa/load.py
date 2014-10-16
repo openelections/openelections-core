@@ -626,8 +626,6 @@ class WALoaderPrecincts(OCDMixin, WABaseLoader):
                         'votes': votes,
                         'ocd_id': "{}".format(self._get_ocd_id(self.jurisdiction, precinct=row[self.precinct_index]))
                     })
-                    print rr_kwargs['ocd_id']
-                    quit(rr_kwargs['ocd_id'])
                     try:
                         rr_kwargs.update({
                             'party': row[self.party_index].strip()
