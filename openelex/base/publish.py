@@ -8,7 +8,7 @@ from blinker import signal
 import github3
 
 from openelex import COUNTRY_DIR
-from openelex import settings
+from openelex.config import settings
 
 try:
     # Python 2

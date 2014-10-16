@@ -1,7 +1,7 @@
 from invoke import Collection
 from mongoengine import ConnectionError
 
-from openelex.settings import init_db
+from openelex.db import init_db
 from fetch import fetch
 from shell import shell
 from publish import publish
