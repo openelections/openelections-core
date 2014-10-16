@@ -11,7 +11,7 @@ from .state import StateBase
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 
-from openelex import settings
+from openelex.config import settings
 from .cache import StateCache
 
 

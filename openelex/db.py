@@ -1,4 +1,4 @@
-from openelex import settings
+from openelex.config import settings
 from mongoengine import connect
 
 def init_db(name='openelex'):
