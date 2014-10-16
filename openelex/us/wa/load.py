@@ -16,16 +16,13 @@ error message instead.
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
+from openelex.lib.text import ocd_type_id
 from .datasource import Datasource
 
 """
 Washington state elections have CSV and XLSX result files.
 Results from < 2007 have a different format than those <= 2008.
 Actually, most every file has a different format.
-
-TO DO:
-
-1.) Create class(es) for bad_filenames' .xls files
 
 NOTES:
 
@@ -76,7 +73,7 @@ class LoadResults(object):
         election = mapping['election']
 
         """
-        bad_filenames[] holds the list of files who have content that's 
+        bad_filenames[] holds the list of files who have content that's
         hard to use (e.g. an .xls file with 10 sheets).
 
         The edge cases will be taken care of later. The cases where there is
@@ -211,10 +208,73 @@ class LoadResults(object):
             logger.error('\tNo raw results loaded')
 
 
+class OCDMixin(object):
+
+    """
+    Borrowed from md/loader.py
+    Generates ocd_id
+
+    """
+
+    def _get_ocd_id(self, jurisdiction, precinct=False):
+        if precinct:
+            return "{}/county:{}/precinct:{}".format(
+                self.mapping['ocd_id'],
+                ocd_type_id(jurisdiction),
+                ocd_type_id(precinct))
+        elif 'county' in self.mapping['ocd_id']:
+            return "{}".format(self.mapping['ocd_id'])
+        else:
+            return "{}/county:{}".format(self.mapping['ocd_id'], ocd_type_id(jurisdiction))
+
+
+class WABaseLoader(BaseLoader):
+    datasource = Datasource()
+
+    """
+    target_offices are the offices that openeelections is looking for.
+    This set() is a master list that all of the rows in the .csv and .xls(x)
+    files are matched against (after being normalized).
+
+    """
+
+    target_offices = set([
+        'President',
+        'U.S. Senator',
+        'U.S. Representative',
+        'Governor',
+        'Secretary of State',
+        'Superintendent of Public Instruction',
+        'State Senator',
+        'State Representative',
+        'Lt. Governor',
+        'Governor',
+        'Treasurer',
+        'Auditor',
+        'State Superintendent of Public Instruction',
+        'Attorney General',
+        'Commissioner of Public Lands'
+    ])
+
+    district_offices = {
+        'U.S. Senator': 'Congressional District',
+        'U.S. Representative': 'Congressional District',
+        'State Senator': 'Legislative District',
+        'State Representative': 'Legislative District'
+    }
+
+    def _skip_row(self, row):
+        """
+        Should this row be skipped?
+        This should be implemented in subclasses.
+
+        """
+        return False
+
 """
 New methods to normalize headers should follow this structure:
 
-    def _*(header):
+    def *_(header):
 
 
         # Some sort of examples of what words the regex tests for
@@ -275,7 +335,7 @@ def normalize_party(header):
     """
 
     regex = re.compile(
-        r'.*(^party$|party.*code|candidate(_|\s+)party(_|\s)id).*',
+        r'.*(\bparty\b|party.*code|candidate(_|\s+)party(_|\s)id).*',
         re.IGNORECASE)
 
     """
@@ -299,7 +359,7 @@ def normalize_candidate(header):
     """
 
     regex = re.compile(
-        r'.*(ballot\sname|candidate.*(name|title)|candidate$).*',
+        r'.*(ballot\sname|candidate.*(name|title)|candidate\b).*',
         re.IGNORECASE)
 
     return filter(lambda x: regex.search(x), header)[0]
@@ -317,7 +377,7 @@ def normalize_contest(header):
     """
 
     regex = re.compile(
-        r'.*(^contest$|race$|race(_|\s)(title|name)|(contest.*(title|name))).*',
+        r'.*(officeposition|\bcontest\b|race\b|race(_|\s)(title|name)|(contest.*(title|name))).*',
         re.IGNORECASE)
 
     return filter(lambda x: regex.search(x), header)[0]
@@ -333,7 +393,7 @@ def normalize_precinct(header):
 
     """
 
-    regex = re.compile('.*(precinct|precinct.*name).*', re.IGNORECASE)
+    regex = re.compile(r'.*(precinct|precinct.*name).*', re.IGNORECASE)
 
     return filter(lambda x: regex.search(x), header)[0]
 
@@ -350,7 +410,7 @@ def normalize_votes(header):
     """
 
     regex = re.compile(
-        '.*(.*vote.*for|^vote|^count$|total_votes|total.*votes).*',
+        r'.*(.*vote.*for|\bvote|\bcount\b|total_votes|total.*votes).*',
         re.IGNORECASE)
 
     return filter(lambda x: regex.search(x), header)[0]
@@ -365,6 +425,25 @@ def normalize_index(header, method):
     """
 
     return header.index(''.join(method(header)))
+
+
+def normalize_district(header, office):
+    """
+    Example of what we had before:
+
+    'district': '{0} {1}'.format(
+        self.district_offices[normalize_races(sh_val)],
+        "".join(map(str, [int(s) for s in sh_val.strip() if s.isdigit()][:2])
+        ))})
+
+    normalize_district now provides a more standardized and clean API than
+    was the case with the mess before.
+    """
+
+    return "{} {}".format(
+        WABaseLoader.district_offices[
+            normalize_races(office)], "".join(
+            map(str, [int(s) for s in office.strip() if s.isdigit()][:2])))
 
 
 def normalize_races(string):
@@ -401,7 +480,7 @@ def normalize_races(string):
         'Legislative District)',
         re.IGNORECASE)
     national_regex = re.compile(
-        r'(U\.S\.|^US$|Congressional|National|United\s+States|U\.\s+S\.\s+)',
+        r'(U\.S\.|\bUS\b|Congressional|National|United\s+States|U\.\s+S\.\s+)',
         re.IGNORECASE)
 
     """
@@ -467,43 +546,6 @@ def normalize_races(string):
         return 'N/A'
 
 
-class WABaseLoader(BaseLoader):
-    datasource = Datasource()
-
-    """
-    target_offices are the offices that openeelections is looking for.
-    This set() is a master list that all of the rows in the .csv and .xls(x)
-    files are matched against (after being normalized).
-
-    """
-
-    target_offices = set([
-        'President',
-        'U.S. Senator',
-        'U.S. Representative',
-        'Governor',
-        'Secretary of State',
-        'Superintendent of Public Instruction',
-        'State Senator',
-        'State Representative',
-        'Lt. Governor',
-        'Governor',
-        'Treasurer',
-        'Auditor',
-        'State Superintendent of Public Instruction',
-        'Attorney General',
-        'Commissioner of Public Lands'
-    ])
-
-    def _skip_row(self, row):
-        """
-        Should this row be skipped?
-        This should be implemented in subclasses.
-
-        """
-        return False
-
-
 class SkipLoader(WABaseLoader):
 
     """
@@ -526,7 +568,7 @@ class SkipLoader(WABaseLoader):
         pass
 
 
-class WALoaderPrecincts(WABaseLoader):
+class WALoaderPrecincts(OCDMixin, WABaseLoader):
 
     """
     Parse Washington election results for all precinct files.
@@ -541,6 +583,7 @@ class WALoaderPrecincts(WABaseLoader):
     contest_index = ''
     candidate_index = ''
     precinct_index = ''
+    jurisdiction = ''
 
     def load(self):
 
@@ -573,6 +616,7 @@ class WALoaderPrecincts(WABaseLoader):
                 if self._skip_row(row):
                     continue
                 else:
+                    self.jurisdiction = row[self.precinct_index].strip()
                     votes = int(row[self.votes_index].strip())
                     rr_kwargs = self._common_kwargs.copy()
                     rr_kwargs.update(self._build_contest_kwargs(row))
@@ -580,7 +624,7 @@ class WALoaderPrecincts(WABaseLoader):
                     rr_kwargs.update({
                         'reporting_level': 'precinct',
                         'votes': votes,
-                        'county_ocd_id': self.mapping['ocd_id']
+                        'ocd_id': "{}".format(self._get_ocd_id(self.jurisdiction, precinct=row[self.precinct_index]))
                     })
                     try:
                         rr_kwargs.update({
@@ -590,18 +634,16 @@ class WALoaderPrecincts(WABaseLoader):
                         party_flag = 1
                     try:
                         rr_kwargs.update({
-                            'district': '{0} {1}'.format(
-                                normalize_races(row[self.contest_index]),
-                                [int(s) for s in row[
-                                    self.contest_index].strip()
-                                 if s.isdigit()][0])})
-                    except IndexError:
+                            'district': '{}'.format(normalize_district(self.header, row[self.contest_index]))
+                        })
+                    except KeyError:
+                        pass
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
             if 0 is not party_flag:
-                logger.info('Some rows did not contain party info')
+                logger.info('Some rows did not contain party info.')
             if 0 is not district_flag:
-                logger.info('Some rows did not contain district info')
+                logger.info('Some rows did not contain district info.')
 
         """
         Many county files *only* have local races, such as schoolboard or
@@ -623,7 +665,7 @@ class WALoaderPrecincts(WABaseLoader):
     def _build_contest_kwargs(self, row):
         return {
             'office': row[self.contest_index].strip(),
-            'jurisdiction': row[self.precinct_index].strip(),
+            'jurisdiction': self.jurisdiction,
         }
 
     def _build_candidate_kwargs(self, row):
@@ -640,7 +682,7 @@ I should fix this.
 """
 
 
-class WALoaderPre2007(WABaseLoader):
+class WALoaderPre2007(OCDMixin, WABaseLoader):
 
     """
     Parse Washington election results for all elections before 2007.
@@ -703,7 +745,6 @@ class WALoaderPre2007(WABaseLoader):
             'family_name': family_name,
             'given_name': given_name
         }
-
         return kwargs
 
     def _base_kwargs(self, row):
@@ -734,20 +775,18 @@ class WALoaderPre2007(WABaseLoader):
             'jurisdiction': county,
             'party': row['partycode'].strip(),
             'votes': int(row['votes'].strip()),
-            'county_ocd_id': self.mapping['ocd_id']
+            'ocd_id': "{}".format(self._get_ocd_id(county))
         })
         try:
             kwargs.update({
-                'district': '{0} {1}'.format(
-                    normalize_races(row[self.contest_index]),
-                    [int(s) for s in row[self.contest_index].strip()
-                     if s.isdigit()][0])})
-        except (IndexError, KeyError):
+                'district': '{}'.format(normalize_district(self.header, row[self.contest_index]))
+            })
+        except KeyError:
             pass
         return RawResult(**kwargs)
 
 
-class WALoaderPost2007(WABaseLoader):
+class WALoaderPost2007(OCDMixin, WABaseLoader):
 
     """
     Parse Washington election results for all elections after and including 2007.
@@ -768,6 +807,7 @@ class WALoaderPost2007(WABaseLoader):
             reader = unicodecsv.DictReader(
                 csvfile, encoding='latin-1', delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
+            self.contest_index = normalize_contest(self.header)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -779,20 +819,18 @@ class WALoaderPost2007(WABaseLoader):
                     rr_kwargs.update({
                         'party': row['Party'].strip(),
                         'votes': int(row['Votes'].strip()),
-                        'county_ocd_id': self.mapping['ocd_id'],
+                        'ocd_id': "{}".format(self._get_ocd_id(rr_kwargs['jurisdiction'])),
                     })
                     try:
                         rr_kwargs.update({
-                            'district': '{0} {1}'.format(
-                                normalize_races(row[self.contest_index]),
-                                [int(s) for s in row[
-                                    self.contest_index].strip()
-                                 if s.isdigit()][0])})
-                    except (IndexError, KeyError):
+                            'district': '{}'.format(normalize_district(self.header, row[self.contest_index]))
+                        })
+                    except KeyError:
+                        pass
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
             if 0 is not district_flag:
-                logger.info('Some rows did not contain district info')
+                logger.info('Some rows did not contain district info.')
 
         """
         Many county files *only* have local races, such as schoolboard or
@@ -842,7 +880,7 @@ class WALoaderPost2007(WABaseLoader):
         }
 
 
-class WALoaderExcel(WABaseLoader):
+class WALoaderExcel(OCDMixin, WABaseLoader):
 
     """ Load Excel (.xls/.xlsx) results """
 
@@ -920,7 +958,7 @@ class WALoaderExcel(WABaseLoader):
                 rr_kwargs.update(self._build_contest_kwargs(row, sheet))
                 rr_kwargs.update({
                     'votes': votes,
-                    'county_ocd_id': self.mapping['ocd_id']
+                    'ocd_id': "{}".format(self._get_ocd_id(rr_kwargs['jurisdiction']))
                 })
                 # Get party
                 try:
@@ -941,14 +979,12 @@ class WALoaderExcel(WABaseLoader):
                     # logger.info('No party')
                     pass
                 try:
-                    rr_kwargs.update({
-                            'district': '{0} {1}'.format(
-                                normalize_races(
-                                    sheet.cell(
-                                        rowx=row, colx=self.contest_index)).value.strip(), [
-                                    int(s) for s in sheet.cell(
-                                        rowx=row, colx=self.contest_index).value.strip() if s.isdigit()][0])})
-                except TypeError:
+                    sh_val = sheet.cell(
+                        rowx=row,
+                        colx=self.contest_index).value
+                    rr_kwargs.update(
+                        {'district': '{}'.format(normalize_district(self.header, sh_val))})
+                except KeyError:
                     pass
         RawResult.objects.insert(results)
 
@@ -965,6 +1001,7 @@ class WALoaderExcel(WABaseLoader):
         returns a float. You can't .strip() a float.
 
         """
+
         jurisdiction = str(
             sheet.cell(
                 rowx=row,
