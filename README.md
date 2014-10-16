@@ -64,11 +64,17 @@ $ pip install -r requirements.txt
 $ pip install -r requirements-dev.txt
 ```
 
-Create `settings.py` from the template
+Create a `settings.py` file.
 
 ```bash
-$ cp settings.py.tmplt openelex/settings.py
+$ cp settings.py.tmplt settings.py
 ```
+
+At the very least, you'll want to make sure the values in the ``MONGO`` variable work for the way you've installed and configured MongoDB on your system.
+
+You can put this settings file anywhere on your filesystem.  You'll need to set the ``OPENELEX_SETTINGS`` environment variable to the [absolute path](http://en.wikipedia.org/wiki/Path_(computing)) to the ``settings.py`` file that you created. 
+
+You'll probably want to add a line to the ``postactivate`` [script](http://virtualenvwrapper.readthedocs.org/en/latest/scripts.html) (``$VIRTUAL_ENV/bin/postactivate``) in your virtualenv to set the ``OPENELEX_SETTINGS`` environment variable.
 
 #### Setting up 'invoke'
 

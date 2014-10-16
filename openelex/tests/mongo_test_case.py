@@ -3,8 +3,7 @@ from unittest import TestCase
 from mongoengine import ConnectionError
 from nose.exc import SkipTest
 
-from openelex.settings import init_db
-
+from openelex.db import init_db
 
 class MongoTestCase(TestCase):
 
