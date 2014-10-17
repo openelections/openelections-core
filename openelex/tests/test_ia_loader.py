@@ -5,7 +5,8 @@ from unittest import TestCase
 from openelex.lib.text import ocd_type_id
 from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinctPre2010ResultLoader, ExcelPrecinct2010PrimaryResultLoader,
-    ExcelPrecinct2010GeneralResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2010GeneralResultLoader,
+    ExcelPrecinct2010GeneralAudubonResultLoader, ExcelPrecinct2012ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
 
 
@@ -630,6 +631,104 @@ class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
         self.assertEqual(result.votes, row[5])
 
 
+class TestExcelPrecinct2010GeneralAudubonResultLoader(LoaderPrepMixin, TestCase):
+    def setUp(self):
+        self.loader = ExcelPrecinct2010GeneralAudubonResultLoader()
+
+    def test_clean_jurisdiction_cell(self):
+        test_data = [
+          ('Absentee     One', 'Absentee One'),
+        ]
+        for val, expected in test_data:
+            self.assertEqual(self.loader._clean_jurisdiction_cell(val),
+                expected)
+
+    def test_parse_jurisdictions(self):
+        row = [u'Candidates', u'Party', u'One', u'Absentee     One', u'Total Precinct One', u'Two', u'Abs Two', u'Total Precinct Two', u'Three', u'Abs   Three', u'Total Precinct Three', u'Four', u'Abs     Four', u'Total Precinct Four', u'Special & Abs', u'Total', '', '']
+        expected = [
+            "One",
+            "Absentee One",
+            "Total Precinct One",
+            "Two",
+            "Abs Two",
+            "Total Precinct Two",
+            "Three",
+            "Abs Three",
+            "Total Precinct Three",
+            "Four",
+            "Abs Four",
+            "Total Precinct Four",
+            "Special & Abs",
+            "Total",
+        ]
+        jurisdictions = self.loader._parse_jurisdictions(row)
+        self.assertEqual(jurisdictions, expected)
+
+    def test_parse_office(self):
+        # Cell value, expected office, expected district
+        test_data = [
+            ('United States Senator', "United States Senator", None),
+            ('United States Representative - Dist 5', "United States Representative", "5"),
+            ('Board of Supervisors', None, None),
+            ('Secretary of State', 'Secretary of State', None),
+            ('Auditor of State', 'Auditor of State', None),
+            ('Treasurer of State', 'Treasurer of State', None),
+            ('Secretary of Agriculture', 'Secretary of Agriculture', None),
+            ('Attorney General', 'Attorney General', None),
+            ('State Senator District 29', 'State Senator', '29'),
+            ('State Representative District 58', 'State Representative', '58'),
+        ]
+        for cell, expected_office, expected_district in test_data:
+            office, district = self.loader._parse_office(cell)
+            self.assertEqual(office, expected_office)
+            self.assertEqual(district, expected_district)
+
+    def test_parse_result_row(self):
+        county = "Audubon"
+        county_ocd_id = 'ocd-division/country:us/state:ia/county:audubon'
+        row = [u'Steve King', u'REP', 371.0, 205.0, 576.0, 236.0, 98.0, 334.0, 127.0, 22.0, 149.0, 344.0, 124.0, 468.0, 449.0, 1527.0, 1527.0, '']
+        jurisdictions = [
+            "One",
+            "Absentee One",
+            "Total Precinct One",
+            "Two",
+            "Abs Two",
+            "Total Precinct Two",
+            "Three",
+            "Abs Three",
+            "Total Precinct Three",
+            "Four",
+            "Abs Four",
+            "Total Precinct Four",
+            "Special & Abs",
+            "Total",
+        ]
+        results = self.loader._parse_result_row(row, jurisdictions, county,
+            county_ocd_id)
+        self.assertEqual(len(results), len(jurisdictions))
+        for result, votes, jurisdiction in zip(results, row[2:-1], jurisdictions):
+            reporting_level = 'precinct'
+            votes_type = ''
+            clean_jurisdiction = jurisdiction
+            if jurisdiction in ("Total", "Special & Abs"):
+                clean_jurisdiction = county
+                reporting_level = 'county'
+
+            if "Abs" in jurisdiction:
+                votes_type = 'absentee'
+            elif "Total" in jurisdiction:
+                votes_type = ''
+            else:
+                votes_type = 'election_day'
+
+            self.assertEqual(result.full_name, row[0].strip())
+            self.assertEqual(result.party, row[1].strip())
+            self.assertEqual(result.jurisdiction, clean_jurisdiction)
+            self.assertEqual(result.reporting_level, reporting_level)
+            self.assertEqual(result.votes, votes)
+            self.assertEqual(result.votes_type, votes_type)
+
+
 class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
     def setUp(self):
         self.loader = ExcelPrecinct2012ResultLoader()
@@ -843,7 +942,7 @@ class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
         row = [u'District 1NW', '', '', '', '', 39.0, 19.0, 0.0, 0.0, 0.0, 58.0]
         self.assertEqual(self.loader._fix_row(row), row)
 
-        row = [u'ABSENTEE 1', '', '', '', '', 26.0, 35.0, 0.0, 35.0, 1.0, 12.0, '', '', 0.0, '', u'ABSENTEE 1', '', '', '', '', 0.0, '', 0.0, '', '', 109.0] 
+        row = [u'ABSENTEE 1', '', '', '', '', 26.0, 35.0, 0.0, 35.0, 1.0, 12.0, '', '', 0.0, '', u'ABSENTEE 1', '', '', '', '', 0.0, '', 0.0, '', '', 109.0]
         fixed = row[0:14] + row[16:]
         self.assertEqual(self.loader._fix_row(row), fixed)
 
@@ -942,7 +1041,7 @@ class TestExcellPrecinct2014Loader(LoaderPrepMixin, TestCase):
         self.loader = ExcelPrecinct2014ResultLoader()
 
     def test_parse_jurisdictions(self):
-        row = [u'RaceTitle', u' CandidateName', u' PoliticalPartyName', '', u' Adair-1 NW Polling', u' Adair-2 NE Polling', u' Adair-3 SW Polling', u' Adair-4 SE Polling', u' Adair-5 GF Polling', u' Adair-Absentee Absentee', u' Adair Total'] 
+        row = [u'RaceTitle', u' CandidateName', u' PoliticalPartyName', '', u' Adair-1 NW Polling', u' Adair-2 NE Polling', u' Adair-3 SW Polling', u' Adair-4 SE Polling', u' Adair-5 GF Polling', u' Adair-Absentee Absentee', u' Adair Total']
         expected = [
             ('Adair-1 NW Polling', 'precinct', 'election_day'),
             ('Adair-2 NE Polling', 'precinct', 'election_day'),
@@ -955,7 +1054,7 @@ class TestExcellPrecinct2014Loader(LoaderPrepMixin, TestCase):
         jurisdictions = self.loader._parse_jurisdictions(row)
         self.assertEqual(jurisdictions, expected)
 
-        row = [u'RaceTitle', u' CandidateName', u' PoliticalPartyName', u' Clay-Douglas/Peterson Absentee', u' Clay-Douglas/Peterson Polling', u' Clay-Douglas/Peterson Total', u' Clay-Garfield/Herdland Absentee', u' Clay-Garfield/Herdland Polling', u' Clay-Garfield/Herdland Total', u' Clay-Lake/Freeman Absentee', u' Clay-Lake/Freeman Polling', u' Clay-Lake/Freeman Total', u' Clay-Lincoln/Clay Absentee', u' Clay-Lincoln/Clay Polling', u' Clay-Lincoln/Clay Total', u' Clay-Logan/Gillett Grove Absentee', u' Clay-Logan/Gillett Grove Polling', u' Clay-Logan/Gillett Grove Total', u' Clay-Spencer Ward 1 Absentee', u' Clay-Spencer Ward 1 Polling', u' Clay-Spencer Ward 1 Total', u' Clay-Spencer Ward 2 Absentee', u' Clay-Spencer Ward 2 Polling', u' Clay-Spencer Ward 2 Total', u' Clay-Spencer Ward 3 Absentee', u' Clay-Spencer Ward 3 Polling', u' Clay-Spencer Ward 3 Total', u' Clay-Spencer Ward 4 Absentee', u' Clay-Spencer Ward 4 Polling', u' Clay-Spencer Ward 4 Total', u' Clay-Spencer Ward 5 Absentee', u' Clay-Spencer Ward 5 Polling', u' Clay-Spencer Ward 5 Total', u' Clay-Summit/Riverton/Sioux/Meadow Absentee', u' Clay-Summit/Riverton/Sioux/Meadow Polling', u' Clay-Summit/Riverton/Sioux/Meadow Total', u' Clay-Waterford/Lone Tree Absentee', u' Clay-Waterford/Lone Tree Polling', u' Clay-Waterford/Lone Tree Total', u' Clay Total'] 
+        row = [u'RaceTitle', u' CandidateName', u' PoliticalPartyName', u' Clay-Douglas/Peterson Absentee', u' Clay-Douglas/Peterson Polling', u' Clay-Douglas/Peterson Total', u' Clay-Garfield/Herdland Absentee', u' Clay-Garfield/Herdland Polling', u' Clay-Garfield/Herdland Total', u' Clay-Lake/Freeman Absentee', u' Clay-Lake/Freeman Polling', u' Clay-Lake/Freeman Total', u' Clay-Lincoln/Clay Absentee', u' Clay-Lincoln/Clay Polling', u' Clay-Lincoln/Clay Total', u' Clay-Logan/Gillett Grove Absentee', u' Clay-Logan/Gillett Grove Polling', u' Clay-Logan/Gillett Grove Total', u' Clay-Spencer Ward 1 Absentee', u' Clay-Spencer Ward 1 Polling', u' Clay-Spencer Ward 1 Total', u' Clay-Spencer Ward 2 Absentee', u' Clay-Spencer Ward 2 Polling', u' Clay-Spencer Ward 2 Total', u' Clay-Spencer Ward 3 Absentee', u' Clay-Spencer Ward 3 Polling', u' Clay-Spencer Ward 3 Total', u' Clay-Spencer Ward 4 Absentee', u' Clay-Spencer Ward 4 Polling', u' Clay-Spencer Ward 4 Total', u' Clay-Spencer Ward 5 Absentee', u' Clay-Spencer Ward 5 Polling', u' Clay-Spencer Ward 5 Total', u' Clay-Summit/Riverton/Sioux/Meadow Absentee', u' Clay-Summit/Riverton/Sioux/Meadow Polling', u' Clay-Summit/Riverton/Sioux/Meadow Total', u' Clay-Waterford/Lone Tree Absentee', u' Clay-Waterford/Lone Tree Polling', u' Clay-Waterford/Lone Tree Total', u' Clay Total']
 
 
         expected = [
@@ -1027,11 +1126,11 @@ class TestExcellPrecinct2014Loader(LoaderPrepMixin, TestCase):
             ('Adair Total', 'county', 'total'),
         ]
         common_kwargs = {
-          'election_type': 'primary',        
+          'election_type': 'primary',
         }
 
-        row = [u'U.S. Senator - Rep', u' Sam Clovis', u' Republican Party', '', 15.0, 13.0, 13.0, 3.0, 10.0, 8.0, 62.0] 
-        results = self.loader._parse_result_row(row, jurisdictions,            
+        row = [u'U.S. Senator - Rep', u' Sam Clovis', u' Republican Party', '', 15.0, 13.0, 13.0, 3.0, 10.0, 8.0, 62.0]
+        results = self.loader._parse_result_row(row, jurisdictions,
             county, county_ocd_id, **common_kwargs)
         self._test_result_common_fields(row, jurisdictions, results)
         self._test_result_at_index(row, jurisdictions, results, 0)
@@ -1039,7 +1138,7 @@ class TestExcellPrecinct2014Loader(LoaderPrepMixin, TestCase):
         self._test_result_at_index(row, jurisdictions, results, -1)
 
         row = [u'U.S. Rep. Dist. 3 - Rep', u' Robert Cramer', u' Republican Party', '', 26.0, 15.0, 14.0, 14.0, 20.0, 20.0, 109.0]
-        results = self.loader._parse_result_row(row, jurisdictions,            
+        results = self.loader._parse_result_row(row, jurisdictions,
             county, county_ocd_id, **common_kwargs)
         self._test_result_common_fields(row, jurisdictions, results, '3')
 
@@ -1060,7 +1159,7 @@ class TestExcellPrecinct2014Loader(LoaderPrepMixin, TestCase):
         """Test that a result at an index is well formed"""
         result = results[i]
         vote_index = i if i < 0 else i + 4
-        votes_type = ('' if jurisdictions[i][2] == 'total' 
+        votes_type = ('' if jurisdictions[i][2] == 'total'
                       else jurisdictions[i][2])
         self.assertEqual(result.jurisdiction, jurisdictions[i][0])
         self.assertEqual(result.reporting_level, jurisdictions[i][1])

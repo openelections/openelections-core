@@ -40,7 +40,6 @@ class LoadResults(object):
         # each other.  Skip them for now.
         #
         # TODO: Write separate loader classes for these
-        '20101102__ia__general__audubon__precinct.xls',
         '20101102__ia__general__clinton__precinct.xls',
         '20101102__ia__general__grundy__precinct.xls',
         '20101102__ia__general__henry__precinct.xls',
@@ -73,7 +72,10 @@ class LoadResults(object):
               generated_filename.endswith('xls') and
               election_year == 2010 and
               'general' in election_id):
-            return ExcelPrecinct2010GeneralResultLoader()
+            if mapping['name'] == "Audubon":
+                return ExcelPrecinct2010GeneralAudubonResultLoader()
+            else:
+                return ExcelPrecinct2010GeneralResultLoader()
         elif (election_year == 2012 and generated_filename.endswith('xls')):
             return ExcelPrecinct2012ResultLoader()
         elif (election_year == 2014 and generated_filename.endswith('xlsx')
@@ -333,6 +335,12 @@ class ExcelPrecinctResultLoader(BaseLoader):
             workbook = self._get_workbook()
 
         return workbook.sheets()[sheet_index]
+
+    def _get_sheet_by_name(self, sheet_name, workbook=None):
+        if workbook is None:
+            workbook = self._get_workbook()
+
+        return workbook.sheet_by_name(sheet_name)
 
     def _get_workbook(self):
         return xlrd.open_workbook(self._xls_file_path)
@@ -850,6 +858,152 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
         # Otherwise, assume normal vote totals
         return ""
 
+
+class ExcelPrecinct2010GeneralAudubonResultLoader(ExcelPrecinctResultLoader):
+    """
+    Load precinct-level results from Audubon County in the 2010 general election
+
+    The standardized filename for this results file is
+    '20101102__ia__general__audubon__precinct.xls'
+
+    This is needed because the structure of Audubon County's files are
+    significantly different from most of the other county results files for htis
+    election.
+
+    """
+    offices = [
+        "Governor",
+        "United States Senator",
+        "United States Representative",
+        "Secretary of State",
+        "Auditor of State",
+        "Treasurer of State",
+        "Secretary of Agriculture",
+        "Attorney General",
+        "State Senator",
+        "State Representative",
+    ]
+    _office_re = re.compile('(?P<office>{offices})'
+        '([-\s]+Dist(rict){{0,1}} (?P<district>\d+)){{0,1}}'.format(offices='|'.join(offices)),
+        re.IGNORECASE
+    )
+
+    def _results(self, mapping):
+        results = []
+        county = mapping['name']
+        county_ocd_id = mapping['ocd_id']
+        base_kwargs = self._build_common_election_kwargs()
+        # Audubon County's results have a number of sheets in the workbook.
+        # We're going to use the one named "Totals -Absentee" because it's the
+        # default sheet that opens when I open the workbook in LibreOffice.
+        # It also has absentee votes broken down by precinct.
+        sheet = self._get_sheet_by_name("Totals -Absentee")
+        jurisdictions = []
+        office = None
+        district = None
+
+        for row in self._rows(sheet):
+            cell0 = row[0].strip()
+            if cell0 == "Candidates":
+                jurisdictions = self._parse_jurisdictions(row)
+                continue
+
+            if not len(jurisdictions):
+                # Skip header rows
+                continue
+
+            if office is None:
+                # If we haven't detected an office of interest yet, see if this
+                # is a header row for an office of interest
+                office, district = self._parse_office(cell0)
+                if office is not None:
+                    base_kwargs['office'] = office
+                    base_kwargs['district'] = district
+                # We're done parsing the office and district, move on to the
+                # next line
+                continue
+
+            results.extend(self._parse_result_row(row, jurisdictions, county,
+                county_ocd_id, **base_kwargs))
+
+            if cell0 == "Undervotes":
+                # We're done with this office's results. Reset the office
+                # and district variables
+                office = None
+                district = None
+
+        return results
+
+    def _parse_jurisdictions(self, row):
+        return [self._clean_jurisdiction_cell(c) for c in row[2:]
+                if c.strip() != '']
+
+    def _clean_jurisdiction_cell(self, val):
+        # Remove leading and trailing whitespace and compress
+        # consecutive whitespace characters down to one
+        return re.sub('\s{2,}', ' ', val.strip())
+
+    def _parse_office(self, cell):
+        """
+        Parse a cell containing office and district information
+
+        Args:
+            cell (str): String containing office and district information
+
+        Returns:
+            A tuple of strings where the first element is the office name and
+            the second element is the district.  If the cell doesn't represent
+            an office, or doesn't represent a statewide or federal office, the
+            first element will be None.  If the office doesn't have an
+            associated district, the second element will be None
+
+        """
+        office = None
+        district = None
+
+        m = self._office_re.match(cell)
+        if m is not None:
+            office = m.group('office')
+            district = m.group('district')
+
+        return office, district
+
+    def _parse_result_row(self, row, jurisdictions, county, county_ocd_id,
+            **common_kwargs):
+        results = []
+        candidate = row[0].strip()
+        party = row[1].strip()
+        for jurisdiction, votes in zip(jurisdictions, row[2:]):
+            if jurisdiction in ("Total", "Special & Abs"):
+                clean_jurisdiction = county
+                ocd_id = county_ocd_id
+                reporting_level = 'county'
+            else:
+                ocd_id = county_ocd_id + '/' + ocd_type_id(jurisdiction)
+                reporting_level = 'precinct'
+                clean_jurisdiction = jurisdiction
+
+            if "Abs" in jurisdiction:
+                votes_type = 'absentee'
+            elif "Total" in jurisdiction:
+                votes_type = ''
+            else:
+                votes_type = 'election_day'
+
+            results.append(RawResult(
+                full_name=candidate,
+                party=party,
+                votes=votes,
+                votes_type=votes_type,
+                jurisdiction=clean_jurisdiction,
+                reporting_level=reporting_level,
+                ocd_id=ocd_id,
+                **common_kwargs
+            ))
+
+        return results
+
+
 class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):
     """
     Parse 2012 primary and general election precinct-level results
@@ -1096,7 +1250,7 @@ class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):
     def _fix_row(self, row):
         """
         Fix row that has repeated jurisdiction column
-        
+
         This only occurs in the Polk County Primary results file.
         """
         try:
@@ -1270,11 +1424,11 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
           'office': m.group('office'),
           'district': m.group('district'),
           'full_name': row[1].strip(),
-          'party': party, 
+          'party': party,
         }
         if is_primary:
             # Not all rows, for instance Write-in pseudo candidates,
-            # have a party listed in the 'PoliticalPartyName' column 
+            # have a party listed in the 'PoliticalPartyName' column
             # Use the party listed in the 'RaceTitle' column.
             # Note that these values are Dem, Rep and we don't
             # rewrite, saving that for transforms.
@@ -1298,7 +1452,7 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
                 reporting_level=reporting_level,
                 votes=votes,
                 votes_type=votes_type,
-                **base_kwargs 
+                **base_kwargs
             ))
 
         return results
