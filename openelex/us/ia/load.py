@@ -40,7 +40,6 @@ class LoadResults(object):
         # each other.  Skip them for now.
         #
         # TODO: Write separate loader classes for these
-        '20101102__ia__general__clinton__precinct.xls',
         '20101102__ia__general__grundy__precinct.xls',
         '20101102__ia__general__henry__precinct.xls',
         '20101102__ia__general__johnson__precinct.xls',
@@ -74,6 +73,8 @@ class LoadResults(object):
               'general' in election_id):
             if mapping['name'] == "Audubon":
                 return ExcelPrecinct2010GeneralAudubonResultLoader()
+            elif mapping['name'] == "Clinton":
+                return ExcelPrecinct2010GeneralClintonResultLoader()
             else:
                 return ExcelPrecinct2010GeneralResultLoader()
         elif (election_year == 2012 and generated_filename.endswith('xls')):
@@ -866,8 +867,8 @@ class ExcelPrecinct2010GeneralAudubonResultLoader(ExcelPrecinctResultLoader):
     The standardized filename for this results file is
     '20101102__ia__general__audubon__precinct.xls'
 
-    This is needed because the structure of Audubon County's files are
-    significantly different from most of the other county results files for htis
+    This is needed because the structure of Audubon County's file is
+    significantly different from most of the other results files for this
     election.
 
     """
@@ -1002,6 +1003,158 @@ class ExcelPrecinct2010GeneralAudubonResultLoader(ExcelPrecinctResultLoader):
             ))
 
         return results
+
+
+class ExcelPrecinct2010GeneralClintonResultLoader(ExcelPrecinctResultLoader):
+    """
+    Load precinct-level results from Clinton County for the 2010 general
+    election
+
+    The standardized filename for this results file is
+    `20101102__ia__general__clinton__precinct.xls`.
+
+    A separate class is needed because the structure of this county's file is
+    significantly different from most of the other results files for this
+    election.
+
+    The file has a single worksheet with rows of the sheet grouped by precinct
+    and then by office.
+
+    Precinct groups begin with a heading in the first column of a row with
+    a format like "NNNN PRECINCT NAME", for example "0001 BLOOMFIELD DELMAR".
+
+    Office groups follow the format:
+
+    OFFICE NAME
+    VOTE FOR NO MORE THAN 1
+    Candidate Name (PARTY ABRREV).  .  .  .  .  .  .  .
+    WRITE-IN.  .  .  .  .  .  .  .  .  .  .
+    Over Votes .  .  .  .  .  .  .  .  .
+    Under Votes .  .  .  .  .  .  .  .  .
+
+    Note the period characters following the candidate names.
+
+    Office groups are separated by an empty row.
+
+    Result rows have the following columns (from left to right):
+
+    * Total votes
+    * %
+    * Absentee
+    * Election day
+
+    """
+    _precinct_re = re.compile(r'\d{4} .*')
+
+    offices = [
+        "US SENATOR",
+        "US REP",
+        "GOV/LT GOV",
+        "SEC OF STATE",
+        "AUD OF STATE",
+        "TREAS OF STATE",
+        "SEC OF AG",
+        "ATT GEN",
+        "ST SEN",
+        "ST REP",
+    ]
+    _office_re = re.compile('(?P<office>{offices})'
+        '(\s+DIST (?P<district>\d+)){{0,1}}'.format(offices='|'.join(offices)),
+        re.IGNORECASE)
+
+    _candidate_re = re.compile(r'(?P<candidate>([-\w]+\s*(\w\.\s+){0,1})+)'
+        '(\s*\((?P<party>\w+)\)){0,1}')
+
+    def _results(self, mapping):
+        results = []
+        county_ocd_id = mapping['ocd_id']
+        base_kwargs = self._build_common_election_kwargs()
+        # Unlike other results files for Iowa, all rows represent
+        # a precinct result
+        base_kwargs['reporting_level'] = 'precinct'
+        office = None
+        district = None
+
+        for row in self._rows():
+            cell0 = row[0].strip()
+
+            if cell0 == '' or cell0.startswith("VOTE FOR NO"):
+                # Ignore empty rows or the instructional rows within
+                # an office group
+                continue
+
+            m = self._precinct_re.match(cell0)
+            if m is not None:
+                base_kwargs['jurisdiction'] = cell0
+                base_kwargs['ocd_id'] = '{}/precinct:{}'.format(county_ocd_id,
+                    ocd_type_id(base_kwargs['jurisdiction']))
+                continue
+
+            if office is None:
+                # If we aren't in an office block, see if the row
+                # matches an office name heading.
+                office, district = self._parse_office(row)
+
+                # This guard also helps us skip header lines like
+                # "PREC REPORT-GROUP DETAIL"
+                # and "RUN DATE:12/16/10 03:16 PM"
+
+                if office:
+                    # An office was detected
+                    base_kwargs['office'] = office
+                    base_kwargs['district'] = district
+
+                # Skip to the next row.
+                continue
+
+            # If we've gotten this far without short-circuiting, our row must
+            # be a results row.
+            results.extend(self._parse_result_row(row, **base_kwargs))
+
+            if cell0.startswith("Under Votes"):
+                # The under votes row is the last result row in an office group.
+                # Reset the office.
+                office = None
+
+        return results
+
+    def _parse_office(self, row):
+        office = None
+        district = None
+        cell0 = row[0].strip()
+        m = self._office_re.match(cell0)
+        if m:
+            office = m.group('office')
+            district = m.group('district')
+        return office, district
+
+    def _parse_result_row(self, row, **base_kwargs):
+        results = []
+        candidate, party = self._parse_candidate(row[0].strip())
+        votes_types = ['', 'absentee', 'election_day']
+        votes = row[1:2] + row[3:]
+        for v, vt in zip(votes, votes_types):
+            results.append(RawResult(
+              full_name=candidate,
+              party=party,
+              votes=v,
+              votes_type=vt,
+              **base_kwargs
+            ))
+
+        return results
+
+    def _parse_candidate(self, cell):
+        candidate = None
+        party = None
+        m = self._candidate_re.match(cell)
+        if m:
+            # Need to call strip because the re might greedily
+            # grab trailing whitespace between the candidate
+            # name and the party
+            candidate = m.group('candidate').strip()
+            party = m.group('party')
+        return candidate, party
 
 
 class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):

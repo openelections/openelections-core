@@ -6,7 +6,8 @@ from openelex.lib.text import ocd_type_id
 from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinctPre2010ResultLoader, ExcelPrecinct2010PrimaryResultLoader,
     ExcelPrecinct2010GeneralResultLoader,
-    ExcelPrecinct2010GeneralAudubonResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2010GeneralAudubonResultLoader,
+    ExcelPrecinct2010GeneralClintonResultLoader, ExcelPrecinct2012ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
 
 
@@ -727,6 +728,74 @@ class TestExcelPrecinct2010GeneralAudubonResultLoader(LoaderPrepMixin, TestCase)
             self.assertEqual(result.reporting_level, reporting_level)
             self.assertEqual(result.votes, votes)
             self.assertEqual(result.votes_type, votes_type)
+
+
+class TestExcelPrecinct2010GeneralClintonResultLoader(LoaderPrepMixin,
+        TestCase):
+
+    def setUp(self):
+        self.loader = ExcelPrecinct2010GeneralClintonResultLoader() 
+    def test_parse_office(self):
+        row = [u'US SENATOR', '', '', '', '']
+        office, district = self.loader._parse_office(row)
+        self.assertEqual(office, 'US SENATOR')
+        self.assertEqual(district, None)
+
+        row = [u'US REP DIST 1', '', '', '', '']
+        office, district = self.loader._parse_office(row)
+        self.assertEqual(office, 'US REP')
+        self.assertEqual(district, '1')
+
+    def test_parse_result_row(self):
+        row = [u'Roxanne Conlin (DEM).  .  .  .  .  .  .', 371.0, 43.75, 190.0, 181.0]
+        results = self.loader._parse_result_row(row)
+        self.assertEqual(len(results), 3)
+        for result in results:
+            self.assertEqual(result.full_name, "Roxanne Conlin")
+            self.assertEqual(result.party, "DEM")
+        self.assertEqual(results[0].votes, row[1])
+        self.assertEqual(results[0].votes_type, '')
+        self.assertEqual(results[1].votes, row[3])
+        self.assertEqual(results[1].votes_type, 'absentee')
+        self.assertEqual(results[2].votes, row[4])
+        self.assertEqual(results[2].votes_type, 'election_day')
+
+    def test_parse_candidate(self):
+        test_data = [
+          ('Roxanne Conlin (DEM).  .  .  .  .  .  .', "Roxanne Conlin", "DEM"),
+          ('WRITE-IN.  .  .  .  .  .  .  .  .  .  .', "WRITE-IN", None),
+          ('Tod R. Bowman (DEM) .  .  .  .  .  .  .', "Tod R. Bowman", "DEM")
+        ]
+        for cell, expected_candidate, expected_party in test_data:
+            candidate, party = self.loader._parse_candidate(cell)
+            self.assertEqual(candidate, expected_candidate)
+            self.assertEqual(party, expected_party)
+
+    def test_results(self):
+        filename = '20101102__ia__general__clinton__precinct.xls'
+        mapping = self._get_mapping(filename)
+        self._prep_loader_attrs(mapping)
+
+        results = self.loader._results(mapping)
+        filtered_results = [r for r in results 
+            if r.office == 'ST SEN' and
+            r.district == '13' and
+            r.jurisdiction == '0008 CLINTON 1-2']
+        self.assertEqual(len(filtered_results), 15)
+
+        result = filtered_results[0]
+        self.assertEqual(result.full_name, "Tod R. Bowman")
+        self.assertEqual(result.party, "DEM")
+        self.assertEqual(result.reporting_level, 'precinct')
+        self.assertEqual(result.votes, 544)
+        self.assertEqual(result.votes_type, "")
+
+        result = filtered_results[-1]
+        self.assertEqual(result.full_name, "Under Votes")
+        self.assertEqual(result.party, None)
+        self.assertEqual(result.reporting_level, 'precinct')
+        self.assertEqual(result.votes, 4)
+        self.assertEqual(result.votes_type, "election_day")
 
 
 class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
