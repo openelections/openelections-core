@@ -1,14 +1,18 @@
 import datetime
 import re
-from unittest import TestCase
+from unittest import skipUnless, TestCase
 
 from openelex.lib.text import ocd_type_id
+from openelex.tests import cache_file_exists
 from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinctPre2010ResultLoader, ExcelPrecinct2010PrimaryResultLoader,
     ExcelPrecinct2010GeneralResultLoader,
     ExcelPrecinct2010GeneralAudubonResultLoader,
     ExcelPrecinct2010GeneralClintonResultLoader, ExcelPrecinct2012ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
+
+CACHED_FILE_MISSING_MSG = ("Cached results file does not exist. Try running "
+    "the fetch task before running this test")
 
 
 class LoaderPrepMixin(object):
@@ -105,6 +109,8 @@ class TestExcelPrecinctResultLoader(LoaderPrepMixin, TestCase):
     def setUp(self):
         self.loader = ExcelPrecinctResultLoader()
 
+    @skipUnless(cache_file_exists('ia',
+        '20060606__ia__primary__adair__precinct.xls'), CACHED_FILE_MISSING_MSG)
     def test_rows(self):
         filename = '20060606__ia__primary__adair__precinct.xls'
         mapping = self._get_mapping(filename)
@@ -117,6 +123,8 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
     def setUp(self):
         self.loader = ExcelPrecinctPre2010ResultLoader()
 
+    @skipUnless(cache_file_exists('ia',
+        '20060606__ia__primary__adair__precinct.xls'), CACHED_FILE_MISSING_MSG)
     def test_results_2006(self):
         filename = '20060606__ia__primary__adair__precinct.xls'
         mapping = self._get_mapping(filename)
@@ -165,6 +173,8 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
                       if r.office == "State Representative")
         self.assertTrue(re.match(r'\d+', result.district))
 
+    @skipUnless(cache_file_exists('ia',
+        '20080603__ia__primary__adair__precinct.xls'), CACHED_FILE_MISSING_MSG)
     def test_results_2008(self):
         filename = '20080603__ia__primary__adair__precinct.xls'
         mapping = self._get_mapping(filename)
@@ -377,6 +387,8 @@ class TestExcelPrecinct2010PrimaryResultLoader(LoaderPrepMixin, TestCase):
     def setUp(self):
         self.loader = ExcelPrecinct2010PrimaryResultLoader()
 
+    @skipUnless(cache_file_exists('ia',
+        '20100608__ia__primary__adair__precinct.xls'), CACHED_FILE_MISSING_MSG)
     def test_results(self):
         filename = '20100608__ia__primary__adair__precinct.xls'
         mapping = self._get_mapping(filename)
@@ -771,6 +783,8 @@ class TestExcelPrecinct2010GeneralClintonResultLoader(LoaderPrepMixin,
             self.assertEqual(candidate, expected_candidate)
             self.assertEqual(party, expected_party)
 
+    @skipUnless(cache_file_exists('ia',
+        '20101102__ia__general__clinton__precinct.xls'), CACHED_FILE_MISSING_MSG)
     def test_results(self):
         filename = '20101102__ia__general__clinton__precinct.xls'
         mapping = self._get_mapping(filename)
@@ -802,6 +816,8 @@ class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
     def setUp(self):
         self.loader = ExcelPrecinct2012ResultLoader()
 
+    @skipUnless(cache_file_exists('ia',
+        '20120605__ia__primary__adair__precinct.xls'), CACHED_FILE_MISSING_MSG)
     def test_results_primary(self):
         filename = '20120605__ia__primary__adair__precinct.xls'
         mapping = self._get_mapping(filename)
@@ -827,6 +843,8 @@ class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
         self.assertEqual(result.full_name, "Jake Chapman")
         self.assertEqual(result.votes, 39)
 
+    @skipUnless(cache_file_exists('ia',
+        '20121106__ia__general__adair__precinct.xls'), CACHED_FILE_MISSING_MSG)
     def test_results_general(self):
         filename = '20121106__ia__general__adair__precinct.xls'
         mapping = self._get_mapping(filename)
