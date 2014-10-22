@@ -634,7 +634,7 @@ class TestExcelPrecinct2010GeneralResultLoader(LoaderPrepMixin, TestCase):
             self.assertEqual(result.office, row[1].strip())
             self.assertEqual(result.full_name, row[2].strip())
 
-        result = next(r for r in results if r.votes_type == 'polling')
+        result = next(r for r in results if r.votes_type == 'election_day')
         self.assertEqual(result.votes, row[3])
 
         result = next(r for r in results if r.votes_type == 'absentee')
