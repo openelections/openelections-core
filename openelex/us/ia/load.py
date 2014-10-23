@@ -40,7 +40,6 @@ class LoadResults(object):
         # each other.  Skip them for now.
         #
         # TODO: Write separate loader classes for these
-        '20101102__ia__general__johnson__precinct.xls',
         '20101102__ia__general__louisa__precinct.xls',
         '20101102__ia__general__poweshiek__precinct.xls',
     ]
@@ -77,6 +76,8 @@ class LoadResults(object):
                 return ExcelPrecinct2010GeneralGrundyResultLoader()
             elif mapping['name'] == 'Henry':
                 return ExcelPrecinct2010GeneralHenryResultLoader()
+            elif mapping['name'] == 'Johnson':
+                return ExcelPrecinct2010GeneralJohnsonResultLoader()
             else:
                 return ExcelPrecinct2010GeneralResultLoader()
         elif (election_year == 2012 and generated_filename.endswith('xls')):
@@ -678,8 +679,9 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
     _county_re = re.compile(r'(?P<county>[A-Za-z ]+) County')
     _office_re = re.compile(r'(?P<office>U\.{0,1}S\.{0,1} Senator|'
         'U\.{0,1}S\.{0,1} Rep(resentative|)|'
-        'Governor/Lt\.{0,1} Governor|Secretary of State|Auditor of State|'
-        'Treasurer of State|Secretary of Agriculture|Attorney General|'
+        'Governor|Governor/Lt\.{0,1} Governor|'
+        'Sec(retary){0,1} of State|Auditor of State|'
+        'Treasurer of State|Secretary of Ag(riculture){0,1}|Attorney General|'
         'State Senator|State Rep)'
         '(\s+Dist (?P<district>\d+)|)', re.IGNORECASE)
 
@@ -1067,6 +1069,8 @@ class ExcelPrecinct2010GeneralClintonResultLoader(ExcelPrecinctResultLoader):
     _candidate_re = re.compile(r'(?P<candidate>([-\w]+\s*(\w\.\s+){0,1})+)'
         '(\s*\((?P<party>\w+)\)){0,1}')
 
+    votes_types = ['', 'election_day', 'absentee']
+
     def _results(self, mapping):
         results = []
         county_ocd_id = mapping['ocd_id']
@@ -1078,9 +1082,14 @@ class ExcelPrecinct2010GeneralClintonResultLoader(ExcelPrecinctResultLoader):
         district = None
 
         for row in self._rows():
-            cell0 = row[0].strip()
+            try:
+                cell0 = row[0].strip()
+            except AttributeError:
+                # Some values in the first cell are floats, so they don't
+                # have strip, but we should skip these anyway
+                continue
 
-            if cell0 == '' or cell0.startswith("VOTE FOR NO"):
+            if cell0 == '' or "vote for no" in cell0.lower():
                 # Ignore empty rows or the instructional rows within
                 # an office group
                 continue
@@ -1133,9 +1142,8 @@ class ExcelPrecinct2010GeneralClintonResultLoader(ExcelPrecinctResultLoader):
     def _parse_result_row(self, row, **base_kwargs):
         results = []
         candidate, party = self._parse_candidate(row[0].strip())
-        votes_types = ['', 'absentee', 'election_day']
         votes = row[1:2] + row[3:]
-        for v, vt in zip(votes, votes_types):
+        for v, vt in zip(votes, self.votes_types):
             results.append(RawResult(
               full_name=candidate,
               party=party,
@@ -1404,6 +1412,43 @@ class ExcelPrecinct2010GeneralHenryResultLoader(ExcelPrecinctResultLoader):
         candidate = m.group('candidate').strip()
         party = m.group('party')
         return candidate, party
+
+
+class ExcelPrecinct2010GeneralJohnsonResultLoader(ExcelPrecinct2010GeneralClintonResultLoader):
+    """
+    Load precinct-level results from Johnson County for the 2010 general
+    election
+
+    The standardized filename for these results is
+    '20101102__ia__general__johnson__precinct.xls'
+
+    A separate class is needed because the structure of this county's file is
+    significantly different from most of the other results files for this
+    election.
+
+    The results file has a very similar structure to that of Clinton county.
+
+    The main differences are:
+
+    * Different case and abbrevations in office name
+    * Different case, format in "Vote for no more than" text
+
+    """
+    offices = [
+        "UNITED STATES SENATOR",
+        "UNITED STATES REPRESENTATIVE",
+        "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "SECRETARY OF STATE",
+        "AUDITOR OF STATE",
+        "TREASURER OF STATE",
+        "SECRETARY OF AGRICULTURE",
+        "ATTORNEY GENERAL",
+        "STATE SENATOR SENATE",
+        "STATE REPRESENTATIVE HOUSE",
+    ]
+    _office_re = re.compile('(?P<office>{offices})'
+        '(\s+DISTRICT (?P<district>\d+)){{0,1}}'.format(offices='|'.join(offices)),
+        re.IGNORECASE)
 
 
 class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):

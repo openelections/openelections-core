@@ -10,7 +10,8 @@ from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinct2010GeneralAudubonResultLoader,
     ExcelPrecinct2010GeneralClintonResultLoader,
     ExcelPrecinct2010GeneralGrundyResultLoader,
-    ExcelPrecinct2010GeneralHenryResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2010GeneralHenryResultLoader,
+    ExcelPrecinct2010GeneralJohnsonResultLoader, ExcelPrecinct2012ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
 
 
@@ -968,6 +969,48 @@ class TestExcelPrecinct2010GeneralHenryResultLoader(LoaderPrepMixin,
         self.assertEqual(result.votes_type, '')
         self.assertEqual(result.jurisdiction, "Henry")
         self.assertEqual(result.reporting_level, 'county')
+
+
+class TestExcelPrecinct2010GeneralJohnsonResultLoader(LoaderPrepMixin,
+        TestCase):
+
+    def setUp(self):
+        self.loader = ExcelPrecinct2010GeneralJohnsonResultLoader()
+
+    @skipUnless(cache_file_exists('ia',
+        '20101102__ia__general__johnson__precinct.xls'), CACHED_FILE_MISSING_MSG)
+    def test_results(self):
+        filename = '20101102__ia__general__johnson__precinct.xls'
+        mapping = self._get_mapping(filename)
+        self._prep_loader_attrs(mapping)
+
+        results = self.loader._results(mapping)
+        sr_dist_29_results = [r for r in results
+                              if r.office == "STATE REPRESENTATIVE HOUSE"
+                              and r.district == "29"
+                              and r.jurisdiction == "0003 CLEAR CREEK TOWNSHIP"]
+        self.assertEqual(len(sr_dist_29_results), 18)
+
+        result = sr_dist_29_results[0]
+        self.assertEqual(result.full_name, "Nathan Willems")
+        self.assertEqual(result.party, "DEM")
+        self.assertEqual(result.votes, 41)
+        self.assertEqual(result.votes_type, '')
+        self.assertEqual(result.reporting_level, 'precinct')
+
+        result = sr_dist_29_results[-2]
+        self.assertEqual(result.full_name, "Under Votes")
+        self.assertEqual(result.party, None)
+        self.assertEqual(result.votes, 7)
+        self.assertEqual(result.votes_type, 'election_day')
+        self.assertEqual(result.reporting_level, 'precinct')
+
+        result = sr_dist_29_results[-1]
+        self.assertEqual(result.full_name, "Under Votes")
+        self.assertEqual(result.party, None)
+        self.assertEqual(result.votes, 6)
+        self.assertEqual(result.votes_type, 'absentee')
+        self.assertEqual(result.reporting_level, 'precinct')
 
 
 class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
