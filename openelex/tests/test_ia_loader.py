@@ -8,8 +8,10 @@ from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinctPre2010ResultLoader, ExcelPrecinct2010PrimaryResultLoader,
     ExcelPrecinct2010GeneralResultLoader,
     ExcelPrecinct2010GeneralAudubonResultLoader,
-    ExcelPrecinct2010GeneralClintonResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2010GeneralClintonResultLoader,
+    ExcelPrecinct2010GeneralGrundyResultLoader, ExcelPrecinct2012ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
+
 
 CACHED_FILE_MISSING_MSG = ("Cached results file does not exist. Try running "
     "the fetch task before running this test")
@@ -747,6 +749,7 @@ class TestExcelPrecinct2010GeneralClintonResultLoader(LoaderPrepMixin,
 
     def setUp(self):
         self.loader = ExcelPrecinct2010GeneralClintonResultLoader() 
+
     def test_parse_office(self):
         row = [u'US SENATOR', '', '', '', '']
         office, district = self.loader._parse_office(row)
@@ -810,6 +813,88 @@ class TestExcelPrecinct2010GeneralClintonResultLoader(LoaderPrepMixin,
         self.assertEqual(result.reporting_level, 'precinct')
         self.assertEqual(result.votes, 4)
         self.assertEqual(result.votes_type, "election_day")
+
+
+class TestExcelPrecinct2010GeneralGrundyResultLoader(LoaderPrepMixin,
+        TestCase):
+
+    def setUp(self):
+        self.loader = ExcelPrecinct2010GeneralGrundyResultLoader()
+
+    def test_parse_office(self):
+        row = [u'SECRETARY OF STATE', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+        office, district = self.loader._parse_office(row)
+        self.assertEqual(office, row[0])
+        self.assertEqual(district, None)
+
+        row = [u'US REPRESENTATIVE  - DIST. 3', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+        office, district = self.loader._parse_office(row)
+        self.assertEqual(office, 'US REPRESENTATIVE')
+        self.assertEqual(district, '3')
+
+    def test_parse_candidate(self):
+        test_data = [
+            ('RICHARD C. STEPPE (WRITE-IN)', 'RICHARD C. STEPPE', 'WRITE-IN'),
+            ('MARK A SCHILDROTH', 'MARK A SCHILDROTH', None),
+            ('Under Votes', 'Under Votes', None),
+        ]
+        for cell, expected_candidate, expected_writein in test_data:
+            candidate, writein = self.loader._parse_candidate(cell)
+            self.assertEqual(candidate, expected_candidate)
+            self.assertEqual(writein, expected_writein)
+
+    def test_parse_result_row(self):
+        county = "Grundy"
+        county_ocd_id = 'ocd-division/country:us/state:ia/county:grundy'
+        jurisdictions = [u'P1', u'P1 ABS', u'P2', u'P2 ABS', u'P3', u'P3 ABS', u'P4', u'P4 ABS', u'P5', u'P5 ABS', u'P6', u'P6 ABS', u'P7', u'P7 ABS', u'ABS', u'TOTAL'] 
+        row = [u'DAVID A VAUDT', 413.0, 125.0, 141.0, 71.0, 389.0, 112.0, 235.0, 86.0, 516.0, 169.0, 582.0, 112.0, 540.0, 164.0, 839.0, 3655.0]
+        results = self.loader._parse_result_row(row, jurisdictions, county,
+            county_ocd_id)
+        self.assertEqual(len(results), len(jurisdictions))
+        for result in results:
+            self.assertEqual(result.full_name, row[0])
+
+        result = results[0]
+        self.assertEqual(result.reporting_level, 'precinct')
+        self.assertEqual(result.jurisdiction, jurisdictions[0])
+        self.assertEqual(result.votes, row[1])
+        self.assertEqual(result.votes_type, '')
+
+        result = results[-2]
+        self.assertEqual(result.reporting_level, 'county')
+        self.assertEqual(result.jurisdiction, county)
+        self.assertEqual(result.votes, row[-2])
+        self.assertEqual(result.votes_type, 'absentee')
+
+        result = results[-1]
+        self.assertEqual(result.reporting_level, 'county')
+        self.assertEqual(result.jurisdiction, county)
+        self.assertEqual(result.votes, row[-1])
+        self.assertEqual(result.votes_type, '')
+
+    @skipUnless(cache_file_exists('ia',
+        '20101102__ia__general__grundy__precinct.xls'), CACHED_FILE_MISSING_MSG)
+    def test_results(self):
+        filename = '20101102__ia__general__grundy__precinct.xls'
+        mapping = self._get_mapping(filename)
+        self._prep_loader_attrs(mapping)
+
+        results = self.loader._results(mapping)
+        sec_of_state_results = [r for r in results 
+            if r.office == "SECRETARY OF STATE"]
+        self.assertEqual(len(sec_of_state_results), 160)
+
+        county_results = [r for r in sec_of_state_results
+                          if r.reporting_level == 'county']
+        self.assertEqual(len(county_results), 20)
+
+        result = sec_of_state_results[0]
+        self.assertEqual(result.full_name, "MATT SCHULTZ")
+        self.assertEqual(result.votes, 352)
+
+        result = sec_of_state_results[-1]
+        self.assertEqual(result.full_name, "TOTAL")
+        self.assertEqual(result.votes, 5330)
 
 
 class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
