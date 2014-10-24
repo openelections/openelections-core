@@ -35,12 +35,6 @@ class LoadResults(object):
         '20040203__ia__special__general__state_senate__30__county.csv',
         '20091124__ia__special__general__state_house__33__precinct.csv',
         '20100608__ia__primary__county.csv',
-        # The following files have significantly different structure than the
-        # rest of the 2010 general election precinct-level files and from
-        # each other.  Skip them for now.
-        #
-        # TODO: Write separate loader classes for these
-        '20101102__ia__general__poweshiek__precinct.xls',
     ]
 
     def run(self, mapping):
@@ -79,6 +73,8 @@ class LoadResults(object):
                 return ExcelPrecinct2010GeneralJohnsonResultLoader()
             elif mapping['name'] == 'Louisa':
                 return ExcelPrecinct2010GeneralLouisaResultLoader()
+            elif mapping['name'] == 'Poweshiek':
+                return ExcelPrecinct2010GeneralPoweshiekResultLoader()
             else:
                 return ExcelPrecinct2010GeneralResultLoader()
         elif (election_year == 2012 and generated_filename.endswith('xls')):
@@ -1454,7 +1450,7 @@ class ExcelPrecinct2010GeneralJohnsonResultLoader(ExcelPrecinct2010GeneralClinto
 
 class ExcelPrecinct2010GeneralLouisaResultLoader(ExcelPrecinctResultLoader):
     """
-    Parse 2010 generl election precinct-level results for Henry County
+    Parse 2010 generl election precinct-level results for Louisa County
 
     This file has the standardized filename
     '20101102__ia__general__louisa__precinct.xls',
@@ -1622,6 +1618,167 @@ class ExcelPrecinct2010GeneralLouisaResultLoader(ExcelPrecinctResultLoader):
                 district=district,
                 votes=votes,
                 votes_type=votes_type,
+                **base_kwargs
+            ))
+
+        return results
+
+
+class ExcelPrecinct2010GeneralPoweshiekResultLoader(ExcelPrecinctResultLoader):
+    """
+    Parse 2010 generl election precinct-level results for Poweshiek County
+
+    This file has the standardized filename
+    '20101102__ia__general__poweshiek__precinct.xls',
+
+    A separate class is needed because the structure of this county's file is
+    significantly different from most of the other results files for this
+    election.
+
+    """
+    offices = [
+      "United States Senator",
+      "U.S. Rep",
+      "Governor Lt. Governor",
+      "Secretary of State",
+      "Auditor of State",
+      "Treasurer of State",
+      "Secretary of Agriculture",
+      "Attorney General",
+      "State Rep",
+    ]
+    _office_re = re.compile('(?P<office>{offices})'
+        '((\s+District){{0,1}}\s+(?P<district>\d+)(th){{0,1}}(\s+Dist){{0,1}}){{0,1}}'.format(offices='|'.join(offices)),
+        re.IGNORECASE
+    )
+    parties = [
+        "REP",
+        "DEM",
+        "LIB",
+        "SWP",
+        "IAP",
+        "NBP",
+    ]
+    _party_re = re.compile('\s+-\s+(?P<party>{parties})$'.format(parties='|'.join(parties)))
+
+    def _results(self, mapping):
+        results = []
+        county = mapping['name']
+        county_ocd_id = mapping['ocd_id']
+        base_kwargs = self._build_common_election_kwargs()
+        base_kwargs['votes_type'] = ''
+
+        for i, row in enumerate(self._rows()):
+            if i == 0:
+                row0 = row
+                continue
+
+            if i == 1:
+                offices = self._parse_office_row(row0, row)
+                continue
+
+            if i == 2:
+                candidates = self._parse_candidates_row(row)
+
+            cell0 = row[0].strip()
+
+            if cell0 == "Absentee:":
+                base_kwargs['votes_type'] = 'absentee'
+                continue
+
+            if cell0 == "Totals":
+                base_kwargs['votes_type'] = ''
+
+            results.extend(self._parse_result_row(row, offices, candidates,
+                county, county_ocd_id, **base_kwargs))
+
+        return results
+
+    def _parse_office_row(self, row0, row1):
+        offices = []
+        office = None
+        district = None
+        # The office names are spread across two rows.  Merge them.
+        row = [(str(c0).strip() + ' ' + str(c1)).strip() for c0, c1 in zip(row0[1:], row1[1:])]
+
+        for cell in row:
+            if office and cell == '':
+                offices.append((office, district))
+            else:
+                m = self._office_re.match(cell)
+                if m is not None:
+                    office = m.group('office')
+                    district = m.group('district')
+                    offices.append((office, district))
+                else:
+                    office = None
+                    district = None
+
+        return offices
+
+    def _parse_candidates_row(self, row):
+        candidates = []
+        for cell in row[1:]:
+            candidates.append(self._parse_candidate(cell))
+
+        return candidates
+
+    def _parse_candidate(self, cell):
+        candidate = None
+        party = None
+
+        m = self._party_re.search(cell)
+        if m is not None:
+            party = m.group('party')
+            candidate = self._party_re.sub('', cell)
+        else:
+            candidate = cell
+
+        return candidate, party
+
+    def _parse_result_row(self, row, offices, candidates, county, county_ocd_id,
+            **base_kwargs):
+        results = []
+        jurisdiction = row[0].strip()
+
+        # Note: setting the votes_type kwarg is handled outside of this method
+
+        if "Total" in jurisdiction:
+            jurisdiction = county
+            ocd_id = county_ocd_id
+            reporting_level = 'county'
+        else:
+            ocd_id = county_ocd_id + '/' + ocd_type_id(jurisdiction)
+            reporting_level = 'precinct'
+
+        for office_dist, candidate_party, votes in zip(offices, candidates,
+                row[1:]):
+            office, district = office_dist
+            candidate, party = candidate_party
+            if candidate == "2010 General Election":
+                # Skip "spacer" columns
+                continue
+
+            if votes == '':
+                # Don't create results when they're not available for a
+                # particular race.
+                continue
+
+            if candidate == "Write-In":
+                write_in = "Write-In"
+            else:
+                write_in = None
+
+            results.append(RawResult(
+                jurisdiction=jurisdiction,
+                ocd_id=ocd_id,
+                reporting_level=reporting_level,
+                office=office,
+                district=district,
+                full_name=candidate,
+                party=party,
+                write_in=write_in,
+                votes=votes,
                 **base_kwargs
             ))
 

@@ -12,7 +12,8 @@ from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinct2010GeneralGrundyResultLoader,
     ExcelPrecinct2010GeneralHenryResultLoader,
     ExcelPrecinct2010GeneralJohnsonResultLoader,
-    ExcelPrecinct2010GeneralLouisaResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2010GeneralLouisaResultLoader,
+    ExcelPrecinct2010GeneralPoweshiekResultLoader, ExcelPrecinct2012ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
 
 
@@ -1078,6 +1079,70 @@ class TestExcelPrecinct2010GeneralLouisaResultLoader(LoaderPrepMixin,
             self.assertEqual(candidate, expected_candidate)
             self.assertEqual(party, expected_party)
 
+
+class TestExcelPrecinct2010GeneralPoweshiekResultLoader(LoaderPrepMixin,
+        TestCase):
+
+    def setUp(self):
+        self.loader = ExcelPrecinct2010GeneralPoweshiekResultLoader()
+
+    @skipUnless(cache_file_exists('ia',
+        '20101102__ia__general__poweshiek__precinct.xls'), CACHED_FILE_MISSING_MSG)
+    def test_results(self):
+        filename = '20101102__ia__general__poweshiek__precinct.xls'
+        mapping = self._get_mapping(filename)
+        self._prep_loader_attrs(mapping)
+
+        results = self.loader._results(mapping)
+
+        montezuma_abs_results = [r for r in results
+                                 if r.jurisdiction == 'Montezuma' and
+                                 r.votes_type == 'absentee']
+        self.assertEqual(len(montezuma_abs_results), 34)
+
+        result = montezuma_abs_results[0]
+        self.assertEqual(result.office, "United States Senator")
+        self.assertEqual(result.district, None)
+        self.assertEqual(result.full_name, "Roxanne Conlin")
+        self.assertEqual(result.party, "DEM")
+        self.assertEqual(result.write_in, None)
+        self.assertEqual(result.votes, 59)
+
+        result = montezuma_abs_results[-1]
+        self.assertEqual(result.office, "State Rep")
+        self.assertEqual(result.district, "75")
+        self.assertEqual(result.full_name, "Write-In")
+        self.assertEqual(result.party, None)
+        self.assertEqual(result.write_in, "Write-In")
+        self.assertEqual(result.votes, 0)
+
+
+    def test_parse_office_row(self):
+        row0 = [u'Official', u'United States', '', '', '', u'U.S. Rep.', '', '', '', u'Governor', '', '', '', '', '', '', u'Secretary', '', '', '', u'Auditor', '', '', u'Treasurer ', '', '', u'Secretary of', '', '', u'Attorney ', '', '', '', u'State Rep', '', '', u'State Rep', '', '', '', u'Judges', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', u' ', u'Judges', '', '', '', '', '', '', '', '', '', '', '', 1.0, '', 2.0, '', '', '', '', '']
+        row1 = ['', u'Senator', '', '', '', u'District 3', '', '', '', u'Lt. Governor', '', '', '', '', '', '', u'of State', '', '', '', u'of State', '', '', u'of State', '', '', u'Agriculture', '', '', u'General', '', '', '', u'75th Dist', '', '', u'76th Dist', '', '', '', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', u'Yes ', u'No', u'Yes ', u'No', u'Yes', u'No', u'Yes', u'No', '', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', u'Yes', u'No', '', '', '', '']
+
+        offices = self.loader._parse_office_row(row0, row1)
+
+        office, district = offices[0]
+        self.assertEqual(office, "United States Senator")
+        self.assertEqual(district, None)
+
+        office, district = offices[-1]
+        self.assertEqual(office, "State Rep")
+        self.assertEqual(district, "76")
+
+    def test_parse_candidates_row(self):
+        row = [u'2010 General Election', u'Roxanne Conlin - DEM', u'Chuck Grassley - REP', u'John Heiderscheit - LIB', u'Write-In', u'Leonard L. Boswell - DEM', u'Brad Zaun - REP', u'Rebecca Williamson - SWP', u'Write-In', u'Chet Culver/Patty Judge - DEM', u'Terry E. Branstad/Kim Reynolds - REP', u'Jonathan Narcisse/Richard Marlar - IAP', u'Eric Cooper/Nick Weltha - LIB', u'David Rosenfeld/Helen Meyers - SWP', u'Gregory James Hughes/Robin Prior-Calef - NBP', u'Write-In', u'Michael A. Mauro - DEM', u'Matt Schultz - REP', u'Jake Porter - LIB', u'Write-In', u'Jon Murphy - DEM', u'David A. Vaudt - REP', u'Write-In', u'Michael L. Fitzgerald - DEM', u'David D. Jamison - REP', u'Write-In', u'Francis Thicke - DEM', u'Bill Northey - REP', u'Write-In', u'Tom Miller - DEM', u'Brenna Findley - REP', u'Write-In', u'2010 General Election', u'Eric J. Palmer - DEM', u'Guy Vander Linden - REP', u'Write-In', u'Nathan Clubb - DEM', u'Betty R. De Boef - REP', u'Write-In', u'2010 General Election', u'David L. Baker', '', u'Michael J. Streit', '', u'Marsha Ternus', '', u'Amanda Potterfield', '', u'Gayle Vogel', '', u'David R. Danilson', '', u'Rick Doyle', '', u'Ed Mansfield', '', u'2010 General Election', u'Michael R. Mullins', '', u'Annette J. Scieszinksi', '', u'Joel D. Yates', '', u'Kirk A. Daily', '', u'Randy S. DeGeest', '', u'William S. Owens', '', u'Constitutional Amendment', '', u'Constitutional Amendment', '', u'Challanged Ballots', u'Total # Voters', u'Returned Supplies', u'2010 General Election']
+
+        candidates = self.loader._parse_candidates_row(row)
+
+        candidate, party = candidates[0]
+        self.assertEqual(candidate, "Roxanne Conlin")
+        self.assertEqual(party, "DEM")
+
+        candidate, party = candidates[13]
+        self.assertEqual(candidate, "Gregory James Hughes/Robin Prior-Calef")
+        self.assertEqual(party, "NBP")
 
 class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
     def setUp(self):
