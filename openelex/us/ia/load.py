@@ -40,7 +40,6 @@ class LoadResults(object):
         # each other.  Skip them for now.
         #
         # TODO: Write separate loader classes for these
-        '20101102__ia__general__louisa__precinct.xls',
         '20101102__ia__general__poweshiek__precinct.xls',
     ]
 
@@ -78,6 +77,8 @@ class LoadResults(object):
                 return ExcelPrecinct2010GeneralHenryResultLoader()
             elif mapping['name'] == 'Johnson':
                 return ExcelPrecinct2010GeneralJohnsonResultLoader()
+            elif mapping['name'] == 'Louisa':
+                return ExcelPrecinct2010GeneralLouisaResultLoader()
             else:
                 return ExcelPrecinct2010GeneralResultLoader()
         elif (election_year == 2012 and generated_filename.endswith('xls')):
@@ -478,7 +479,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
     def _parse_result_row(self, row, candidates, county, county_ocd_id,
             **common_kwargs):
         """
-        Create result dictionaries from a row of results for a precinct
+        Create result records from a row of results for a precinct
 
         Args:
             row (list): Data from a row in the spreadsheet.  The first column
@@ -1449,6 +1450,182 @@ class ExcelPrecinct2010GeneralJohnsonResultLoader(ExcelPrecinct2010GeneralClinto
     _office_re = re.compile('(?P<office>{offices})'
         '(\s+DISTRICT (?P<district>\d+)){{0,1}}'.format(offices='|'.join(offices)),
         re.IGNORECASE)
+
+
+class ExcelPrecinct2010GeneralLouisaResultLoader(ExcelPrecinctResultLoader):
+    """
+    Parse 2010 generl election precinct-level results for Henry County
+
+    This file has the standardized filename
+    '20101102__ia__general__louisa__precinct.xls',
+
+    A separate class is needed because the structure of this county's file is
+    significantly different from most of the other results files for this
+    election.
+
+    """
+    offices = [
+        "US Senator",
+        "US Representative",
+        "Governor/ Lieutenant Governor",
+        "Secretary of State",
+        "Auditor of State",
+        "Treasurer of State",
+        "Secretary of Agriculture",
+        "Attorney General",
+        "State Rep",
+    ]
+    _office_re = re.compile('(?P<office>{offices})'
+        '(\s+Dist(rict){{0,1}}\s+(?P<district>\d+)){{0,1}}'.format(offices='|'.join(offices)),
+        re.IGNORECASE
+    )
+
+    parties = [
+        "REP",
+        "DEM",
+        "LIB",
+        "CONS",
+        "IOWA",
+        "SOC",
+        "NBP",
+    ]
+    _party_re = re.compile('\s+(?P<party>{parties})$'.format(parties='|'.join(parties)))
+
+    _votes_start = 5
+    """Index where the votes start"""
+
+    def _results(self, mapping):
+        results = []
+        county = mapping['name']
+        county_ocd_id = mapping['ocd_id']
+        base_kwargs = self._build_common_election_kwargs()
+        base_jurisdiction = None
+
+        for i, row in enumerate(self._rows()):
+            if i == 0:
+                offices = self._parse_office_row(row)
+                continue
+
+            if i == 1:
+                candidates = self._parse_candidates_row(row, offices)
+                continue
+
+            if row[2] == '':
+                # Skip empty rows.  We know a row is empty if it doesn't
+                # have votes in the third column
+                base_jurisdiction = None
+                continue
+
+            if row[1] != '' and 'Abs' not in row[1]:
+                base_jurisdiction = row[1]
+
+            results.extend(self._parse_result_row(row, offices, candidates,
+                base_jurisdiction, county, county_ocd_id, **base_kwargs))
+
+        return results
+
+    def _parse_office_row(self, row):
+        offices = []
+        office = None
+        district = None
+
+        for cell in row[5:]:
+            if office and cell == '':
+                offices.append((office, district))
+            else:
+                m = self._office_re.match(cell)
+                if m is not None:
+                    office = m.group('office')
+                    district = m.group('district')
+                    offices.append((office, district))
+                else:
+                    office = None
+                    district = None
+
+        return offices
+
+    def _parse_candidates_row(self, row, offices):
+        candidates = []
+        for i in range(len(offices)):
+            candidates.append(self._parse_candidate(row[i+self._votes_start]))
+
+        return candidates
+
+    def _parse_candidate(self, cell):
+        candidate = None
+        party = None
+
+        m = self._party_re.search(cell)
+        if m is not None:
+            party = m.group('party')
+            candidate = self._party_re.sub('', cell)
+        else:
+            candidate = cell
+
+        return candidate, party
+
+    def _parse_result_row(self, row, offices, candidates, base_jurisdiction,
+            county, county_ocd_id, **base_kwargs):
+        """
+        Create result records from a row of results for a precinct
+
+        Args:
+            row (list): Data from a row in the spreadsheet.  The first column
+                should be the precinct name.  All other columns are vote
+                values
+            offices (list): List of tuples where the first item is the office
+                and the second is the district
+            candidates (list): List of tuples where the first item is the
+                candidate name, the second the candidate party
+            base_jurisdiction (string): Base jurisdiction since the total line
+                is empty
+            county (string): County name
+            county_ocd_id (string): OCD ID for the county
+
+        Returns:
+            A list of RawResult models with each dictionary representing the
+            votes for a candidate (or pseudo-candidate) for the reporting
+            level.
+
+        """
+        results = []
+        jurisdiction = row[1].strip()
+        if 'Abs' in jurisdiction:
+            votes_type = 'absentee'
+        elif jurisdiction == '':
+            votes_type = ''
+        else:
+            votes_type = 'election_day'
+
+        if jurisdiction == '':
+            jurisdiction = base_jurisdiction
+
+        if jurisdiction == 'TOTAL':
+            jurisdiction = county
+            ocd_id = county_ocd_id
+            reporting_level = 'county'
+        else:
+            ocd_id = county_ocd_id + '/' + ocd_type_id(jurisdiction)
+            reporting_level = 'precinct'
+
+        for i, office_district in enumerate(offices):
+            office, district = office_district
+            candidate, party = candidates[i]
+            votes = row[i+self._votes_start]
+            results.append(RawResult(
+                jurisdiction=jurisdiction,
+                ocd_id=ocd_id,
+                reporting_level=reporting_level,
+                full_name=candidate,
+                party=party,
+                office=office,
+                district=district,
+                votes=votes,
+                votes_type=votes_type,
+                **base_kwargs
+            ))
+
+        return results
 
 
 class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):

@@ -11,7 +11,8 @@ from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinct2010GeneralClintonResultLoader,
     ExcelPrecinct2010GeneralGrundyResultLoader,
     ExcelPrecinct2010GeneralHenryResultLoader,
-    ExcelPrecinct2010GeneralJohnsonResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2010GeneralJohnsonResultLoader,
+    ExcelPrecinct2010GeneralLouisaResultLoader, ExcelPrecinct2012ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
 
 
@@ -1011,6 +1012,71 @@ class TestExcelPrecinct2010GeneralJohnsonResultLoader(LoaderPrepMixin,
         self.assertEqual(result.votes, 6)
         self.assertEqual(result.votes_type, 'absentee')
         self.assertEqual(result.reporting_level, 'precinct')
+
+
+class TestExcelPrecinct2010GeneralLouisaResultLoader(LoaderPrepMixin,
+        TestCase):
+
+    def setUp(self):
+        self.loader = ExcelPrecinct2010GeneralLouisaResultLoader()
+
+    @skipUnless(cache_file_exists('ia',
+        '20101102__ia__general__louisa__precinct.xls'), CACHED_FILE_MISSING_MSG)
+    def test_results(self):
+        filename = '20101102__ia__general__louisa__precinct.xls'
+        mapping = self._get_mapping(filename)
+        self._prep_loader_attrs(mapping)
+
+        results = self.loader._results(mapping)
+        wapello_city_results = [r for r in results
+                                if r.jurisdiction == 'Wapello City']
+        self.assertEqual(len(wapello_city_results), 52*2)
+
+        result = wapello_city_results[0]
+        self.assertEqual(result.full_name, "Chuck Grassley")
+        self.assertEqual(result.party, "REP")
+        self.assertEqual(result.office, "US Senator")
+        self.assertEqual(result.district, None)
+        self.assertEqual(result.votes, 395)
+        self.assertEqual(result.votes_type, 'election_day')
+
+        result = wapello_city_results[-1]
+        self.assertEqual(result.full_name, "Under Vote")
+        self.assertEqual(result.party, None)
+        self.assertEqual(result.office, "State Rep")
+        self.assertEqual(result.district, "87")
+        self.assertEqual(result.votes, 121)
+        self.assertEqual(result.votes_type, '')
+
+        county_results = [r for r in results
+                          if r.reporting_level == 'county']
+        self.assertEqual(len(county_results), 52)
+
+    def test_parse_office_row(self):
+        row = ['', '', '', '', '', u'US Senator', '', '', '', '', '', u'US Representative District 2', '', '', '', '', '', '', u'Governor/ Lieutenant Governor', '', '', '', '', '', '', '', '', u'Secretary of State', '', '', '', '', '', u'Auditor of State', '', '', '', '', u'Treasurer of State', '', '', '', '', u'Secretary of Agriculture', '', '', '', '', u'Attorney General', '', '', '', '', u'State Rep Dist 87', '', '', '', u'County Supervisor', '', '', '', '', u'County Treasurer', '', '', '', u'County Recorder', '', '', '', u'County Attorney', '', '', '', u'County Sheriff', '', '', '', u'Soil & Water Conservation District Commisssioner-VOTE FOR TWO', '', '', '', u'Agricultural Extension Council Member-VOTE FOR FIVE', '', '', '', '', '', '', '', u'Iowa Supreme Court Justice', '', '', '', '', '', '', '', '', '', '', '', u'Iowa Court of Appeals Judge', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', u'Dist. Assoc. 8b', '', '', '', u'Const. Amend. 1', '', '', '', u'Const. Amend. 2', '', '', '']
+
+        offices = self.loader._parse_office_row(row)
+
+        office, district = offices[0]
+        self.assertEqual(office, "US Senator")
+        self.assertEqual(district, None)
+
+        office, district = offices[-1]
+        self.assertEqual(office, "State Rep")
+        self.assertEqual(district, "87")
+
+        self.fail()
+
+    def test_parse_candidate(self):
+        test_data = [
+            ('Mariannette Miller-Meeks REP', 'Mariannette Miller-Meeks', 'REP'),
+            ('Under Vote', 'Under Vote', None),
+        ]
+
+        for cell, expected_candidate, expected_party in test_data:
+            candidate, party = self.loader._parse_candidate(cell)
+            self.assertEqual(candidate, expected_candidate)
+            self.assertEqual(party, expected_party)
 
 
 class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
