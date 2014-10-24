@@ -299,9 +299,9 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
         results = self.loader._parse_result_row(row, candidates,
             county='', county_ocd_id='')
         result = next(r for r in results if r.full_name == "OverVote")
-        self.assertEqual(result.votes_type, 'over')
+        self.assertEqual(result.votes_type, '')
         result = next(r for r in results if r.full_name == "UnderVote")
-        self.assertEqual(result.votes_type, 'under')
+        self.assertEqual(result.votes_type, '')
 
     def test_parse_result_row_absentee(self):
         candidates = [
@@ -380,12 +380,12 @@ class TestExcelPrecinctPre2010ResultLoader(LoaderPrepMixin, TestCase):
         test_vals = (
             ('NANCY BOETTGER', 'ABSENTEE PRECICNT', 'absentee'),
             ('NANCY BOETTGER', 'PROVISIONAL PRECINCT', 'provisional'),
-            ('OverVote', 'ADAIR COMMUNITY CENTRE', 'over'),
-            ('UnderVote', 'ADAIR COMMUNITY CENTRE', 'under'),
+            ('OverVote', 'ADAIR COMMUNITY CENTRE', ''),
+            ('UnderVote', 'ADAIR COMMUNITY CENTRE', ''),
         )
 
         for candidate, jurisdiction, expected in test_vals:
-            votes_type = self.loader._votes_type(candidate, jurisdiction)
+            votes_type = self.loader._votes_type(jurisdiction)
             self.assertEqual(votes_type, expected)
 
 
@@ -576,12 +576,12 @@ class TestExcelPrecinct2010PrimaryResultLoader(LoaderPrepMixin, TestCase):
         # candidate, jurisdiction, expected
         test_vals = (
             ('ROXANNE CONLIN', 'ABSENTEE', 'absentee'),
-            ('Over Votes', '1 NW', 'over'),
-            ('Under Votes', '1 NW', 'under'),
+            ('Over Votes', '1 NW', ''),
+            ('Under Votes', '1 NW', ''),
         )
 
         for candidate, jurisdiction, expected in test_vals:
-            votes_type = self.loader._votes_type(candidate, jurisdiction)
+            votes_type = self.loader._votes_type(jurisdiction)
             self.assertEqual(votes_type, expected)
 
 
@@ -1065,8 +1065,6 @@ class TestExcelPrecinct2010GeneralLouisaResultLoader(LoaderPrepMixin,
         office, district = offices[-1]
         self.assertEqual(office, "State Rep")
         self.assertEqual(district, "87")
-
-        self.fail()
 
     def test_parse_candidate(self):
         test_data = [
