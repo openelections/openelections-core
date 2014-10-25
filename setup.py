@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-from distutils.core import setup
+from setuptools import setup
 
 # TODO: More informative message about Python version support, version reflected
 # classifiers argument to setup(). Perhaps setup should fail altogether for 
@@ -17,5 +17,9 @@ setup(
     author_email='openelections@gmail.com',
     url='http://openelections.net',
     packages=['openelex'],
-    scripts=[],
+    entry_points={
+        'console_scripts': [
+            'openelex = openelex.tasks:cli',
+        ],
+    }
 )

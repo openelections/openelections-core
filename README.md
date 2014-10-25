@@ -76,13 +76,11 @@ You can put this settings file anywhere on your filesystem.  You'll need to set 
 
 You'll probably want to add a line to the ``postactivate`` [script](http://virtualenvwrapper.readthedocs.org/en/latest/scripts.html) (``$VIRTUAL_ENV/bin/postactivate``) in your virtualenv to set the ``OPENELEX_SETTINGS`` environment variable.
 
-#### Setting up 'invoke'
-
-OpenElections uses [invoke](http://docs.pyinvoke.org/en/latest/) to run tasks (similar to Ruby's `rake`).
+#### Setting up your PYTHONPATH 
 
 First, make sure you're in the **root of the repository** you've cloned.
 
-Add the `openelex` directory to your `$PYTHONPATH`, so that `invoke` can see our tasks. This will append to your shell's login script (replace `.bashrc` with whatever your shell uses, if needed).
+Add the `openelex` directory to your `$PYTHONPATH`.  This will append to your shell's login script (replace `.bashrc` with whatever your shell uses, if needed).
 
 ```bash
 echo "export PYTHONPATH=$PYTHONPATH:`pwd`/openelex" >> ~/.bashrc
@@ -94,39 +92,61 @@ That will run automatically for future terminal sessions. To activate it for the
 source ~/.bashrc
 ```
 
-All `invoke` commands must be run **from the project root**.
+#### Add management command to PATH
 
-Test it out by running `invoke --list`, you should see something like:
+This project comes with a command, ``openelex`` that can be used to run various tasks.  You should add this to your system's path.
+
+```baseh
+echo "export PATH=$PATH:`pwd`/bin" >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Running management commands
+
+Test it out by running `openelex --help`, you should see something like:
 
 ```bash
-$ invoke --list
-Available tasks:
+$ openelex --help
+Usage: openelex [OPTIONS] COMMAND [ARGS]...
 
-    fetch
-    archive.delete
-    archive.save
-    cache.clear
-    cache.files
-    datasource.elections
-    datasource.filename_url_pairs
-    datasource.mappings
-    datasource.target_urls
-    load.run
-    transform.list
-    transform.run
-    validate.list
-    validate.run
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  archive.delete                 Delete raw state files from S3
+  archive.save                   Save files from cache to s3
+  bake.election_file             Write election and candidate data with on...
+  bake.results_status_json       Output a JSON file describing available...
+  bake.state_file                Write election and candidate data along
+                                 with...
+  cache.clear                    Delete files in state cache diretory
+  cache.files                    List files in state cache diretory
+  datasource.elections           List elections for a state.
+  datasource.filename_url_pairs  List mapping of standard filenames to
+                                 source...
+  datasource.mappings            List metadata mappings for a state
+  datasource.target_urls         List source data urls for a state
+  fetch                          Scrape data files and store in local file...
+  load.run                       Load cached data files into the database
+  load_metadata.run              Populate metadata in database from fixture...
+  publish                        Publish baked result files
+  shell                          Open a Python shell, bootstrapping the...
+  transform.list                 Show available data transformations
+  transform.reverse              Reverse a previously run transformation
+  transform.run                  Run data transformations
+  validate.list                  Show available validations for state
+  validate.run                   Run data validations for state
 ```
 
 Running commands looks something like this:
 
 ```bash
-$ invoke cache.clear --state=NY
+$ openelex cache.clear --state=NY
 0 files deleted
 0 files still in cache
 ```
 
-You can also get help on particular commands, e.g. `invoke --help cache.clear`.
+You can also get help on particular commands, e.g. `openelex --help cache.clear`.
 
 #### Configuring services (optional)
 
@@ -162,6 +182,6 @@ You only need to do this if you plan to write data loaders or transforms.
 
 ```bash
 $ cd openelex
-$ invoke load_metadata.run --collection=office
-$ invoke load_metadata.run --collection=party
+$ openelex load_metadata.run --collection=office
+$ openelex load_metadata.run --collection=party
 ```

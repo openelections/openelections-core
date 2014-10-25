@@ -1,10 +1,11 @@
-from invoke import task
+import click
 
 from openelex.base.cache import StateCache
-from .utils import HELP_TEXT, print_files
+from .utils import default_state_options, print_files
 
 
-@task(help=HELP_TEXT)
+@click.command(name="cache.files", help="List files in state cache diretory")
+@default_state_options
 def files(state, datefilter=''):
     """List files in state cache diretory
 
@@ -24,7 +25,8 @@ def files(state, datefilter=''):
         print msg 
 
 
-@task(help=HELP_TEXT)
+@click.command(name='cache.clear', help="Delete files in state cache diretory")
+@default_state_options
 def clear(state, datefilter=''):
     """Delete files in state cache diretory
 

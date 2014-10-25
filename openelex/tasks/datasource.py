@@ -3,10 +3,11 @@ from pprint import pprint
 import inspect
 import sys
 
-from invoke import task
+import click
 
-from .utils import load_module
 from openelex.base.datasource import MAPPING_FIELDNAMES
+
+from .utils import default_state_options, load_module
 
 
 def handle_task(task, state, datefilter):
@@ -47,12 +48,8 @@ def csv_results(results):
     for r in results:
         writer.writerow(r)
 
-HELP = {
-    'state':'Two-letter state-abbreviation, e.g. NY',
-    'datefilter': 'Any portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc.',
-}
-
-@task(help=HELP)
+@click.command(name='datasource.target_urls', help="List source data urls for a state")
+@default_state_options
 def target_urls(state, datefilter=''):
     """
     List source data urls for a state.
@@ -63,7 +60,8 @@ def target_urls(state, datefilter=''):
     results = handle_task(func_name, state, datefilter)
     pprint_results(func_name, results)
 
-@task(help=HELP)
+@click.command(name='datasource.mappings', help="List metadata mappings for a state")
+@default_state_options
 def mappings(state, datefilter='', csvout=False):
     """
     List metadata mappings for a state.
@@ -77,7 +75,8 @@ def mappings(state, datefilter='', csvout=False):
     else:
         pprint_results(func_name, results)
 
-@task(help=HELP)
+@click.command(name='datasource.elections', help="List elections for a state.")
+@default_state_options
 def elections(state, datefilter=''):
     """
     List elections for a state. This data comes from the OpenElex Metadata API.
@@ -92,7 +91,8 @@ def elections(state, datefilter=''):
         pprint(elecs)
     print "\n%s returned %s results" % (func_name, count)
 
-@task(help=HELP)
+@click.command(name='datasource.filename_url_pairs', help="List mapping of standard filenames to source urls for a state")
+@default_state_options
 def filename_url_pairs(state, datefilter=''):
     """
     List mapping of standard filenames to source urls for a state

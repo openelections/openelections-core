@@ -1,14 +1,14 @@
 import sys
 
-from invoke import task
+import click
 
-from .utils import load_module, split_args
 from validate import run_validation
 
-@task(help={
-    'state': '(required) Two-letter state postal, e.g. NY',
-    'raw': 'List raw transforms',
-})
+from .utils import load_module, split_args
+
+@click.command(name='transform.list', help="Show available data transformations")
+@click.option('--state', help="Two-letter state postal, e.g. NY")
+@click.option('--raw', help="List raw transforms")
 def list(state, raw=False):
     """
     Show available transformations on data loaded in MongoDB.
@@ -67,13 +67,15 @@ def _select_transforms(state, include=None, exclude=None, raw=False):
     return run_transforms
 
 
-@task(help={
-    'state': 'Two-letter state-abbreviation, e.g. NY',
-    'include': 'Transforms to run (comma-separated list)',
-    'exclude': 'Transforms to skip (comma-separated list)',
-    'no_reverse': "Don't reverse before running this transform, even if it is set to auto-reverse", 
-    'raw': 'Transforms to run are raw transforms',
-})
+@click.command(name='transform.run', help="Run data transformations")
+@click.option('--state', help="Two-letter state-abbreviation, e.g. NY")
+@click.option('--include', help="Transforms to run (comma-separated list)")
+@click.option('--exclude', help="Transforms to skip (comma-separated list)")
+# TODO: See if this needs to be transformed
+@click.option('--no-reverse', help="Don't reverse before running this "
+    "transform, even if it is set to auto-reverse")
+# TODO: See if there needs to be special syntax for boolean flags
+@click.option('--raw', help="Transforms to run are raw transforms")
 def run(state, include=None, exclude=None, no_reverse=False, raw=False):
     """
     Run transformations on data loaded in MongoDB.
@@ -98,13 +100,12 @@ def run(state, include=None, exclude=None, no_reverse=False, raw=False):
             print "Executing validation"
             run_validation(state, validators)
 
-
-@task(help={
-    'state': 'Two-letter state-abbreviation, e.g. NY',
-    'include': 'Transforms to reverse (comma-separated list)',
-    'exclude': 'Transforms to skip (comma-separated list)',
-    'raw': 'Transforms to reverse are raw transforms',
-})
+@click.command(name='transform.reverse', help="Reverse a previously run transformation")
+@click.option('--state', help="Two-letter state-abbreviation, e.g. NY")
+@click.option('--include', help="Transforms to reverse (comma-separated list)")
+@click.option('--exclude', help="Transforms to skip (comma-separated list)")
+# TODO: See if there needs to be special syntax for boolean flags
+@click.option('--raw', help="Transforms to reverse are raw transforms")
 def reverse(state, include=None, exclude=None, raw=False):
     """
     Reverse a previously run transformation.

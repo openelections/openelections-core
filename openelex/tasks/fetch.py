@@ -1,15 +1,14 @@
 import sys
 
-from invoke import task
+import click
 
 from openelex.base.fetch import BaseFetcher
-from .utils import load_module
+from .utils import default_state_options, load_module
 
-@task(help={
-    'state':'Two-letter state-abbreviation, e.g. NY',
-    'datefilter': 'Any portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc.',
-    'unprocessed': "Fetch unprocessed data files only.",
-})
+@click.command(help="Scrape data files and store in local file cache "
+    "under standardized name")
+@default_state_options
+@click.option('--unprocessed', help="Fetch unprocessed data files only")
 def fetch(state, datefilter='', unprocessed=False):
     """
     Scrape data files and store in local file cache
