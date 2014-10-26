@@ -1,5 +1,6 @@
 import re
 import csv
+import xlrd
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -11,7 +12,7 @@ from .datasource import Datasource
 North Carolina elections have a mixture of CSV, tab-delimited text and Excel files for results. These files contain precinct-level data for each of the state's
 counties, and includes all contests in that county.
 
-Although the CSV files have a `district` column, the district information is contained in the `contest` column and needs to be parsed out. The 
+Although some of the CSV files have a `district` column, the district information is contained in the `contest` column and needs to be parsed out. The 
 Excel files cover separate offices and have sheets for individual contests. CSV files also have totals for one-stop, absentee, provisional and 
 transfer votes, which appear as "precincts" in the data.
 """
@@ -59,6 +60,7 @@ class NCBaseLoader(BaseLoader):
         'NC AUDITOR',
         'AUDITOR',
         'NC COMMISSIONER OF AGRICULTURE',
+        'COMMISSIONER OF AGRICULTURE',
         'NC COMMISSIONER OF INSURANCE',
         'NC COMMISSIONER OF LABOR',
         'COMMISSIONER OF LABOR',
@@ -94,8 +96,9 @@ class NCBaseLoader(BaseLoader):
         """
         Returns cleaned version of votes or 0 if it's a non-numeric value.
         """
-        if val.strip() == '':
-            return 0
+        if type(val) is str:
+            if val.strip() == '':
+                return 0
 
         try:
             return int(float(val))
@@ -452,3 +455,143 @@ class NCTsv20022000Loader(NCBaseLoader):
             'votes': self._votes(row['total_votes'])
         })
         return RawResult(**kwargs)
+
+class NCXlsLoader(NCBaseLoader):
+    """
+    Loads North Carolina 2000 primary results, which are contained in office-specific Excel files. For district-level
+    offices, each district is represented on a separate worksheet.
+    """
+
+    def load(self):
+        headers = [
+            'county',
+            'precinct',
+            'contest',
+            'choice',
+            'party',
+            'total_votes',
+        ]
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'precinct'
+        # Store result instances for bulk loading
+        results = []
+
+        xlsfile = xlrd.open_workbook(self._xls_file_path)
+        if 'house' in self.source or 'state_senate' in self.source:
+            sheets = xlsfile.sheets()
+        else:
+            sheets = [xlsfile.sheets()[0]]
+
+        for sheet in sheets:
+            office, district = self._detect_office(sheet)
+            if sheet.row_values(0)[1].upper() == 'PRECINCT':
+                cands = sheet.row_values(0)[2:]
+                parties = [x.replace('(','').replace(')','') for x in sheet.row_values(1)[2:]]
+            else:
+                cands = [c for c in sheet.row_values(2)[2:] if c != '']
+                parties = [x.replace('(','').replace(')','') for x in sheet.row_values(3)[2:] if x != '']
+            candidates = zip(cands, parties)
+            for i in xrange(2, sheet.nrows):
+                row = [r for r in sheet.row_values(i)]
+                if self._skip_row(row):
+                    continue
+                for idx, cand in enumerate(candidates):
+                    print row
+                    if row[1] == '':
+                        county = row[0]
+                        results.append(self._prep_county_result(row, office, district, cand, county, row[idx+2]))
+                    else:
+                        results.append(self._prep_precinct_result(row, office, district, cand, county, row[idx+2]))
+        RawResult.objects.insert(results)
+
+    def _skip_row(self, row):
+        if row == []:
+            return True
+        elif row[0] == '' and row[1] == '':
+            return True
+        elif row[0] == 'Total':
+            return True
+        elif row[0] == 'County':
+            return True
+        else:
+            return False
+
+    def _detect_office(self, sheet):
+        district = None
+        if 'state_house' in self.source:
+            office = 'NC HOUSE OF REPRESENTATIVES'
+            district = sheet.name.split(' ')[0]
+        elif 'state_senate' in self.source:
+            office = 'NC STATE SENATE'
+            district = sheet.name.split(' ')[0]
+        elif 'house' in self.source:
+            office = 'US HOUSE OF REPRESENTATIVES'
+            district = sheet.name.split(' ')[0]
+        elif 'lieutenant_governor' in self.source:
+            office = 'LIEUTENANT GOVERNOR'
+        elif 'governor' in self.source:
+            office = 'GOVERNOR'
+        elif 'auditor' in self.source:
+            office = 'AUDITOR'
+        elif 'commissioner_of_agriculture' in self.source:
+            office = 'COMMISSIONER OF AGRICULTURE'
+        elif 'commissioner_of_labor' in self.source:
+            office = 'COMMISSIONER OF LABOR'
+        elif 'treasurer' in self.source:
+            office = 'TREASURER'
+        elif 'president' in self.source:
+            office = 'PRESIDENT-VICE PRESIDENT'
+        return [office, district]
+
+    def _build_contest_kwargs(self, office, district, party):
+        kwargs = {
+            'office': office,
+            'district': district,
+            'primary_party': party,
+        }
+        return kwargs
+
+    def _build_candidate_kwargs(self, candidate):
+        full_name = candidate[0]
+        slug = slugify(full_name, substitute='-')
+        kwargs = {
+            'full_name': full_name,
+            #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
+            'name_slug': slug,
+        }
+        return kwargs
+
+    def _prep_precinct_result(self, row, office, district, candidate, county, votes):
+        kwargs = self._base_kwargs(row, office, district, candidate)
+        precinct = str(row[1]).strip()
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == county.upper()][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'precinct',
+            'jurisdiction': precinct,
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
+            'party': candidate[1],
+            'votes': self._votes(votes)
+        })
+        return RawResult(**kwargs)
+
+    def _prep_county_result(self, row, office, district, candidate, county, votes):
+        kwargs = self._base_kwargs(row, office, district, candidate)
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == county.upper()][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'county',
+            'jurisdiction': county,
+            'ocd_id': county_ocd_id,
+            'party': candidate[1],
+            'votes': self._votes(votes)
+        })
+        return RawResult(**kwargs)
+
+    def _base_kwargs(self, row, office, district, candidate):
+        "Build base set of kwargs for RawResult"
+        # TODO: Can this just be called once?
+        kwargs = self._build_common_election_kwargs()
+        contest_kwargs = self._build_contest_kwargs(office, district, candidate[1])
+        candidate_kwargs = self._build_candidate_kwargs(candidate)
+        kwargs.update(contest_kwargs)
+        kwargs.update(candidate_kwargs)
+        return kwargs
