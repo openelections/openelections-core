@@ -57,11 +57,11 @@ Turn on your virtual environment from the previous step, if you haven't already:
 $ workon openelex
 ```
 
-Then install the Python dependencies:
+Then install the openelex package in [editable mode](http://pip.readthedocs.org/en/latest/reference/pip_install.html#editable-installs)
+
 
 ```bash
-$ pip install -r requirements.txt
-$ pip install -r requirements-dev.txt
+$ pip install -e .
 ```
 
 Create a `settings.py` file.
@@ -75,31 +75,6 @@ At the very least, you'll want to make sure the values in the ``MONGO`` variable
 You can put this settings file anywhere on your filesystem.  You'll need to set the ``OPENELEX_SETTINGS`` environment variable to the [absolute path](http://en.wikipedia.org/wiki/Path_(computing)) to the ``settings.py`` file that you created. 
 
 You'll probably want to add a line to the ``postactivate`` [script](http://virtualenvwrapper.readthedocs.org/en/latest/scripts.html) (``$VIRTUAL_ENV/bin/postactivate``) in your virtualenv to set the ``OPENELEX_SETTINGS`` environment variable.
-
-#### Setting up your PYTHONPATH 
-
-First, make sure you're in the **root of the repository** you've cloned.
-
-Add the `openelex` directory to your `$PYTHONPATH`.  This will append to your shell's login script (replace `.bashrc` with whatever your shell uses, if needed).
-
-```bash
-echo "export PYTHONPATH=$PYTHONPATH:`pwd`/openelex" >> ~/.bashrc
-```
-
-That will run automatically for future terminal sessions. To activate it for the current session:
-
-```bash
-source ~/.bashrc
-```
-
-#### Add management command to PATH
-
-This project comes with a command, ``openelex`` that can be used to run various tasks.  You should add this to your system's path.
-
-```baseh
-echo "export PATH=$PATH:`pwd`/bin" >> ~/.bashrc
-source ~/.bashrc
-```
 
 #### Running management commands
 
