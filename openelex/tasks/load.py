@@ -1,15 +1,13 @@
 import os.path
 import sys
 
-from invoke import task
+import click
 
-from .utils import load_module
+from .utils import default_state_options, load_module
 
-@task(help={
-    'state':'Two-letter state-abbreviation, e.g. NY',
-    'datefilter': 'Any portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc.',
-    'filename': 'Filename of single file to load'
-})
+@click.command(name='load.run', help="Load cached data files into the database")
+@default_state_options
+@click.option('--filename', help="Filename of single file to load")
 def run(state, datefilter='', filename=None):
     """
     Load cached data files into MongoDB.

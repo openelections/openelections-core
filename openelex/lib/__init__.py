@@ -1,4 +1,5 @@
 from datetime import datetime
+import functools
 
 from openelex.lib.text import slugify
 
@@ -140,3 +141,16 @@ def format_date(datestr):
             pass
     else:
         raise ValueError("Invalid date format '{}'".format(datestr))
+
+
+def compose(*functions):
+    """
+    Compose an arbitary number of functions
+
+    Implementation by Mathieu Larose
+    https://mathieularose.com/function-composition-in-python
+
+    """
+    def compose2(f, g):
+        return lambda x: f(g(x))
+    return functools.reduce(compose2, functions)

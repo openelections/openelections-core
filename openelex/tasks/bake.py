@@ -4,36 +4,48 @@ import os.path
 import re
 import sys
 
-from invoke import task
+import click
 
 from openelex.api import elections as elec_api
 from openelex.base.bake import Baker, RawBaker, reporting_levels_for_election
 from openelex.base.publish import published_url
-from openelex.lib import format_date
+from openelex.lib import format_date, compose
 from openelex.us import STATE_POSTALS
 
-BASE_HELP = {
-    'state': "Two-letter state-abbreviation, e.g. NY",
-    'fmt': "Format of output files.  Can be 'csv' or 'json'. Defaults is 'csv'.",
-    'outputdir': ("Directory where output files will be written.  Defaults to "
-        "'openelections/us/bakery'"),
-    'electiontype': ("Only bake results for election of this type. "
-        "Can be 'primary' or 'general'. Default is to bake results for all "
-        "types of election"),
-    'level': ("Only bake results aggregated at this reporting level. "
-        "Values can be things like 'precinct' or 'county'.  "
+BASE_OPTIONS = [
+    click.option('--state', help="Two-letter state-abbreviation, e.g. NY"),
+    click.option('--fmt', help="Format of output files.  Can be 'csv' or "
+                 "'json'. Defaults is 'csv'."),
+    click.option('--outputdir', help="Directory where output files will be "
+                 "written.  Defaults to 'openelex/us/bakery'"),
+    click.option('--electiontype', help="Only bake results for election of "
+        "this type. Can be 'primary' or 'general'. Default is to bake results "
+        "for all types of elections"),
+    click.option('--level', help="Only bake results aggregated at this "
+        "reporting level. Values can be things like 'precinct' or 'county'. "
         "Default is to bake results for all reporting levels."),
-    'raw': "Bake raw results.  Default is to bake cleaned/standardized results",
-}
+    click.option('--raw', help="Bake raw results.  Default is to bake "
+        "cleaned/standardized results"),
+]
 
-STATE_FILE_HELP = BASE_HELP.copy()
-STATE_FILE_HELP.update({
-    'datefilter': ("Portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc. "
-        "Results will only be baked for elections with a start date matching "
-        "the date string."),
-})
+STATE_FILE_OPTIONS = list(BASE_OPTIONS)
+STATE_FILE_OPTIONS.append(click.option('--datefilter', help="Date specified "
+    "in 'YYYY' or 'YYYY-MM-DD' format. Results will only be baked for "
+    "elections with a start date matching the date string"))
 
-@task(help=STATE_FILE_HELP)
+def base_options(f):
+    """Decorator for default options"""
+    decorator_stack = compose(*BASE_OPTIONS)
+    return decorator_stack(f)
+
+def state_file_options(f):
+    """Decorator for options for the state_file command"""
+    decorator_stack = compose(*STATE_FILE_OPTIONS)
+    return decorator_stack(f)
+
+@click.command(name='bake.state_file', help="Write election and candidate data "
+    "along with a manifest to structured files")
+@state_file_options
 def state_file(state, fmt='csv', outputdir=None, datefilter=None,
     electiontype=None, level=None, raw=False):
     """
@@ -109,14 +121,20 @@ def get_election_dates_types(state, datefilter=None):
     return [(elec['start_date'].replace('-', ''), elec['race_type'])
             for elec in get_elections(state, datefilter)]
 
-ELECTION_FILE_HELP = BASE_HELP.copy()
-ELECTION_FILE_HELP.update({
-    'datefilter': ("Day or year, specified in YYYYMMDD format. "
-        "Results will only be baked for elections with a start date matching "
-        "the date string.  Default is to bake results for all elections."),
-})
+ELECTION_FILE_OPTIONS = list(BASE_OPTIONS)
+ELECTION_FILE_OPTIONS.append(click.option('--datefilter', help="Day of year, "
+    "specified in YYYYMMDD format. Results will only be baked for elections "
+    "with a start date matching the date string.  Default is to bake results "
+    "for all elections."))
 
-@task(help=ELECTION_FILE_HELP)
+def election_file_options(f):
+    """Decorator for options fo the election_file command"""
+    decorator_stack = compose(*ELECTION_FILE_OPTIONS)
+    return decorator_stack(f)
+
+@click.command(name="bake.election_file", help="Write election and candidate "
+    "data with on election per file")
+@election_file_options
 def election_file(state, fmt='csv', outputdir=None, datefilter=None,
                   electiontype=None, level=None, raw=False):
     """
@@ -175,7 +193,8 @@ def result_urls(election, raw=False):
 
     return urls
 
-@task
+@click.command(name="bake.results_status_json", help="Output a JSON file "
+    "describing available results for each election")
 def results_status_json(state=None, bakeall=False, outputdir=None):
     """
     Output a JSON file describing available results for each election.

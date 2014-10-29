@@ -1,7 +1,7 @@
 import code
 import os
 
-from invoke import task
+import click
 
 # Portions of this code taken from django.core.management.commands.shell
 # License is as follows:
@@ -34,7 +34,9 @@ from invoke import task
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-@task
+@click.command(help="Open a Python shell, bootstrapping the connection to MongoDB")
+# TODO: Configure this to be a boolean command
+@click.option('--no-startup')
 def shell(no_startup=False):
     """
     Open a Python shell, bootstrapping the connection to MongoDB

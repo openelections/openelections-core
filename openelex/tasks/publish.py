@@ -1,17 +1,9 @@
-
 from blinker import signal
-from invoke import task
+import click
 
 from openelex.base.publish import GitHubPublisher
 
-publish_help = {
-    'state': "Two-letter state-abbreviation, e.g. NY",
-    'datefilter': ("Portion of a YYYYMMDD date, e.g. YYYY, YYYYMM, etc. "
-        "Result files will only be published if the date portion of the filename "
-        "matches the date string."),
-    'raw': ("Publish raw result filess.  Default is to publish cleaned/standardized "
-        "result files."),
-}
+from .utils import default_state_options
 
 def log_publish_started(sender, **kwargs):
     filename = kwargs.get('filename')
@@ -21,7 +13,10 @@ def log_publish_finished(sender, **kwargs):
     filename = kwargs.get('filename')
     print("Finished publishing {}".format(filename))
 
-@task(help=publish_help)
+@click.command(help="Publish baked result files")
+@default_state_options
+@click.option('--raw', help="Publish raw result filess.  Default is to publish "
+    "cleaned/standardized result files")
 def publish(state, datefilter=None, raw=False):
     """
     Publish baked result files

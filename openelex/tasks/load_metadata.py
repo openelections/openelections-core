@@ -1,7 +1,7 @@
 import os
 from csv import DictReader
 
-from invoke import task
+import click
 
 from openelex import models
 from openelex import COUNTRY_DIR
@@ -19,13 +19,14 @@ def _get_document_class(collection):
 def _get_fixture_filename(collection, fmt='csv'):
     return os.path.join(FIXTURE_DIR, "%s.%s" % (collection, fmt))
 
-@task(help={
-    'collection': 'Collection where metadata will be loaded. E.g. "office"',
-    'filename': ("Filename of fixture file. Optional. If omitted the default "
-                 "filename will be calculated based on the collection name."),
-    'database': "Database where data will be loaded. Optional. Default is openelex",
-    'clear': "Delete all records in collection before loading.",
-})
+@click.command(name='load_metadata.run', help="Populate metadata in database "
+    "from fixture files")
+@click.option('--collection', help='Collection where metadata will be loaded. E.g. "office"')
+@click.option('--filename', help="Filename of fixture file. Optional. If omitted "
+    "the default filename will be calculated based on the collection name.")
+@click.option('--database', help="Database where data will be loaded. "
+    "Optional. Default is openelex")
+@click.option('--clear', help="Delete all records in collection before loading")
 def run(collection, filename=None, database='openelex', clear=False):
     """
     Populate metadata in MongoDB from fixture files.

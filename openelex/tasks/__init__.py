@@ -1,4 +1,4 @@
-from invoke import Collection
+import click
 from mongoengine import ConnectionError
 
 from openelex.db import init_db
@@ -8,19 +8,31 @@ from publish import publish
 
 import archive, cache, datasource, load, load_metadata, transform, validate, bake
 
-# Build tasks namespace
-ns = Collection()
-ns.add_collection(archive)
-ns.add_collection(bake)
-ns.add_collection(cache)
-ns.add_collection(datasource)
-ns.add_task(fetch)
-ns.add_collection(load)
-ns.add_collection(load_metadata)
-ns.add_task(publish)
-ns.add_task(shell)
-ns.add_collection(transform)
-ns.add_collection(validate)
+@click.group()
+def cli():
+    pass
+
+cli.add_command(archive.save)
+cli.add_command(archive.delete)
+cli.add_command(bake.state_file)
+cli.add_command(bake.election_file)
+cli.add_command(bake.results_status_json)
+cli.add_command(cache.files)
+cli.add_command(cache.clear)
+cli.add_command(datasource.target_urls)
+cli.add_command(datasource.mappings)
+cli.add_command(datasource.elections)
+cli.add_command(datasource.filename_url_pairs)
+cli.add_command(fetch)
+cli.add_command(load.run)
+cli.add_command(load_metadata.run)
+cli.add_command(publish)
+cli.add_command(shell)
+cli.add_command(transform.list)
+cli.add_command(transform.run)
+cli.add_command(transform.reverse)
+cli.add_command(validate.list)
+cli.add_command(validate.run)
 
 # Initialize prod Mongo connection
 try:

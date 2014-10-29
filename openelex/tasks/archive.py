@@ -1,13 +1,15 @@
 import os
 
-from invoke import task, run
+import click
 
 from openelex.base.archive import BaseArchiver
-from .utils import help_text
+from .utils import default_state_options
 
 save_msg = "Saved to S3: %s"
 
-@task(help=help_text({'cachefile': 'Path to file in state cache directory'}))
+@click.command(name='archive.save', help='Save files from cache to s3')
+@default_state_options
+@click.option('--cachefile', help='Path to file in state cache directory')
 def save(state='', datefilter='', cachefile=''):
     """Save files from cache to s3
 
@@ -39,8 +41,9 @@ def save(state='', datefilter='', cachefile=''):
     else:
         print("Failed to supply proper arguments. No action executed.")
 
-
-@task(help=help_text({'key': 'S3 file key'}))
+@click.command(name='archive.delete', help="Delete raw state files from S3")
+@default_state_options
+@click.option('--key', help='S3 file key')
 def delete(state='', datefilter='', key=''):
     """Delete raw state files from S3
 

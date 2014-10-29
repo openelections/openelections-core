@@ -1,15 +1,13 @@
-import os
 import sys
 from collections import OrderedDict
 
-from invoke import task
+import click
 
 from .utils import load_module, split_args
 
 
-@task(help={
-    'state':'Two-letter state-abbreviation, e.g. NY',
-})
+@click.command(name='validate.list', help="Show available validations for state")
+@click.option('--state', help="Two-letter state-abbreviation, e.g. NY")
 def list(state):
     """
     Show available validations for state.
@@ -25,11 +23,10 @@ def list(state):
                 out += "\n\t\t %s" % func.func_doc
             print out + "\n"
 
-@task(help={
-    'state':'Two-letter state-abbreviation, e.g. NY',
-    'include': 'Validations to run (comma-separated list)',
-    'exclude': 'Validations to skip (comma-separated list)',
-})
+@click.command(name='validate.run', help="Run data validations for state")
+@click.option('--state', help="Two-letter state-abbreviation, e.g. NY")
+@click.option('--include', help="Validations to run (comma-separated list)")
+@click.option('--exclude', help="Validations to skip (comma-separated list)")
 def run(state, include=None, exclude=None):
     """
     Run data validations for state.

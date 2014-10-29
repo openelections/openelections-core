@@ -1,24 +1,3 @@
-argparse==1.2.1
-beautifulsoup4==4.3.2
-blinker==1.3
-boto==2.9.7
-invoke==0.5.1
-ipython==0.13.2
-jellyfish==0.2.0
-mock==1.0.1
-mongoengine==0.8.4
-nameparser==0.2.7
-nose==1.3.0
-ordered-set==1.1
-pymongo>=2.6
-requests==1.2.3
-scrapelib==0.9.0
-stevedore==0.14.1
-unicodecsv==0.9.4
-us==0.7
-virtualenv==1.11.4
-virtualenv-clone==0.2.4
-virtualenvwrapper==4.2
-wsgiref==0.1.2
-xlrd==0.9.2
-github3.py==0.9.0
+--index-url https://pypi.python.org/simple/
+
+-e .
