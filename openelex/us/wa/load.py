@@ -225,7 +225,9 @@ class OCDMixin(object):
         elif 'county' in self.mapping['ocd_id']:
             return "{}".format(self.mapping['ocd_id'])
         else:
-            return "{}/county:{}".format(self.mapping['ocd_id'], ocd_type_id(jurisdiction))
+            return "{}/county:{}".format(
+                self.mapping['ocd_id'],
+                ocd_type_id(jurisdiction))
 
 
 class WABaseLoader(BaseLoader):
@@ -253,14 +255,14 @@ class WABaseLoader(BaseLoader):
         'Auditor',
         'State Superintendent of Public Instruction',
         'Attorney General',
-        'Commissioner of Public Lands'
+        'Commissioner of Public Lands',
     ])
 
     district_offices = {
-        'U.S. Senator': 'Congressional District',
+        #'U.S. Senator': 'Congressional District',
         'U.S. Representative': 'Congressional District',
         'State Senator': 'Legislative District',
-        'State Representative': 'Legislative District'
+        'State Representative': 'Legislative District',
     }
 
     def _skip_row(self, row):
@@ -427,7 +429,7 @@ def normalize_index(header, method):
     return header.index(''.join(method(header)))
 
 
-def normalize_district(header, office):
+def normalize_district(header, office, row):
     """
     Example of what we had before:
 
@@ -440,10 +442,31 @@ def normalize_district(header, office):
     was the case with the mess before.
     """
 
-    return "{} {}".format(
-        WABaseLoader.district_offices[
-            normalize_races(office)], "".join(
-            map(str, [int(s) for s in office.strip() if s.isdigit()][:2])))
+    norm_office = normalize_races(office)
+    dist_str = "".join(
+        map(str, [int(s) for s in office.strip() if s.isdigit()][:2]))
+
+    bth_regex = re.compile(r'((leg|con).*dis.*)', re.IGNORECASE)
+    leg_regex = re.compile(r'leg.*dis.*', re.IGNORECASE)
+    con_regex = re.compile(r'con.*dis.*', re.IGNORECASE)
+
+    if not row:
+        row = {}
+
+    try:
+        row[filter(lambda x: bth_regex.search(x), header)[0]]
+        if norm_office is 'U.S. Representative':
+            dist = row[filter(lambda x: leg_regex.search(x), header)[0]]
+            return dist
+        if norm_office in ('State Representative', 'State Senate'):
+            dist = row[filter(lambda x: con_regex.search(x), header)[0]]
+            return dist
+    except IndexError:
+        if dist_str is "":
+            return None
+        if int(dist_str) > 49:
+            dist_str = dist_str[:1]
+        return dist_str
 
 
 def normalize_races(string):
@@ -462,22 +485,22 @@ def normalize_races(string):
 
     """
 
+    general_filter_regex = re.compile(r'(countywide|initiative|county of|city of|port|director|council|school|mayor)', re.IGNORECASE)
     presidential_regex = re.compile('president', re.IGNORECASE)
-    senate_regex = re.compile('(senate|senator)', re.IGNORECASE)
-    house_regex = re.compile('(house|representative)', re.IGNORECASE)
+    senate_regex = re.compile(r'(senate|senator)', re.IGNORECASE)
+    house_regex = re.compile(r'(house|representative)', re.IGNORECASE)
     governor_regex = re.compile('governor', re.IGNORECASE)
     treasurer_regex = re.compile('treasurer', re.IGNORECASE)
     auditor_regex = re.compile('auditor', re.IGNORECASE)
     sos_regex = re.compile('secretary', re.IGNORECASE)
-    lt_gov_regex = re.compile(r'(lt|Lt|Lieutenant)', re.IGNORECASE)
+    lt_gov_regex = re.compile(r'(lt|Lieutenant)', re.IGNORECASE)
     ospi_regex = re.compile(
         'superintendent of public instruction',
         re.IGNORECASE)
     ag_regex = re.compile('attorney general', re.IGNORECASE)
     wcpl_regex = re.compile('commissioner of public lands', re.IGNORECASE)
     local_regex = re.compile(
-        r'(\bState\b|Washington|Washington\s+State|Local|'
-        'Legislative District)',
+        r'(^State\b|Washington|Washington\s+State|Local|Legislative District)',
         re.IGNORECASE)
     national_regex = re.compile(
         r'(U\.S\.|\bUS\b|Congressional|National|United\s+States|U\.\s+S\.\s+)',
@@ -510,13 +533,17 @@ def normalize_races(string):
 
     """
 
-    if re.search(house_regex, string):
+    if re.search(general_filter_regex, string):
+        return 'N/A'
+    elif re.search(house_regex, string):
         if re.search(national_regex, string):
             return 'U.S. Representative'
         elif re.search(local_regex, string):
             return 'State Representative'
         else:
             return 'N/A'
+    elif re.search(lt_gov_regex, string):
+        return 'Lt. Governor'
     elif re.search(governor_regex, string):
         return 'Governor'
     elif re.search(wcpl_regex, string):
@@ -528,8 +555,6 @@ def normalize_races(string):
             return 'State Senator'
         else:
             return 'N/A'
-    elif re.search(lt_gov_regex, string):
-        return 'Lt. Governor'
     elif re.search(ospi_regex, string):
         return 'Superintendent of Public Instruction'
     elif re.search(sos_regex, string):
@@ -624,7 +649,9 @@ class WALoaderPrecincts(OCDMixin, WABaseLoader):
                     rr_kwargs.update({
                         'reporting_level': 'precinct',
                         'votes': votes,
-                        'ocd_id': "{}".format(self._get_ocd_id(self.jurisdiction, precinct=row[self.precinct_index]))
+                        'ocd_id': "{}".format(self._get_ocd_id(
+                            self.jurisdiction,
+                            precinct=row[self.precinct_index]))
                     })
                     try:
                         rr_kwargs.update({
@@ -633,11 +660,9 @@ class WALoaderPrecincts(OCDMixin, WABaseLoader):
                     except (IndexError, KeyError):
                         party_flag = 1
                     try:
-                        rr_kwargs.update({
-                            'district': '{}'.format(normalize_district(self.header, row[self.contest_index]))
-                        })
+                        rr_kwargs.update(
+                            {'district': normalize_district(self.header, row[self.contest_index], row)})
                     except KeyError:
-                        pass
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
             if 0 is not party_flag:
@@ -727,7 +752,7 @@ class WALoaderPre2007(OCDMixin, WABaseLoader):
         """
 
         kwargs = {
-            'office': normalize_races(row['officename']),
+            'office': row['officename'],
             'primary_party': row['partycode'].strip()
         }
         return kwargs
@@ -779,7 +804,7 @@ class WALoaderPre2007(OCDMixin, WABaseLoader):
         })
         try:
             kwargs.update({
-                'district': '{}'.format(normalize_district(self.header, row[self.contest_index]))
+                'district': normalize_district(self.header, row[self.contest_index], row)
             })
         except KeyError:
             pass
@@ -822,11 +847,9 @@ class WALoaderPost2007(OCDMixin, WABaseLoader):
                         'ocd_id': "{}".format(self._get_ocd_id(rr_kwargs['jurisdiction'])),
                     })
                     try:
-                        rr_kwargs.update({
-                            'district': '{}'.format(normalize_district(self.header, row[self.contest_index]))
-                        })
+                        rr_kwargs.update(
+                            {'district': normalize_district(self.header, row[self.contest_index], row)})
                     except KeyError:
-                        pass
                         district_flag = 1
                     results.append(RawResult(**rr_kwargs))
             if 0 is not district_flag:
@@ -962,8 +985,7 @@ class WALoaderExcel(OCDMixin, WABaseLoader):
                 })
                 # Get party
                 try:
-                    party = str(
-                        sheet.cell(
+                    party = str(sheet.cell(
                             rowx=row,
                             colx=self.party_index).value).strip()
                     rr_kwargs.update({
@@ -983,7 +1005,7 @@ class WALoaderExcel(OCDMixin, WABaseLoader):
                         rowx=row,
                         colx=self.contest_index).value
                     rr_kwargs.update(
-                        {'district': '{}'.format(normalize_district(self.header, sh_val))})
+                        {'district': '{}'.format(normalize_district(self.header, sh_val, row=False))})
                 except KeyError:
                     pass
         RawResult.objects.insert(results)
