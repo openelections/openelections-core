@@ -15,7 +15,7 @@ from openelex.us import STATE_POSTALS
 BASE_OPTIONS = [
     click.option('--state', help="Two-letter state-abbreviation, e.g. NY"),
     click.option('--fmt', help="Format of output files.  Can be 'csv' or "
-                 "'json'. Defaults is 'csv'."),
+                 "'json'. Defaults is 'csv'.", default="csv"),
     click.option('--outputdir', help="Directory where output files will be "
                  "written.  Defaults to 'openelex/us/bakery'"),
     click.option('--electiontype', help="Only bake results for election of "
@@ -25,7 +25,7 @@ BASE_OPTIONS = [
         "reporting level. Values can be things like 'precinct' or 'county'. "
         "Default is to bake results for all reporting levels."),
     click.option('--raw', help="Bake raw results.  Default is to bake "
-        "cleaned/standardized results"),
+        "cleaned/standardized results", is_flag=True),
 ]
 
 STATE_FILE_OPTIONS = list(BASE_OPTIONS)
