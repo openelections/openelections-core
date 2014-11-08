@@ -61,7 +61,6 @@ is used in results.
 """
 
 VOTES_TYPE_CHOICES = (
-   '',
    'absentee',
    'provisional',
    'absentee_provisional',
@@ -143,13 +142,10 @@ class RawResult(TimestampMixin, DynamicDocument):
     ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
     votes = IntField(required=True, help_text="Raw vote count for this jurisdiction")
     votes_type = StringField(choices=VOTES_TYPE_CHOICES,
-       help_text="If the votes field reflects votes other than the votes "
+       help_text="If the votes field reflects votes other than the total votes "
        "cast for a candidate in a jurisdiction, such as "
        "absentee or provisional votes, this field describes the type of "
-       "votes.  Otherwise, leave empty.")
-    # TODO: total_votes and vote_breakdowns can probably be deprecated now that
-    # we have the votes_type field.  Once loaders have been updated to reflect
-    # this, we should remove these fields
+       "votes.  Otherwise, do not set.")
     total_votes = IntField(help_text="Total candidate votes contest-wide, if provided in raw results.")
     vote_breakdowns = DictField(help_text="Vote totals for election day (absentee, provisional, etc.), if provided in raw results")
     winner = StringField(help_text="Winner flag, if provided in raw results.")
@@ -478,6 +474,11 @@ class Result(TimestampMixin, DynamicDocument):
     ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
     jurisdiction = StringField(required=True, help_text="Derived/standardized political geography (state, county, district, etc.).")
     votes = IntField(required=True, help_text="Vote count for this jurisdiction")
+    votes_type = StringField(choices=VOTES_TYPE_CHOICES,
+       help_text="If the votes field reflects votes other than the total votes "
+       "cast for a candidate in a jurisdiction, such as "
+       "absentee or provisional votes, this field describes the type of "
+       "votes.  Otherwise, do not set.")
     total_votes = IntField(help_text="Total candidate votes contest-wide, either from raw results or calculated by OpenElex."
             "Requires validation if migrated from raw results.")
     vote_breakdowns = DictField(help_text="If provided, store vote totals for election day, absentee, provisional, etc.")

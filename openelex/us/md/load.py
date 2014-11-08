@@ -195,10 +195,10 @@ class MDLoader(MDBaseLoader):
     def _prep_county_result(self, row):
         kwargs = self._base_kwargs(row)
         vote_brkdown_fields = [
-           ('election_night_total', 'Election Night Votes'),
-           ('absentee_total', 'Absentees Votes'),
-           ('provisional_total', 'Provisional Votes'),
-           ('second_absentee_total', '2nd Absentees Votes'),
+           ('election_day', 'Election Night Votes'),
+           ('absentee', 'Absentees Votes'),
+           ('provisional', 'Provisional Votes'),
+           ('second_absentee', '2nd Absentees Votes'),
         ]
         vote_breakdowns = {}
         for field, key in vote_brkdown_fields:
@@ -223,9 +223,6 @@ class MDLoader(MDBaseLoader):
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
-        vote_breakdowns = {
-            'election_night_total': self._votes(row['Election Night Votes'])
-        }
         precinct = "%s-%s" % (row['Election District'], row['Election Precinct'].strip())
         ocd_id = "{}/precinct:{}".format(self.mapping['ocd_id'],
             ocd_type_id(precinct))
@@ -235,9 +232,9 @@ class MDLoader(MDBaseLoader):
             'ocd_id': ocd_id,
             'party': row['Party'].strip(),
             'votes': self._votes(row['Election Night Votes']),
+            'votes_type': 'election_day',
             'winner': row['Winner'],
             'write_in': self._writein(row),
-            'vote_breakdowns': vote_breakdowns,
         })
         return RawResult(**kwargs)
 

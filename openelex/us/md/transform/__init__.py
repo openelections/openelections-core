@@ -23,7 +23,7 @@ contest_fields = meta_fields + ['start_date', 'end_date',
 candidate_fields = meta_fields + ['full_name', 'given_name', 
     'family_name', 'additional_name']
 result_fields = meta_fields + ['reporting_level', 'jurisdiction',
-    'votes', 'total_votes', 'vote_breakdowns']
+    'votes', 'votes_type', 'total_votes', 'vote_breakdowns']
 
 
 class BaseTransform(Transform):

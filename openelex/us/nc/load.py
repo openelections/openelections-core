@@ -447,12 +447,17 @@ class NCTsv20022000Loader(NCBaseLoader):
     def _prep_county_result(self, row):
         kwargs = self._base_kwargs(row)
         county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+        if row['precinct'] == 'absentee/provisional':
+            votes_type = 'absentee_provisional'
+        else:
+            votes_type = None
         kwargs.update({
             'reporting_level': 'county',
             'jurisdiction': row['county'],
             'ocd_id': county_ocd_id,
             'party': row['party'].strip(),
-            'votes': self._votes(row['total_votes'])
+            'votes': self._votes(row['total_votes']),
+            'votes_type': votes_type,
         })
         return RawResult(**kwargs)
 
