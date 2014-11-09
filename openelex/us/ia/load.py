@@ -257,16 +257,14 @@ class PreprocessedResultsLoader(BaseLoader):
             jurisdiction = county
             ocd_id = county_ocd_id
             reporting_level = 'county'
-            votes_type = 'absentee_provisional'
+            kwargs['votes_type'] = 'absentee_provisional'
         else:
             reporting_level = 'precinct'
-            votes_type = 'absentee_provisional'
             ocd_id = "{}/precinct:{}".format(county_ocd_id,
                 ocd_type_id(jurisdiction))
 
         kwargs.update({
             'reporting_level': reporting_level,
-            'votes_type': votes_type,
             'ocd_id': ocd_id,
         })
         return RawResult(**kwargs)
@@ -533,7 +531,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         if "provisional" in jurisdiction.lower():
             return 'provisional'
 
-        return ''
+        return None 
 
 
 class ExcelPrecinct2010PrimaryResultLoader(ExcelPrecinctResultLoader):
@@ -648,7 +646,7 @@ class ExcelPrecinct2010PrimaryResultLoader(ExcelPrecinctResultLoader):
         if "absentee" in jurisdiction.lower():
             return 'absentee'
 
-        return ''
+        return None 
 
 
 class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
@@ -721,8 +719,8 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
             **common_kwargs):
         results = []
 
-        vote_breakdowns_in_cols = self._vote_breakdowns_in_cols(row,
-                jurisdiction_offset)
+        vote_breakdowns = self._vote_breakdowns(row, jurisdiction_offset,
+            race_offset)
 
         raw_office = self._get_office(row, race_offset)
 
@@ -760,50 +758,46 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
             **common_kwargs
         )
 
-        if not vote_breakdowns_in_cols:
+        if vote_breakdowns is None:
             # Separate row for each vote breakdown type
             votes = self._get_votes(row, race_offset)
             votes_type = self._votes_type(self._get_votes_type(row, race_offset))
         else:
             # Each vote breakdown type has its own column in the same row
             votes = self._get_total_votes(row, race_offset)
-            votes_type = ''
+            votes_type = None
 
         results.append(RawResult(
           votes=votes,
           votes_type=votes_type,
+          vote_breakdowns=vote_breakdowns,
           **result_kwargs
         ))
 
-        if vote_breakdowns_in_cols:
-            # When each vote breakdown type has its own column in the same row
-            # add the election day (polling) and absentee results as well
-            results.append(RawResult(
-              votes=self._get_polling_votes(row, race_offset),
-              votes_type='election_day',
-              **result_kwargs
-            ))
-
-            results.append(RawResult(
-              votes=self._get_absentee_votes(row, race_offset),
-              votes_type='absentee',
-              **result_kwargs
-            ))
-
         return results
 
-    def _vote_breakdowns_in_cols(self, row, offset=0):
+    def _vote_breakdowns(self, row, jurisdiction_offset, race_offset):
         """
-        Detect whether vote breakdowns are in separate rows or columns
-
+        Get vote breakdowns
+        
         There are two different, but similar layouts for results files.
         One puts total, election day and absentee votes in separate rows.
         Another puts the total, election day and absentee votes
         in separate columns.  An example of this is
         20101102__ia__general__wapello__precinct.xls
 
+        Returns:
+            A dictionary of vote breakdowns if there are multiple types of
+            results in a single row.  Otherwise None.
+
         """
-        return len(row) > (5 + offset)
+        if len(row) <= (5 + jurisdiction_offset):
+            return None
+
+        return {
+            'election_day': self._get_polling_votes(row, race_offset),
+            'absentee': self._get_absentee_votes(row, race_offset),
+        }
 
     def _get_first_cell(self, row, offset=0):
         return row[0 + offset].strip()
@@ -839,7 +833,7 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
             return 'absentee'
         else:
             # Otherwise, assume normal vote totals
-            return ""
+            return None
 
 
 class ExcelPrecinct2010GeneralAudubonResultLoader(ExcelPrecinctResultLoader):
@@ -969,7 +963,7 @@ class ExcelPrecinct2010GeneralAudubonResultLoader(ExcelPrecinctResultLoader):
             if "Abs" in jurisdiction:
                 votes_type = 'absentee'
             elif "Total" in jurisdiction:
-                votes_type = ''
+                votes_type = None
             else:
                 votes_type = 'election_day'
 
@@ -1047,7 +1041,7 @@ class ExcelPrecinct2010GeneralClintonResultLoader(ExcelPrecinctResultLoader):
     _candidate_re = re.compile(r'(?P<candidate>([-\w]+\s*(\w\.\s+){0,1})+)'
         '(\s*\((?P<party>\w+)\)){0,1}')
 
-    votes_types = ['', 'absentee', 'election_day']
+    votes_types = ['absentee', 'election_day']
 
     def _results(self, mapping):
         results = []
@@ -1120,17 +1114,19 @@ class ExcelPrecinct2010GeneralClintonResultLoader(ExcelPrecinctResultLoader):
     def _parse_result_row(self, row, **base_kwargs):
         results = []
         candidate, party = self._parse_candidate(row[0].strip())
-        votes = row[1:2] + row[3:]
-        for v, vt in zip(votes, self.votes_types):
-            results.append(RawResult(
-              full_name=candidate,
-              party=party,
-              votes=v,
-              votes_type=vt,
-              **base_kwargs
-            ))
+        results.append(RawResult(
+          full_name=candidate,
+          party=party,
+          votes=row[1],
+          vote_breakdowns=self._vote_breakdowns(row),
+          **base_kwargs
+        ))
 
         return results
+
+    def _vote_breakdowns(self, row):
+        votes = row[3:]
+        return {vt: v for vt, v in zip(self.votes_types, votes)}
 
     def _parse_candidate(self, cell):
         candidate = None
@@ -1232,7 +1228,7 @@ class ExcelPrecinct2010GeneralGrundyResultLoader(ExcelPrecinctResultLoader):
             if "ABS" in jurisdiction:
                 votes_type = 'absentee'
             else:
-                votes_type = ''
+                votes_type = None
 
             if jurisdiction in ("ABS", "TOTAL"):
                 reporting_level = 'county'
@@ -1352,7 +1348,7 @@ class ExcelPrecinct2010GeneralHenryResultLoader(ExcelPrecinctResultLoader):
             if jurisdiction == "Absentee":
                 votes_type = 'absentee'
             else:
-                votes_type = ''
+                votes_type = None
 
             if jurisdiction in ("Absentee", "TOTAL"):
                 jurisdiction = county
@@ -1428,7 +1424,8 @@ class ExcelPrecinct2010GeneralJohnsonResultLoader(ExcelPrecinct2010GeneralClinto
         '(\s+DISTRICT (?P<district>\d+)){{0,1}}'.format(offices='|'.join(offices)),
         re.IGNORECASE)
 
-    votes_types = ['', 'election_day', 'absentee']
+    votes_types = ['election_day', 'absentee']
+
 
 class ExcelPrecinct2010GeneralLouisaResultLoader(ExcelPrecinctResultLoader):
     """
@@ -1571,7 +1568,7 @@ class ExcelPrecinct2010GeneralLouisaResultLoader(ExcelPrecinctResultLoader):
         if 'Abs' in jurisdiction:
             votes_type = 'absentee'
         elif jurisdiction == '':
-            votes_type = ''
+            votes_type = None
         else:
             votes_type = 'election_day'
 
@@ -1648,7 +1645,7 @@ class ExcelPrecinct2010GeneralPoweshiekResultLoader(ExcelPrecinctResultLoader):
         county = mapping['name']
         county_ocd_id = mapping['ocd_id']
         base_kwargs = self._build_common_election_kwargs()
-        base_kwargs['votes_type'] = ''
+        base_kwargs['votes_type'] = None
 
         for i, row in enumerate(self._rows()):
             if i == 0:
@@ -1669,7 +1666,7 @@ class ExcelPrecinct2010GeneralPoweshiekResultLoader(ExcelPrecinctResultLoader):
                 continue
 
             if cell0 == "Totals":
-                base_kwargs['votes_type'] = ''
+                base_kwargs['votes_type'] = None
 
             results.extend(self._parse_result_row(row, offices, candidates,
                 county, county_ocd_id, **base_kwargs))
@@ -2046,7 +2043,7 @@ class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):
         if cell2 == "Election Day":
             return 'election_day'
 
-        return ''
+        return None
 
 
 class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
@@ -2158,7 +2155,7 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
         """
         jurisdiction = val
         reporting_level = 'precinct'
-        votes_type = 'total'
+        votes_type = None
 
         if "Absentee" in jurisdiction:
             votes_type = 'absentee'
@@ -2205,10 +2202,6 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
                 break
 
             jurisdiction, reporting_level, votes_type = jurisdictions[i]
-            # To not break backward compatibility, we use an empty string
-            # to mean total votes
-            if votes_type == 'total':
-                votes_type = ''
 
             results.append(RawResult(
                 jurisdiction=jurisdiction,
