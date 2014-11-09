@@ -493,7 +493,7 @@ class NCXlsLoader(NCBaseLoader):
             office, district = self._detect_office(sheet)
             if sheet.row_values(0)[1].upper() == 'PRECINCT' or sheet.row_values(0)[2] == 'John Cosgrove' or sheet.row_values(0)[1].upper() == 'PRECINCTS':
                 cands = [c for c in sheet.row_values(0)[2:] if c != '']
-                parties = [x.replace('(','').replace(')','') for x in sheet.row_values(1)[2:]]
+                parties = [x.replace('(','').replace(')','') for x in sheet.row_values(1)[2:] if x != '']
             else:
                 cands = [c for c in sheet.row_values(2)[2:] if c != '']
                 parties = [x.replace('(','').replace(')','') for x in sheet.row_values(3)[2:] if x != '']
