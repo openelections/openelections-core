@@ -203,7 +203,7 @@ class MDLoader(MDBaseLoader):
         vote_breakdowns = {}
         for field, key in vote_brkdown_fields:
             try:
-                vote_breakdowns[field] = row[key].strip()
+                vote_breakdowns[field] = self._votes(row[key].strip())
             except KeyError:
                 pass
         kwargs.update({
@@ -212,6 +212,7 @@ class MDLoader(MDBaseLoader):
             'ocd_id': self.mapping['ocd_id'],
             'party': row['Party'].strip(),
             'votes': self._votes(row['Total Votes']),
+            'vote_breakdowns': vote_breakdowns,
         })
         if (kwargs['office'] not in self.district_offices
                 and kwargs['district'] != ''):
