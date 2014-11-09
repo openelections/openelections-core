@@ -484,7 +484,7 @@ class NCXlsLoader(NCBaseLoader):
 
         for sheet in sheets:
             office, district = self._detect_office(sheet)
-            if sheet.row_values(0)[1].upper() == 'PRECINCT':
+            if sheet.row_values(0)[1].upper() == 'PRECINCT' or sheet.row_values(0)[2] == 'John Cosgrove' or sheet.row_values(0)[1].upper() == 'PRECINCTS':
                 cands = sheet.row_values(0)[2:]
                 parties = [x.replace('(','').replace(')','') for x in sheet.row_values(1)[2:]]
             else:
@@ -496,7 +496,6 @@ class NCXlsLoader(NCBaseLoader):
                 if self._skip_row(row):
                     continue
                 for idx, cand in enumerate(candidates):
-                    print row
                     if row[1] == '':
                         county = row[0]
                         results.append(self._prep_county_result(row, office, district, cand, county, row[idx+2]))
@@ -509,7 +508,7 @@ class NCXlsLoader(NCBaseLoader):
             return True
         elif row[0] == '' and row[1] == '':
             return True
-        elif row[0] == 'Total':
+        elif row[0].upper() == 'TOTAL':
             return True
         elif row[0] == 'County':
             return True
