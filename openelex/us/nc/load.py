@@ -484,13 +484,15 @@ class NCXlsLoader(NCBaseLoader):
         xlsfile = xlrd.open_workbook(self._xls_file_path)
         if 'house' in self.source or 'state_senate' in self.source:
             sheets = xlsfile.sheets()
+        elif 'lieutenant_governor':
+            sheets = [xlsfile.sheets()[5]]
         else:
             sheets = [xlsfile.sheets()[0]]
 
         for sheet in sheets:
             office, district = self._detect_office(sheet)
             if sheet.row_values(0)[1].upper() == 'PRECINCT' or sheet.row_values(0)[2] == 'John Cosgrove' or sheet.row_values(0)[1].upper() == 'PRECINCTS':
-                cands = sheet.row_values(0)[2:]
+                cands = [c for c in sheet.row_values(0)[2:] if c != '']
                 parties = [x.replace('(','').replace(')','') for x in sheet.row_values(1)[2:]]
             else:
                 cands = [c for c in sheet.row_values(2)[2:] if c != '']
