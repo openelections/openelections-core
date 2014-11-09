@@ -150,9 +150,10 @@ class PreprocessedResultsLoader(BaseLoader):
 
     def _is_racewide_total(self, row):
         try:
-            return row['jurisdiction'].strip().upper() in ["TOTALS", "TOTAL"]
+            return (row['jurisdiction'].strip().upper() in ["TOTALS", "TOTAL"]
+                    or row['reporting_level'] == 'state')
         except KeyError:
-            # No jurisdiction column means racewide result
+            # No jurisdiction or reporting_level column means racewide result
             return True
 
     def _build_contest_kwargs(self, row, primary_type):
