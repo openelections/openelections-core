@@ -80,6 +80,8 @@ class LoadResults(object):
                 return ExcelPrecinct2010GeneralResultLoader()
         elif (election_year == 2012 and generated_filename.endswith('xls')):
             return ExcelPrecinct2012ResultLoader()
+        elif (election_year == 2013 and generated_filename.endswith('xls')):
+            return ExcelPrecinct2013ResultLoader()
         elif (election_year == 2014 and generated_filename.endswith('xlsx')
               and 'primary' in election_id):
             return ExcelPrecinct2014ResultLoader()
@@ -344,6 +346,14 @@ class ExcelPrecinctResultLoader(BaseLoader):
 
     def _get_workbook(self):
         return xlrd.open_workbook(self._xls_file_path)
+
+    @classmethod
+    def _empty_row(cls, row):
+        for col in row:
+            if col != '':
+                return False
+
+        return True
 
 
 class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
@@ -1908,12 +1918,6 @@ class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):
         else:
             return False
 
-    def _empty_row(self, row):
-        for col in row:
-            if col != '':
-                return False
-
-        return True
 
     def _parse_office_row(self, row):
         """
@@ -2069,6 +2073,120 @@ class ExcelPrecinct2012ResultLoader(ExcelPrecinctResultLoader):
             return 'election_day'
 
         return None
+
+
+class ExcelPrecinct2013ResultLoader(ExcelPrecinctResultLoader):
+    """
+    Parse 2013 special general election precinct-level results
+
+    This loader differs from others because the special election
+    results file will only have one office for each file.
+
+    """
+    OFFICE_RE = re.compile(r'(?P<office>State Representative)\s+'
+        'District\s+(?P<district>\d+)')
+
+    def _results(self, mapping):
+        results = []
+
+        county = mapping['name']
+        county_ocd_id = mapping['ocd_id']
+        base_kwargs = self._build_common_election_kwargs()
+        base_kwargs['office'] = None
+        sheet = self._get_sheet()
+        candidates = None
+
+        for row in self._rows(sheet):
+            if self._empty_row(row):
+                continue
+
+            if base_kwargs['office'] is None:
+                office, district = self._parse_office_row(row)
+                if office is not None:
+                    base_kwargs['office'] = office
+                    base_kwargs['district'] = district
+                continue
+
+            if row[0].strip() == 'Precinct':
+                candidates = self._parse_candidates_row(row)
+                continue
+
+            if candidates is None:
+                # Skip rows until we get candidates
+                continue
+
+            results.extend(self._parse_result_row(row, candidates,
+                county, county_ocd_id, **base_kwargs))
+
+        return results
+
+    def _parse_office_row(self, row):
+        for col in [row[0], row[5]]:
+            m = self.OFFICE_RE.match(col)
+            if m is not None:
+                return m.group('office'), m.group('district')
+
+        return None, None
+
+    def _parse_candidates_row(self, row):
+        candidates = []
+        for col in row[1:]:
+            col = col.strip()
+            if col == '':
+                continue
+            candidate, party = self._parse_candidate(col)
+            candidates.append((candidate, party))
+            if candidate.lower().startswith("total"):
+                # Return early in case there are empty trailing columns
+                return candidates
+
+        # We shouldn't get here
+        return candidates
+
+    def _parse_candidate(self, s):
+        party = None
+        candidate = s
+        m = re.search(r'(?P<party>Democratic|Republican)', s)
+        if m is not None:
+            party = m.group('party')
+            candidate = candidate.replace(party, '').strip()
+
+        return candidate, party
+
+    def _parse_result_row(self, row, candidates, county, county_ocd_id,
+            **common_kwargs):
+        results = []
+        reporting_level = 'precinct'
+        jurisdiction = row[0].strip()
+        # Rows with a precinct column of "Total" or "TOTALS" are actually
+        # county-level results
+        if jurisdiction.lower().startswith("total"):
+            jurisdiction = county
+            reporting_level = 'county'
+
+        vote_cols = [c for c in row[1:] if c != '']
+        for candidate_party, votes in zip(candidates, vote_cols):
+            candidate, party = candidate_party
+            if candidate == "Write-In":
+                write_in = candidate
+            else:
+                write_in = None
+
+            results.append(RawResult(
+                reporting_level=reporting_level,
+                jurisdiction=jurisdiction,
+                full_name=candidate,
+                party=party,
+                write_in=write_in,
+                votes=self._votes(votes),
+                **common_kwargs
+            ))
+
+        return results
+
+    @classmethod
+    def _votes(cls, val):
+        return int(val)
 
 
 class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):

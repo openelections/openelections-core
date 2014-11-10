@@ -14,6 +14,7 @@ from openelex.us.ia.load import (ExcelPrecinctResultLoader,
     ExcelPrecinct2010GeneralJohnsonResultLoader,
     ExcelPrecinct2010GeneralLouisaResultLoader,
     ExcelPrecinct2010GeneralPoweshiekResultLoader, ExcelPrecinct2012ResultLoader,
+    ExcelPrecinct2013ResultLoader,
     ExcelPrecinct2014ResultLoader, LoadResults, PreprocessedResultsLoader)
 
 
@@ -1444,6 +1445,98 @@ class TestExcelPrecinct2012Loader(LoaderPrepMixin, TestCase):
 
         row = ['', '', u'Total', '', '', 2659.0, 1219.0, 5.0, 133.0, 4.0, 4020.0, '', '', '', '', '', '', '']
         self.assertEqual(self.loader._parse_votes_type(row), None)
+
+
+class TestExcelPrecinct2013Loader(LoaderPrepMixin, TestCase):
+    def setUp(self):
+        self.loader = ExcelPrecinct2013ResultLoader()
+
+    def test_parse_office_row(self):
+        row = [u'State Representative District 52 - 52 -  (Iowa - Cerro Gordo County)', '', '', '', '', '']
+        office, district = self.loader._parse_office_row(row)
+        self.assertEqual(office, "State Representative")
+        self.assertEqual(district, "52")
+
+        row = ['', '', '', '', '', u'State Representative\nDistrict 33', '', '', '', '', '']
+        office, district = self.loader._parse_office_row(row)
+        self.assertEqual(office, "State Representative")
+        self.assertEqual(district, "33")
+
+    def test_parse_candidates_row(self):
+        row = [u'Precinct', '', '', '', '', u'Brian Meyer\nDemocratic', u'Michael Young\nRepublican', u'Write-In', u' Under Votes', u' Over Votes', u'Total']
+        expected_candidates = [
+            ('Brian Meyer', 'Democratic'),
+            ('Michael Young', 'Republican'),
+            ('Write-In', None),
+            ('Under Votes', None),
+            ('Over Votes', None),
+            ('Total', None)
+        ]
+        candidates = self.loader._parse_candidates_row(row)
+        self.assertEqual(candidates, expected_candidates)
+
+        row = [u'Precinct', u'  Dennis Litterer', u'  Todd Prichard', u'  Craig Clark', u'  Write-In', u'TOTALS']
+        expected_candidates = [
+            ('Dennis Litterer', None),
+            ('Todd Prichard', None),
+            ('Craig Clark', None),
+            ('Write-In', None),
+            ('TOTALS', None),
+        ]
+        candidates = self.loader._parse_candidates_row(row)
+        self.assertEqual(candidates, expected_candidates)
+
+    def test_parse_result_row(self):
+        county = "Polk"
+        county_ocd_id = "ocd-division/country:us/state:ia/county:polk"
+        candidates = [
+            ('Brian Meyer', 'Democratic'),
+            ('Michael Young', 'Republican'),
+            ('Write-In', None),
+            ('Under Votes', None),
+            ('Over Votes', None),
+            ('Total', None)
+        ]
+        row = [u'Des Moines 48', '', '', '', '', 8.0, 3.0, 0.0, 0.0, 0.0, 11.0]
+        results = self.loader._parse_result_row(row, candidates, county, county_ocd_id)
+        self.assertEqual(len(results), len(candidates))
+        for r in results:
+            self.assertEqual(r.reporting_level, 'precinct')
+            self.assertEqual(r.jurisdiction, row[0].strip())
+        result = next(r for r in results if r.full_name == 'Michael Young')
+        self.assertEqual(result.votes, 3)
+        self.assertEqual(result.party, "Republican")
+        row = [u'Total', '', '', '', '', 1410.0, 369.0, 2.0, 0.0, 1.0, 1782.0]
+        results = self.loader._parse_result_row(row, candidates, county, county_ocd_id)
+        for r in results:
+            self.assertEqual(r.reporting_level, 'county')
+            self.assertEqual(r.jurisdiction, county)
+
+        county = "Cerro Gordo"
+        county_ocd_id = "ocd-division/country:us/state:ia/county:cerro-gordo"
+        candidates = [
+            ('Dennis Litterer', None),
+            ('Todd Prichard', None),
+            ('Craig Clark', None),
+            ('Write-In', None),
+            ('TOTALS', None),
+        ]
+        row = [u'Falls Twp - Plymouth Pct      ', 31.0, 47.0, 2.0, 0.0, u'80']
+        results = self.loader._parse_result_row(row, candidates, county, county_ocd_id)
+        self.assertEqual(len(results), len(candidates))
+        for r in results:
+            self.assertEqual(r.reporting_level, 'precinct')
+            self.assertEqual(r.jurisdiction, row[0].strip())
+        result = next(r for r in results if r.full_name == 'Dennis Litterer')
+        self.assertEqual(result.votes, 31)
+        result = next(r for r in results if r.full_name == 'TOTALS')
+        self.assertEqual(result.votes, 80)
+
+        row = [u'TOTAL', 111.0, 129.0, 3.0, 0.0, 243.0]
+        results = self.loader._parse_result_row(row, candidates, county, county_ocd_id)
+        for r in results:
+            self.assertEqual(r.reporting_level, 'county')
+            self.assertEqual(r.jurisdiction, county)
 
 
 class TestExcellPrecinct2014Loader(LoaderPrepMixin, TestCase):
