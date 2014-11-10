@@ -7,7 +7,7 @@ from .utils import load_module, split_args
 
 
 @click.command(name='validate.list', help="Show available validations for state")
-@click.option('--state', help="Two-letter state-abbreviation, e.g. NY")
+@click.option('--state', required=True, help="Two-letter state-abbreviation, e.g. NY")
 def list(state):
     """
     Show available validations for state.
@@ -24,7 +24,7 @@ def list(state):
             print out + "\n"
 
 @click.command(name='validate.run', help="Run data validations for state")
-@click.option('--state', help="Two-letter state-abbreviation, e.g. NY")
+@click.option('--state', required=True, help="Two-letter state-abbreviation, e.g. NY")
 @click.option('--include', help="Validations to run (comma-separated list)")
 @click.option('--exclude', help="Validations to skip (comma-separated list)")
 def run(state, include=None, exclude=None):

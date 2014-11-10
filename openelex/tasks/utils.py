@@ -13,8 +13,10 @@ def load_module(state, mod_list=[]):
 
 def default_state_options(f):
     """Decorator that adds the default options for a state command"""
-    d1 = click.option('--state', '-s', help='Two-letter state-abbreviation, e.g. NY')
-    d2 = click.option('--datefilter', '-d', help='A year specified as YYYY, e.g. 2012', default='')
+    d1 = click.option('--state', '-s', required=True,
+        help='Two-letter state-abbreviation, e.g. NY')
+    d2 = click.option('--datefilter', '-d',
+        help='A year specified as YYYY, e.g. 2012', default='')
     return d1(d2(f))
 
 

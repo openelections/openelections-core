@@ -8,7 +8,8 @@ from .utils import default_state_options, load_module
 @click.command(help="Scrape data files and store in local file cache "
     "under standardized name")
 @default_state_options
-@click.option('--unprocessed', help="Fetch unprocessed data files only")
+@click.option('--unprocessed', is_flag=True,
+    help="Fetch unprocessed data files only")
 def fetch(state, datefilter='', unprocessed=False):
     """
     Scrape data files and store in local file cache

@@ -15,8 +15,9 @@ def log_publish_finished(sender, **kwargs):
 
 @click.command(help="Publish baked result files")
 @default_state_options
-@click.option('--raw', help="Publish raw result filess.  Default is to publish "
-    "cleaned/standardized result files")
+@click.option('--raw', is_flag=True,
+    help="Publish raw result filess.  Default is to publish cleaned/"
+         "standardized result files")
 def publish(state, datefilter=None, raw=False):
     """
     Publish baked result files
