@@ -389,11 +389,8 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         district = None
         candidates_next = False
         base_kwargs = self._build_common_election_kwargs()
-        row_num = -1
 
         for row in self._rows():
-            row_num += 1
-
             # We'll inspect the first two cells to figure out
             # the function of the row
             try:
@@ -423,7 +420,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                 continue
 
             if cell0 and cell1 == '':
-                if row_num == 0:
+                if cell0.lower().endswith('county'):
                     # County header, skip it
                     continue
 
@@ -443,7 +440,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                 common_kwargs.update(base_kwargs)
                 continue
 
-            if cell0 != " "and cell1 != "":
+            if cell0 != "" and cell1 != "":
                 # Result row
                 row_results = self._parse_result_row(row, candidates, county,
                     county_ocd_id, **common_kwargs)
@@ -492,7 +489,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         results = []
         assert len(candidates) == len(row) - 1
         i = 1
-        raw_jurisdiction = row[0]
+        raw_jurisdiction = self._parse_jurisdiction(row[0])
         if raw_jurisdiction in self.COUNTY_JURISDICTIONS:
             # Total of all precincts is a county-level result
             jurisdiction = county
@@ -532,7 +529,33 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
         if "provisional" in jurisdiction.lower():
             return 'provisional'
 
-        return None 
+        return None
+
+    @classmethod
+    def _parse_jurisdiction(cls, raw_jurisdiction):
+        """
+        Convert jurisdiction value to a string
+
+        This is needed because some counties just have numbers for precincts
+        names. These are interpretted as float values by xlrd.
+
+        Args:
+            raw_jurisdiction: Jurisdiction as represented in the spreadsheet
+                cell. This should be a string or a float.
+
+        Returns:
+            String representing the jurisdiction name
+
+        >>> ExcelPrecinctPre2010ResultLoader._parse_jurisdiction(1.0)
+        '1'
+
+        """
+        try:
+            # Try to convert float to an integer and then a string.
+            # E.g. 1.0 -> '1'
+            return str(int(raw_jurisdiction))
+        except ValueError:
+            return raw_jurisdiction
 
 
 class ExcelPrecinct2010PrimaryResultLoader(ExcelPrecinctResultLoader):
@@ -647,7 +670,7 @@ class ExcelPrecinct2010PrimaryResultLoader(ExcelPrecinctResultLoader):
         if "absentee" in jurisdiction.lower():
             return 'absentee'
 
-        return None 
+        return None
 
 
 class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
@@ -780,7 +803,7 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
     def _vote_breakdowns(self, row, jurisdiction_offset, race_offset):
         """
         Get vote breakdowns
-        
+
         There are two different, but similar layouts for results files.
         One puts total, election day and absentee votes in separate rows.
         Another puts the total, election day and absentee votes
