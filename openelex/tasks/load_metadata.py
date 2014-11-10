@@ -24,9 +24,10 @@ def _get_fixture_filename(collection, fmt='csv'):
 @click.option('--collection', help='Collection where metadata will be loaded. E.g. "office"')
 @click.option('--filename', help="Filename of fixture file. Optional. If omitted "
     "the default filename will be calculated based on the collection name.")
-@click.option('--database', help="Database where data will be loaded. "
-    "Optional. Default is openelex")
-@click.option('--clear', help="Delete all records in collection before loading")
+@click.option('--database', default='openelex', 
+    help="Database where data will be loaded. Optional. Default is openelex")
+@click.option('--clear', is_flag=True,
+    help="Delete all records in collection before loading")
 def run(collection, filename=None, database='openelex', clear=False):
     """
     Populate metadata in MongoDB from fixture files.

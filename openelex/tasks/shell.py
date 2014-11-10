@@ -35,8 +35,7 @@ import click
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @click.command(help="Open a Python shell, bootstrapping the connection to MongoDB")
-# TODO: Configure this to be a boolean command
-@click.option('--no-startup')
+@click.option('--no-startup', is_flag=True)
 def shell(no_startup=False):
     """
     Open a Python shell, bootstrapping the connection to MongoDB

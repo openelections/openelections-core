@@ -13,7 +13,7 @@ from openelex.lib import format_date, compose
 from openelex.us import STATE_POSTALS
 
 BASE_OPTIONS = [
-    click.option('--state', help="Two-letter state-abbreviation, e.g. NY"),
+    click.option('--state', required=True, help="Two-letter state-abbreviation, e.g. NY"),
     click.option('--fmt', help="Format of output files.  Can be 'csv' or "
                  "'json'. Defaults is 'csv'.", default="csv"),
     click.option('--outputdir', help="Directory where output files will be "
@@ -195,6 +195,11 @@ def result_urls(election, raw=False):
 
 @click.command(name="bake.results_status_json", help="Output a JSON file "
     "describing available results for each election")
+@click.option('--state', help="Two-letter state-abbreviation, e.g. NY")
+@click.option('--bakeall', is_flag=True, help='Bake metadata for all states '
+              'instead of the specified state')
+@click.option('--outputdir', help='Create JSON files in this directory. '
+              'If baking a single file. output is sent to stdout.')
 def results_status_json(state=None, bakeall=False, outputdir=None):
     """
     Output a JSON file describing available results for each election.

@@ -7,8 +7,8 @@ from .utils import default_state_options, load_module
 
 @click.command(name='load.run', help="Load cached data files into the database")
 @default_state_options
-@click.option('--filename', help="Filename of single file to load")
-def run(state, datefilter='', filename=None):
+@click.argument('filenames', nargs=-1)
+def run(state, datefilter='', filenames=[]):
     """
     Load cached data files into MongoDB.
 
@@ -18,13 +18,14 @@ def run(state, datefilter='', filename=None):
     datasrc = state_mod.datasource.Datasource()
     loader = state_mod.load.LoadResults()
 
-    if datefilter and filename:
+    if datefilter and len(filenames):
         sys.stderr.write("You must specify a datefilter or filename but not both")
         sys.exit(1)
 
-    if filename:
+    if len(filenames):
         # A filename was specified.  Load only this file.
-        mappings = [datasrc.mapping_for_file(os.path.basename(filename))]
+        mappings = [datasrc.mapping_for_file(os.path.basename(fn))
+                    for fn in filenames]
     else:
         # Load all files for the specified date filter
         mappings = datasrc.mappings(datefilter)
