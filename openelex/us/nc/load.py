@@ -12,8 +12,8 @@ from .datasource import Datasource
 North Carolina elections have a mixture of CSV, tab-delimited text and Excel files for results. These files contain precinct-level data for each of the state's
 counties, and includes all contests in that county.
 
-Although some of the CSV files have a `district` column, the district information is contained in the `contest` column and needs to be parsed out. The 
-Excel files cover separate offices and have sheets for individual contests. CSV files also have totals for one-stop, absentee, provisional and 
+Although some of the CSV files have a `district` column, the district information is contained in the `contest` column and needs to be parsed out. The
+Excel files cover separate offices and have sheets for individual contests. CSV files also have totals for one-stop, absentee, provisional and
 transfer votes, which appear as "precincts" in the data.
 """
 
@@ -103,7 +103,7 @@ class NCBaseLoader(BaseLoader):
         try:
             return int(float(val))
         except ValueError:
-            # Count'y convert value from string   
+            # Count'y convert value from string
             return 0
 
     def _base_kwargs(self, row):
@@ -127,7 +127,7 @@ class NCCsvLoader(NCBaseLoader):
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if self._skip_row(row): 
+                if self._skip_row(row):
                     continue
                 results.append(self._prep_precinct_result(row))
             RawResult.objects.insert(results)
@@ -363,7 +363,7 @@ class NCTextLoader(NCBaseLoader):
 
 class NCTsv20022000Loader(NCBaseLoader):
     """
-    Loads North Carolina 2002 primary and general, plus 2000 general tab-delimited precinct-level results. Absentee/provisional totals are 
+    Loads North Carolina 2002 primary and general, plus 2000 general tab-delimited precinct-level results. Absentee/provisional totals are
     at the county level.
     """
 
@@ -484,21 +484,31 @@ class NCXlsLoader(NCBaseLoader):
         xlsfile = xlrd.open_workbook(self._xls_file_path)
         if 'house' in self.source or 'state_senate' in self.source:
             sheets = xlsfile.sheets()
-        elif 'lieutenant_governor':
+        elif 'republican__primary__lieutenant_governor' in self.source:
             sheets = [xlsfile.sheets()[5]]
         else:
             sheets = [xlsfile.sheets()[0]]
 
         for sheet in sheets:
             office, district = self._detect_office(sheet)
-            if sheet.row_values(0)[1].upper() == 'PRECINCT' or sheet.row_values(0)[2] == 'John Cosgrove' or sheet.row_values(0)[1].upper() == 'PRECINCTS':
+            if sheet.name == '83rd NC House':
+                cands = [c for c in sheet.row_values(1)[2:] if c != '']
+                parties = [x.replace('(','').replace(')','') for x in sheet.row_values(2)[2:] if x != '']
+                start_row = 3
+            elif sheet.name == '97th NC House':
+                cands = [c for c in sheet.row_values(2)[2:] if c != '']
+                parties = [x.replace('(','').replace(')','') for x in sheet.row_values(3)[2:] if x != '']
+                start_row = 4
+            elif sheet.row_values(0)[1].upper() == 'PRECINCT' or sheet.row_values(0)[2] == 'John Cosgrove' or sheet.row_values(0)[1].upper() == 'PRECINCTS' or sheet.row_values(0)[2] == 'Paul Luebke' or sheet.row_values(0)[1] == 'Precinct Name':
                 cands = [c for c in sheet.row_values(0)[2:] if c != '']
                 parties = [x.replace('(','').replace(')','') for x in sheet.row_values(1)[2:] if x != '']
+                start_row = 2
             else:
                 cands = [c for c in sheet.row_values(2)[2:] if c != '']
                 parties = [x.replace('(','').replace(')','') for x in sheet.row_values(3)[2:] if x != '']
+                start_row = 2
             candidates = zip(cands, parties)
-            for i in xrange(2, sheet.nrows):
+            for i in xrange(start_row, sheet.nrows):
                 row = [r for r in sheet.row_values(i)]
                 if self._skip_row(row):
                     continue
@@ -514,6 +524,8 @@ class NCXlsLoader(NCBaseLoader):
         if row == []:
             return True
         elif row[0] == '' and row[1] == '':
+            return True
+        elif row[0] == ' ' and row[1] == '':
             return True
         elif row[0].upper() == 'TOTAL':
             return True
