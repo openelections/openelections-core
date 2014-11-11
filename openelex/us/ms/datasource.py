@@ -1,6 +1,6 @@
 """
-Mississippi has CSV files containing precinct-level results for each county and all offices 
-for all years back to 2003. All of the files are pre-processed and available on Github at 
+Mississippi has CSV files containing precinct-level results for each county and all offices
+for all years back to 2003. All of the files are pre-processed and available on Github at
 https://github.com/openelections/openelections-data-ms.
 
 For regular primary and general elections, each county has a results file. Special and runoff
@@ -16,11 +16,11 @@ from openelex.base.datasource import BaseDatasource
 from openelex.lib import build_github_url
 
 class Datasource(BaseDatasource):
-    
+
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
@@ -33,7 +33,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url']) 
+        return [(item['generated_filename'], item['raw_url'])
                 for item in self.mappings(year)]
 
     def mappings_for_url(self, url):
