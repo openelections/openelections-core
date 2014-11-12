@@ -13,7 +13,7 @@ import urlparse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
-from openelex.lib import build_github_url
+from openelex.lib import build_raw_github_url
 
 class Datasource(BaseDatasource):
 
@@ -33,8 +33,14 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url'])
-                for item in self.mappings(year)]
+        return [(mapping['generated_filename'], self._url_for_fetch(mapping))
+                for mapping in self.mappings(year)]
+
+    def _url_for_fetch(self, mapping):
+        try:
+            return mapping['pre_processed_url']
+        except KeyError:
+            return mapping['raw_url']
 
     def mappings_for_url(self, url):
         return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
@@ -56,7 +62,7 @@ class Datasource(BaseDatasource):
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": result['url'],
-                        "pre_processed_url": build_github_url(self.state, generated_filename),
+                        "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
                         "ocd_id": ocd_id,
                         "name": 'Mississippi',
                         "election": election['slug']
@@ -71,7 +77,7 @@ class Datasource(BaseDatasource):
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": self._build_raw_url(year, result['url']),
-                        "pre_processed_url": build_github_url(self.state, generated_filename),
+                        "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
                         "ocd_id": county['ocd_id'],
                         "name": result['county'],
                         "election": election['slug']

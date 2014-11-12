@@ -59,7 +59,7 @@ class MSBaseLoader(BaseLoader):
         """
         return False
 
-class MSCSVLoader(WVBaseLoader):
+class MSCSVLoader(MSBaseLoader):
     """
     Loads Mississippi results for 2003-2014.
 
