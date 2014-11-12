@@ -31,23 +31,24 @@ class MSBaseLoader(BaseLoader):
     datasource = Datasource()
 
     target_offices = set([
-        'U.S. President',
+        'President',
         'U.S. Senate',
-        'U.S. House of Representatives',
+        'U.S. House',
         'Governor',
+        'Lieutenant Governor',
         'Secretary of State',
-        'Auditor',
+        'State Auditor',
         'State Treasurer',
-        'Commissioner of Agriculture',
+        'Commissioner of Agriculture & Commerce',
         'Attorney General',
         'State Senate',
-        'House of Delegates',
+        'State House',
     ])
 
     district_offices = set([
-        'U.S. House of Representatives',
+        'U.S. House',
         'State Senate',
-        'House of Delegates',
+        'State House',
     ])
 
     def _skip_row(self, row):
