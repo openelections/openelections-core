@@ -93,7 +93,7 @@ class BaseFetcher(StateBase):
 
         This is mostly useful for removing a file when the request results in
         an HTTP error.
-        
+
         Args:
             local_file_name: Absolute path to the downloaded file.
         """

@@ -12,7 +12,7 @@ def build_github_url(state, generated_filename):
 
     Returns:
         String containing a URL to the preprocessed result file on GitHub.
-    
+
     """
     tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/{}"
     return tpl.format(state.lower(), generated_filename)
@@ -26,9 +26,9 @@ def build_raw_github_url(state, datestring, raw_filename):
 
     Returns:
         String containing a URL to the raw result file on GitHub.
-    
+
     """
-    tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/raw/{}/{}"
+    tpl = "https://raw.githubusercontent.com/openelections/openelections-data-{}/master/{}/{}"
     return tpl.format(state.lower(), datestring, raw_filename)
 
 def standardized_filename(state, start_date, extension,
@@ -119,7 +119,7 @@ def format_date(datestr):
     in "%Y%m%d" format and the data store uses dates in "%Y-%m-%d" format.
 
     Args:
-        datestr (string): Date string in "%Y%m%d" format. 
+        datestr (string): Date string in "%Y%m%d" format.
 
     Returns:
         Date string in "%Y-%m-%d" format.
