@@ -11,11 +11,11 @@ These are represented in the dashboard API as the `direct_links` attribute on el
 from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
-    
+
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
@@ -28,7 +28,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url']) 
+        return [(item['generated_filename'], item['raw_url'])
                 for item in self.mappings(year)]
 
     # PRIVATE METHODS
@@ -44,11 +44,11 @@ class Datasource(BaseDatasource):
                 "election": election['slug']
             })
         return meta
-    
+
     def _generate_filename(self, election):
         # example: 20021105__fl__general.tsv
         if election['race_type'] == 'primary-runoff':
-            race_type = 'primary__runoff'
+            race_type = 'primary_runoff'
         else:
             race_type = election['race_type']
         if election['special'] == True:
@@ -60,7 +60,7 @@ class Datasource(BaseDatasource):
         ]
         name = "__".join(bits) + '.tsv'
         return name
-    
+
     def _jurisdictions(self):
         """Florida counties"""
         m = self.jurisdiction_mappings()
