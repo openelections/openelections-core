@@ -49,6 +49,7 @@ class NCBaseLoader(BaseLoader):
         'US HOUSE OF REPRESENTATIVES',
         'US HOUSE OF REP.',
         'US CONGRESS',
+        'US CONGRESS DISTRICT',
         'US SENATE',
         'NC GOVERNOR',
         'GOVERNOR',
@@ -110,16 +111,11 @@ class NCBaseLoader(BaseLoader):
         "Build base set of kwargs for RawResult"
         # TODO: Can this just be called once?
         kwargs = self._build_common_election_kwargs()
-        contest_kwargs = self._build_contest_kwargs(row)
-        candidate_kwargs = self._build_candidate_kwargs(row)
-        kwargs.update(contest_kwargs)
-        kwargs.update(candidate_kwargs)
         return kwargs
 
 class NCCsvLoader(NCBaseLoader):
     """
-    Parse North Carolina election results in CSV format
-
+    Parse North Carolina election results in CSV format.
     """
     def load(self):
         with self._file_handle as csvfile:
@@ -133,21 +129,29 @@ class NCCsvLoader(NCBaseLoader):
             RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        if any(o in row['contest'] for o in self.target_offices):
+        if " ".join(row['contest'].split(' ')[:3]) in self.target_offices:
             return False
         else:
             return True
 
-    def _build_contest_kwargs(self, row, primary_type):
+    def _build_contest_kwargs(self, row):
         if 'DISTRICT' in row['contest']:
-            office, district = row['contest'].split(' DISTRICT ')
+            try:
+                office, district = row['contest'].split(' DISTRICT ')
+            except:
+                print row['contest']
+                raise
         else:
             office = row['contest'].strip()
             district = None
+        if 'primary' in self.source:
+            party = row['party'].strip()
+        else:
+            party = None
         kwargs = {
             'office': office,
             'district': district,
-            'primary_party': row['party'].strip()
+            'primary_party': party
         }
         return kwargs
 
@@ -156,13 +160,14 @@ class NCCsvLoader(NCBaseLoader):
         slug = slugify(full_name, substitute='-')
         kwargs = {
             'full_name': full_name,
-            #TODO: QUESTION: Do we need this? if so, needs a matching model field on RawResult
             'name_slug': slug,
         }
         return kwargs
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
+        kwargs.update(self._build_contest_kwargs(row))
+        kwargs.update(self._build_candidate_kwargs(row))
         precinct = str(row['precinct'])
         county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
         kwargs.update({
@@ -235,7 +240,7 @@ class NCTsv2008Loader(NCBaseLoader):
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        if any(o in row['contest'] for o in self.target_offices):
+        if " ".join(row['contest'].split(' ')[:3]) in self.target_offices:
             return False
         else:
             return True
@@ -266,6 +271,8 @@ class NCTsv2008Loader(NCBaseLoader):
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
+        kwargs.update(self._build_contest_kwargs(row))
+        kwargs.update(self._build_candidate_kwargs(row))
         precinct = str(row['precinct'])
         county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
         kwargs.update({
@@ -338,6 +345,8 @@ class NCTextLoader(NCBaseLoader):
 
     def _prep_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
+        kwargs.update(self._build_contest_kwargs(row))
+        kwargs.update(self._build_candidate_kwargs(row))
         precinct = str(row['precinct']).strip()
         county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
         kwargs.update({
@@ -396,7 +405,7 @@ class NCTsv20022000Loader(NCBaseLoader):
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        if any(o in row['contest'] for o in self.target_offices):
+        if " ".join(row['contest'].split(' ')[:3]) in self.target_offices:
             return False
         else:
             return True
@@ -409,7 +418,7 @@ class NCTsv20022000Loader(NCBaseLoader):
             office = row['contest'].split('(')[0].strip()
             district = row['contest'].split('(')[1].split(' ')[0]
         elif row['contest'][0:2] == 'NC':
-            office = contest.split('(')[0].strip()
+            office = row['contest'].split('(')[0].strip()
             district = row['contest'].split('(')[1].split(')')[0]
         else:
             office = row['contest'].strip()
