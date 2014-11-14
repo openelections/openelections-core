@@ -66,7 +66,6 @@ class Datasource(BaseDatasource):
                 'ar-2001-11-20-special-general'):
             return self._build_election_metadata_zipped_special(election)
         elif link.startswith(self.CLARITY_PORTAL_URL):
-            # do clarity stuff
             return self._build_election_metadata_clarity(election)
         else:
             return self._build_election_metadata_default(election)
