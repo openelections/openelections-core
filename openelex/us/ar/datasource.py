@@ -4,6 +4,7 @@ import urlparse
 
 from bs4 import BeautifulSoup
 import requests
+import clarity
 import unicodecsv
 
 from openelex.base.datasource import BaseDatasource
@@ -18,9 +19,9 @@ class Datasource(BaseDatasource):
     # There aren't precinct-level results for these, just a CSV file with
     # summary data for the county.
     no_precinct_urls = [
-        "http://results.enr.clarityelections.com/AR/Columbia/42858/111213/",
-        "http://results.enr.clarityelections.com/AR/Ouachita/42896/112694/",
-        "http://results.enr.clarityelections.com/AR/Union/42914/112664/",
+        "http://results.enr.clarityelections.com/AR/Columbia/42858/111213/en/summary.html",
+        "http://results.enr.clarityelections.com/AR/Ouachita/42896/112694/en/summary.html",
+        "http://results.enr.clarityelections.com/AR/Union/42914/112664/en/summary.html",
     ]
 
     def mappings(self, year=None):
@@ -33,7 +34,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], self._url_for_fetch(item)) 
+        return [(item['generated_filename'], self._url_for_fetch(item))
                 for item in self.mappings(year)]
 
     def unprocessed_filename_url_pairs(self, year=None):
@@ -65,6 +66,7 @@ class Datasource(BaseDatasource):
                 'ar-2001-11-20-special-general'):
             return self._build_election_metadata_zipped_special(election)
         elif link.startswith(self.CLARITY_PORTAL_URL):
+            # do clarity stuff
             return self._build_election_metadata_clarity(election)
         else:
             return self._build_election_metadata_default(election)
@@ -81,8 +83,8 @@ class Datasource(BaseDatasource):
 
         generated_filename = self._standardized_filename(election, **filename_kwargs)
         mapping = {
-            "generated_filename": generated_filename, 
-            "raw_url": link, 
+            "generated_filename": generated_filename,
+            "raw_url": link,
             "ocd_id": 'ocd-division/country:us/state:ar',
             "name": 'Arkansas',
             "election": election['slug']
@@ -93,11 +95,11 @@ class Datasource(BaseDatasource):
             mapping['pre_processed_url'] = build_github_url(self.state,
                 generated_filename)
             mapping['generated_filename'] = generated_filename
-        
+
         return [mapping]
 
     def _build_election_metadata_2000_general(self, election):
-        meta_entries = [] 
+        meta_entries = []
         for county in self._counties():
             county_name = county['name']
             filename = self._standardized_filename(election,
@@ -105,7 +107,7 @@ class Datasource(BaseDatasource):
                 extension='.txt')
             raw_extracted_filename = self._raw_extracted_filename_2000_general(county_name)
             meta_entries.append({
-                'generated_filename': filename, 
+                'generated_filename': filename,
                 'raw_url': election['direct_links'][0],
                 'raw_extracted_filename': raw_extracted_filename,
                 'ocd_id': county['ocd_id'],
@@ -137,7 +139,7 @@ class Datasource(BaseDatasource):
                 'raw_url': path['url'],
                 'raw_extracted_filename': path['raw_extracted_filename'],
                 'ocd_id': ocd_id,
-                'name': jurisdiction, 
+                'name': jurisdiction,
                 'election': election['slug'],
             })
         return meta_entries
@@ -145,7 +147,7 @@ class Datasource(BaseDatasource):
 
     def _raw_extracted_filename_2000_general(self, county_name):
         county_part = county_name + " County"
-        county_part = county_part.upper().replace(' ', '') 
+        county_part = county_part.upper().replace(' ', '')
         return "cty{}.txt".format(county_part[:7])
 
 
@@ -161,76 +163,63 @@ class Datasource(BaseDatasource):
         * fmt - Format of results file.  Can be "xls", "txt" or "xml".
                 Default is "xml".
         """
-        return self._build_election_metadata_clarity_county(election, fmt) +\
-            self._build_election_metadata_clarity_precinct(election, fmt)
-        
-    def _build_election_metadata_clarity_county(self, election, fmt):
-        base_url = self._clarity_election_base_url(election['direct_links'][0])
+        base_url = election['direct_links'][0]
+        jurisdiction = clarity.Jurisdiction(url=base_url, level='state')
+        return self._build_election_metadata_clarity_county(election, fmt, jurisdiction) +\
+            self._build_election_metadata_clarity_precinct(election, fmt, jurisdiction)
+
+    def _build_election_metadata_clarity_county(self, election, fmt, jurisdiction):
 
         return [{
             "generated_filename": self._standardized_filename(election,
                 reporting_level='county', extension='.'+fmt),
             "raw_extracted_filename": "detail.{}".format(fmt),
-            "raw_url": self._clarity_results_url(base_url, fmt), 
+            "raw_url": jurisdiction.report_url(fmt),
             "ocd_id": 'ocd-division/country:us/state:ar',
             "name": 'Arkansas',
             "election": election['slug']
         }]
 
-    def _build_election_metadata_clarity_precinct(self, election, fmt):
+    def _build_election_metadata_clarity_precinct(self, election, fmt, jurisdiction):
         meta_entries = []
-        for path in self._clarity_precinct_url_paths(election, fmt):
-            jurisdiction = path['jurisdiction']
-            ocd_id = 'ocd-division/country:us/state:ar/county:{}'.format(ocd_type_id(jurisdiction))
+        for path in self._clarity_precinct_url_paths(election, fmt, jurisdiction):
+            jurisdiction_name = path['jurisdiction']
+            ocd_id = 'ocd-division/country:us/state:ar/county:{}'.format(ocd_type_id(jurisdiction_name))
             filename = self._standardized_filename(election,
-                jurisdiction=jurisdiction, reporting_level='precinct', 
+                jurisdiction=jurisdiction_name, reporting_level='precinct',
                 extension='.'+fmt)
             meta_entries.append({
                 "generated_filename": filename,
                 "raw_extracted_filename": "detail.{}".format(fmt),
                 "raw_url": path['url'],
-                "ocd_id": ocd_id, 
-                "name": jurisdiction, 
+                "ocd_id": ocd_id,
+                "name": jurisdiction_name,
                 "election": election['slug'],
             })
         return meta_entries
-            
-    def _clarity_election_base_url(self, url):
-        if "/en/" in url:
-            return url.split('/en/')[0] + '/'
-
-        parsed = urlparse.urlsplit(url)
-        newpath = '/'.join(parsed.path.split('/')[:-1]) + '/'
-        parts = (parsed.scheme, parsed.netloc, newpath, parsed.query,
-                 parsed.fragment)
-        return urlparse.urlunsplit(parts)
-
-    def _clarity_results_url(self, base_url, fmt):
-        return "{}reports/detail{}.zip".format(base_url, fmt)
 
     def _clarity_precinct_url_paths_filename(self, election):
         filename = self._standardized_filename(election, ['url_paths'],
             reporting_level='precinct', extension='.csv')
         return os.path.join(self.mappings_dir, filename)
 
-    def _clarity_precinct_url_paths(self, election, fmt):
+    def _clarity_precinct_url_paths(self, election, fmt, jurisdiction):
         url_paths_filename = self._clarity_precinct_url_paths_filename(election)
         if os.path.exists(url_paths_filename):
             return self._url_paths(url_paths_filename)
 
         url_paths = []
-        for url, county in self._clarity_county_urls(election):
-            base_url = self._clarity_election_base_url(url)
-            if base_url not in self.no_precinct_urls: 
+        for subjurisdiction in jurisdiction.get_subjurisdictions():
+            if subjurisdiction.url not in self.no_precinct_urls:
                 url_paths.append({
                     'date': election['start_date'],
                     'office': '',
                     'race_type': election['race_type'],
                     'party': '',
                     'special': election['special'],
-                    'url': self._clarity_results_url(base_url, fmt),
+                    'url': subjurisdiction.report_url(fmt),
                     'reporting_level': 'precinct',
-                    'jurisdiction': county,
+                    'jurisdiction': subjurisdiction.name,
                 })
 
         with open(url_paths_filename, 'wb') as f:
@@ -241,32 +230,6 @@ class Datasource(BaseDatasource):
             writer.writerows(url_paths)
 
         return url_paths
-
-    def _clarity_county_urls(self, election):
-        base_url = self._clarity_election_base_url(election['direct_links'][0])
-        county_url = base_url + 'en/select-county.html' 
-        r = requests.get(county_url)
-        r.raise_for_status()
-        return [(self._clarity_county_url(path), county) for path, county 
-                in self._scrape_county_paths(r.text)]
-
-    def _scrape_county_paths(self, html):
-        soup = BeautifulSoup(html)
-        return [(o['value'], o.get_text()) for o in soup.select("table li a")]
-
-    def _clarity_county_url(self, path):
-        url = self._clarity_election_base_url(self.CLARITY_PORTAL_URL +
-            path.lstrip('/'))
-        r = requests.get(url)
-        r.raise_for_status()
-        redirect_path = self._scrape_county_redirect_path(r.text)
-        return url + redirect_path
-
-    def _scrape_county_redirect_path(self, html):
-        soup = BeautifulSoup(html)
-        script_src = soup.find('script')['src']
-        match = re.search(r'\./(\d+)/.*', script_src)
-        return match.group(1) + '/summary.html'
 
     def _url_for_fetch(self, mapping):
         if 'pre_processed_url' in mapping:
