@@ -4,7 +4,7 @@ import urlparse
 
 from bs4 import BeautifulSoup
 import requests
-import clarity
+import clarify
 import unicodecsv
 
 from openelex.base.datasource import BaseDatasource
