@@ -47,8 +47,8 @@ $ workon openelex
 [Fork this repo](https://help.github.com/articles/fork-a-repo) by hitting the "Fork" button above, and clone your fork to your computer:
 
 ```bash
-$ git clone git@github.com:[my_github_user]/core.git openelex-core
-$ cd openelex-core
+$ git clone https://github.com/[my_github_user]/openelections-core.git
+$ cd openelections-core
 ```
 
 Turn on your virtual environment from the previous step, if you haven't already:
@@ -149,7 +149,7 @@ GITHUB_ACCESS_TOKEN = ''
 
 You only need to install MongoDB if you plan to write data loaders.
 
-To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/core/blob/master/settings.py.tmplt#L5-L18) should auto-create the databases and tables you need, as you need them.
+To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/openelections-core/blob/master/settings.py.tmplt#L7-L20) should auto-create the databases and tables you need, as you need them.
 
 #### Load party and office metadata (optional)
 
