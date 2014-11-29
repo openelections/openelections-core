@@ -2,8 +2,8 @@
 Standardize names of data files from the Pennsylvania Secretary of State.
 
 The state offers CSV files containing precinct-level results for regularly scheduled primary and general elections; these were split from a single
-zip file into election-specific files and thus have no `raw_url` attribute. Special elections are pre-processed CSV files from HTML files. All files 
-are available in the https://github.com/openelections/openelections-data-pa repository. 
+zip file into election-specific files and thus have no `raw_url` attribute. Special elections are pre-processed CSV files from HTML files. All files
+are available in the https://github.com/openelections/openelections-data-pa repository.
 """
 from os.path import join
 import json
@@ -16,11 +16,11 @@ from openelex.base.datasource import BaseDatasource
 from openelex.lib import build_github_url
 
 class Datasource(BaseDatasource):
-    
+
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
@@ -33,7 +33,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], self._url_for_fetch(item)) 
+        return [(item['generated_filename'], self._url_for_fetch(item))
                 for item in self.mappings(year)]
 
     # PRIVATE METHODS
@@ -45,7 +45,7 @@ class Datasource(BaseDatasource):
             if election['special']:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
             else:
-                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == False]
             for result in results:
                 if election['direct_links']:
                     raw_url = election['direct_links'][0]
@@ -61,7 +61,7 @@ class Datasource(BaseDatasource):
                     "election": election['slug']
                 })
         return meta
-    
+
     def _generate_filename(self, start_date, election_type, result):
         if result['district'] == '':
             office = result['office']
@@ -81,7 +81,7 @@ class Datasource(BaseDatasource):
             bits.remove(office)
         name = "__".join(bits) + '.csv'
         return name
-    
+
     def _jurisdictions(self):
         """Pennsylvania counties"""
         m = self.jurisdiction_mappings()
