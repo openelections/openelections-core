@@ -84,9 +84,7 @@ class Datasource(BaseDatasource):
 
     def _jurisdictions(self):
         """Pennsylvania counties"""
-        m = self.jurisdiction_mappings()
-        mappings = [x for x in m if x['county'] != ""]
-        return mappings
+        return self.jurisdiction_mappings()
 
     def _url_for_fetch(self, mapping):
         if mapping['pre_processed_url']:
