@@ -22,7 +22,7 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2011', '2012', '2014']):
+        if any(s in election_id for s in ['2011', '2012', '2013', '2014']):
             loader = MSCSVLoader()
         loader.run(mapping)
 

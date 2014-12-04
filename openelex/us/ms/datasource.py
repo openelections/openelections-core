@@ -52,7 +52,7 @@ class Datasource(BaseDatasource):
         year_int = int(year)
         for election in elections:
             if 'special' in election['slug']:
-                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
                 for result in results:
                     generated_filename = result['path']
                     if result['county']:
