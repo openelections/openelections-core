@@ -52,7 +52,7 @@ cases of candidates.  In most cases these are used to identify a candidate
 that is not a human but represents a consistent candidate-like entity that
 is used in results.
 
-* aggregate - Results for this Candidate record represents aggregate vote 
+* aggregate - Results for this Candidate record represents aggregate vote
               totals for multiple people, such as "Other Write-Ins" in
               Maryland.
 * none_of_above - Results for this Candidate record represents aggregate
@@ -67,7 +67,7 @@ VOTES_TYPE_CHOICES = (
    'election_day',
 )
 """
-Coded types of vote tallies, other than that can appear in source result 
+Coded types of vote tallies, other than that can appear in source result
 files when votes represent something other than the votes received by
 a candidate in a particular jurisdiction.
 """
@@ -94,7 +94,7 @@ class TimestampMixin(object):
         # It won't work with update().
         #
         # See http://stackoverflow.com/a/12248318/386210 and
-        # https://github.com/MongoEngine/mongoengine/issues/21  
+        # https://github.com/MongoEngine/mongoengine/issues/21
         document.updated = datetime.now()
 
 
@@ -198,7 +198,7 @@ class RawResult(TimestampMixin, DynamicDocument):
             if self.suffix:
                 name +=  " %s" % self.suffix
         return slugify(name)
-    
+
 signals.pre_save.connect(TimestampMixin.update_timestamp, sender=RawResult)
 
 
@@ -230,7 +230,7 @@ class Office(Document):
         """
         Returns slugified office in format "name-district".
 
-        Example: 
+        Example:
 
         >>> office = Office(state="MD", name="House of Delegates", district="35B", chamber="lower")
         >>> office.slug
@@ -238,7 +238,7 @@ class Office(Document):
         """
         slug = slugify(self.name, '-')
         if self.district:
-            slug += "-%s" % slugify(self.district, '-') 
+            slug += "-%s" % slugify(self.district, '-')
         return slug
 
 
@@ -352,8 +352,8 @@ class Contest(TimestampMixin, DynamicDocument):
         # party. This is the way it was done in older code.
         slug = kwargs.get('office').slug
         primary_party = kwargs.get('primary_party')
-        if primary_party: 
-            slug += "-%s" % primary_party.slug 
+        if primary_party:
+            slug += "-%s" % primary_party.slug
         return slug
 
     @classmethod
@@ -370,8 +370,8 @@ signals.pre_save.connect(TimestampMixin.update_timestamp, sender=Contest)
 
 class Candidate(TimestampMixin, DynamicDocument):
     """
-    State is included because in nearly all cases, a candidate 
-    is unique to a state (presidential races involve state-level 
+    State is included because in nearly all cases, a candidate
+    is unique to a state (presidential races involve state-level
     candidacies). This helps with lookups and prevents duplicates.
 
     """
@@ -436,7 +436,7 @@ class Candidate(TimestampMixin, DynamicDocument):
             document.contest_slug = document.contest.slug
 
         if not document.slug:
-            document.slug = cls.make_slug(full_name=document.full_name) 
+            document.slug = cls.make_slug(full_name=document.full_name)
 
     @classmethod
     def make_slug(cls, **kwargs):
@@ -487,7 +487,7 @@ class Result(TimestampMixin, DynamicDocument):
     write_in = BooleanField()
     notes = StringField(help_text="Human-readable notes to describe confusing or "
         "exceptional situations in the results data.")
-        
+
 
     meta = {
         'indexes': ['election_id',],
