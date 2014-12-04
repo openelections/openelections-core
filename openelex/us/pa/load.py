@@ -1,10 +1,9 @@
-import re
-import csv
 import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import ocd_type_id, slugify
+from openelex.lib.insertbuffer import BulkInsertBuffer
+from openelex.lib.text import ocd_type_id
 from .datasource import Datasource
 
 """
@@ -85,7 +84,9 @@ class CSVSpecialLoader(PABaseLoader):
         self._common_kwargs = self._build_common_election_kwargs()
         self._common_kwargs['reporting_level'] = 'county'
         # Store result instances for bulk loading
-        results = []
+        # We use a BulkInsertBuffer because the load process was running out of
+        # memory on prod-1
+        results = BulkInsertBuffer(RawResult)
 
         with self._file_handle as csvfile:
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
@@ -111,7 +112,9 @@ class CSVSpecialLoader(PABaseLoader):
                         'votes': int(row['votes'].strip())
                     })
                     results.append(RawResult(**rr_kwargs))
-            RawResult.objects.insert(results)
+            # Flush any remaining results that are still in the buffer and need
+            # to be inserted.
+            results.flush()
 
     def _skip_row(self, row):
         return row['office'].strip() not in self.target_offices
@@ -191,7 +194,7 @@ class CSVLoader(PABaseLoader):
         self._common_kwargs = self._build_common_election_kwargs()
         self._common_kwargs['reporting_level'] = 'precinct'
         # Store result instances for bulk loading
-        results = []
+        results = BulkInsertBuffer(RawResult)
 
         with self._file_handle as csvfile:
             reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
@@ -221,7 +224,8 @@ class CSVLoader(PABaseLoader):
                     'previous_state_house_district': row['previous_state_house_district']
                 })
                 results.append(RawResult(**rr_kwargs))
-        RawResult.objects.insert(results, load_bulk=False)
+
+        results.flush()
 
     def _skip_row(self, row):
         return row['cand_office_code'].strip() not in self.target_offices
