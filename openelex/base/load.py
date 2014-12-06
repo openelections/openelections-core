@@ -14,7 +14,7 @@ class BaseLoader(StateBase):
     Base class for loading results data into MongoDB
     Intended to be subclassed in state-specific load.py modules.
     Reads from cached resources inside each state directory.
-    
+
     Subclasses should create RawResult models and only do minimal
     cleaning such as:
 
@@ -85,7 +85,7 @@ class BaseLoader(StateBase):
     # TODO: Decide if we can remove this.
     def jurisdiction_mappings(self, headers):
         """
-        Given a tuple of headers, returns a JSON object of jurisdictional 
+        Given a tuple of headers, returns a JSON object of jurisdictional
         mappings based on OCD ids"
         """
         filename = join(self.mappings_dir, self.state+'.csv')
@@ -106,7 +106,7 @@ class BaseLoader(StateBase):
 
     def _build_common_election_kwargs(self):
         """
-        Returns a dictionary of fields derived from the OpenElex API 
+        Returns a dictionary of fields derived from the OpenElex API
         and common to all RawResults.
 
         This dictionary can be used to specify some of the keyword
