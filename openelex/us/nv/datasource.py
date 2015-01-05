@@ -53,13 +53,9 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
                 for result in results:
                     generated_filename = result['path']
-                    if result['jurisdiction']:
-                        jurisdiction = [c for c in self._jurisdictions() if c['jurisdiction'] == result['jurisdiction']][0]
-                        ocd_id = jurisdiction['ocd_id']
-                        name = jurisdiction['jurisdiction']
-                    else:
-                        ocd_id = 'ocd-division/country:us/state:nv'
-                        name = 'Nevada'
+                    jurisdiction = [c for c in self._jurisdictions() if c['jurisdiction'] == result['jurisdiction']][0]
+                    ocd_id = jurisdiction['ocd_id']
+                    name = jurisdiction['jurisdiction']
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": result['url'],
@@ -69,34 +65,36 @@ class Datasource(BaseDatasource):
                         "election": election['slug']
                     })
             else:
-                # primary, general and runoff statewide elections have 1 or 2 files per county
-                # some general runoffs will have smaller numbers of files
-                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == False]
+                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == False and x['precinct'] == '']
                 for result in results:
-                    county = [c for c in self._jurisdictions() if c['jurisdiction'] == result['jurisdiction']][0]
-                    generated_filename = self._generate_county_filename(election['start_date'], result)
+                    if result['jurisdiction'] == '':
+                        jurisdiction = 'ocd-division/country:us/state:nv'
+                        generated_filename = self._generate_statewide_filename(result)
+                        pre_processed_url = None
+                    else:
+                        jurisdiction = [c for c in self._jurisdictions() if c['jurisdiction'] == result['jurisdiction']][0]['ocd_id']
+                        generated_filename = result['path']
+                        pre_processed_url = build_raw_github_url(self.state, str(year), result['path'])
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": result['url'],
-                        "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
-                        "ocd_id": county['ocd_id'],
-                        "name": result['county'],
+                        "pre_processed_url": pre_processed_url,
+                        "ocd_id": jurisdiction,
+                        "name": result['jurisdiction'],
                         "election": election['slug']
                     })
         return meta
 
-    def _generate_county_filename(self, start_date, result):
+    def _generate_statewide_filename(self, result):
         bits = [
-            start_date.replace('-',''),
+            result['date'].replace('-',''),
             self.state,
         ]
         if result['party']:
             bits.append(result['party'].lower())
         bits.extend([
-            result['race_type'].lower(),
-            result['jurisdiction'].replace(' ','_').lower()
+            result['race_type'].lower()
         ])
-        bits.append('precinct')
         filename = "__".join(bits) + '.csv'
         return filename
 
