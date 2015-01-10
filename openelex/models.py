@@ -190,11 +190,11 @@ class RawResult(TimestampMixin, DynamicDocument):
         if self.full_name:
             name = self.full_name
         else:
-            name = self.family_name
-            if self.given_name:
-                name += " %s" % self.given_name
+            name = self.given_name
             if self.additional_name:
                 name += " %s" % self.additional_name
+            if self.family_name:
+                name += " %s" % self.family_name
             if self.suffix:
                 name +=  " %s" % self.suffix
         return slugify(name)
