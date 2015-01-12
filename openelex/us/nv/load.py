@@ -40,6 +40,7 @@ class NVBaseLoader(BaseLoader):
         'PRESIDENT',
         'UNITED STATES SENATOR',
         'U.S. REPRESENTATIVE IN CONGRESS',
+        'REPRESENTATIVE IN CONGRESS',
         'GOVERNOR',
         'LIEUTENANT GOVERNOR',
         'SECRETARY OF STATE',
@@ -47,6 +48,7 @@ class NVBaseLoader(BaseLoader):
         'STATE CONTROLLER',
         'ATTORNEY GENERAL',
         'STATE SENATE',
+        'CENTRAL NEVADA SENATORIAL',
         'STATE ASSEMBLY',
     ])
 
@@ -70,7 +72,16 @@ class NVBaseLoader(BaseLoader):
             primary_party = row['office'].strip().split('(')[1].split(')')[0]
             if 'DISTRICT' in row['office'].upper():
                 # 2004 primary district has no comma
-                district = row['office'].split(', ')[1].split(' (')[0].strip()
+                if '2004' in self.mapping['election']:
+                    if row['office'].strip() == 'CENTRAL NEVADA SENATORIAL DISTRICT (Republican)':
+                        office = 'STATE SENATE'
+                        district = 'CENTRAL NEVADA'
+                        primary_party = 'Republican'
+                    else:
+                        office = office.split(' DISTRICT')[0]
+                        district = row['office'].split('DISTRICT ')[1].split(' (')[0].strip()
+                else:
+                    district = row['office'].split(', ')[1].split(' (')[0].strip()
             else:
                 district = None
         else:
@@ -171,7 +182,11 @@ class NVCountyLoader(NVBaseLoader):
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        return row['office'].split(',')[0].strip().upper() not in self.target_offices
+        if self.mapping['election'] == 'nv-2004-09-07-primary':
+            skip = row['office'].split(' (')[0].split(' DISTRICT')[0] not in self.target_offices
+        else:
+            skip = row['office'].split(',')[0].strip().upper() not in self.target_offices
+        return skip
 
 class NVXmlLoader(NVBaseLoader):
     pass
