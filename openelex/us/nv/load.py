@@ -71,8 +71,8 @@ class NVBaseLoader(BaseLoader):
             office = row['office'].split('(')[0].split(', ')[0].strip()
             primary_party = row['office'].strip().split('(')[1].split(')')[0]
             if 'DISTRICT' in row['office'].upper():
-                # 2004 primary district has no comma
-                if '2004' in self.mapping['election']:
+                # 2002-4 primary district has no comma
+                if '2004' in self.mapping['election'] or '2002' in self.mapping['election']:
                     if row['office'].strip() == 'CENTRAL NEVADA SENATORIAL DISTRICT (Republican)':
                         office = 'STATE SENATE'
                         district = 'CENTRAL NEVADA'
@@ -169,11 +169,8 @@ class NVCountyLoader(NVBaseLoader):
                 rr_kwargs.update(self._build_candidate_kwargs(row))
                 jurisdiction = self.mapping['name']
                 if row['party'] and row['party'] != '&nbsp;':
-                    party = row['party'].strip()
-                else:
-                    party = None
+                    rr_kwargs['party'] = row['party'].strip()
                 rr_kwargs.update({
-                    'party': party,
                     'jurisdiction': jurisdiction,
                     'ocd_id': self.mapping['ocd_id'],
                     'votes': int(row['votes'].replace(',','').strip())
@@ -182,7 +179,7 @@ class NVCountyLoader(NVBaseLoader):
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        if self.mapping['election'] == 'nv-2004-09-07-primary':
+        if self.mapping['election'] == 'nv-2004-09-07-primary' or self.mapping['election'] == 'nv-2002-09-03-primary':
             skip = row['office'].split(' (')[0].split(' DISTRICT')[0] not in self.target_offices
         else:
             skip = row['office'].split(',')[0].strip().upper() not in self.target_offices
