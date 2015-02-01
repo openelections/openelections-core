@@ -9,7 +9,7 @@ from .datasource import Datasource
 
 """
 West Virginia elections have CSV results files for elections after 2006. These files contain precinct-level data for each of the state's
-counties, and includes all contests in that county. Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
+counties, and includes all contests in that county. Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the
 https://github.com/openelections/openelections-data-wv repository.
 """
 
@@ -22,7 +22,7 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2008', '2010', '2011', '2012']):
+        if any(s in election_id for s in ['2008', '2010', '2011', '2012', '2014']):
             loader = WVLoader()
         else:
             loader = WVLoaderPre2008()
@@ -72,7 +72,7 @@ class WVLoader(WVBaseLoader):
             reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if self._skip_row(row): 
+                if self._skip_row(row):
                     continue
                 elif any(s in self.mapping['generated_filename'] for s in ['2008', '2010', '2011']):
                     if row['Type'] == 'County':
@@ -153,7 +153,7 @@ class WVLoader(WVBaseLoader):
         try:
             return int(float(val))
         except ValueError:
-            # Count'y convert value from string   
+            # Count'y convert value from string
             return 0
 
     def _writein(self, row):
