@@ -22,10 +22,10 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2008', '2010', '2011', '2012', '2014']):
-            loader = WVLoader()
-        else:
+        if any(s in election_id for s in ['2000', '2002', '2004', '2006']):
             loader = WVLoaderPre2008()
+        else:
+            loader = WVLoader()
         loader.run(mapping)
 
 
