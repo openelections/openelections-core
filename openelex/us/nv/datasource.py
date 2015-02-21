@@ -108,7 +108,7 @@ class Datasource(BaseDatasource):
         bits.extend([
             result['race_type'].lower()
         ])
-        filename = "__".join(bits) + '.csv'
+        filename = "__".join(bits) + '.xml'
         return filename
 
     def _jurisdictions(self):
