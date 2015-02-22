@@ -1,5 +1,6 @@
 import re
 import csv
+from lxml import etree
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -186,4 +187,79 @@ class NVCountyLoader(NVBaseLoader):
         return skip
 
 class NVXmlLoader(NVBaseLoader):
-    pass
+    """
+    Parses and loads jurisdiction-level results from Nevada for 2012 and 2014.
+    """
+
+    jurisdiction_attrs = set([
+        'Carson City',
+        'Churchill',
+        'Clark',
+        'Douglas',
+        'Elko',
+        'Esmeralda',
+        'Eureka',
+        'Humboldt',
+        'Lander',
+        'Lincoln',
+        'Lyon',
+        'Mineral',
+        'Nye',
+        'Pershing',
+        'Storey',
+        'Washoe',
+        'White Pine'
+    ])
+
+    def load(self):
+        # need to pluck OCD_ID from jurisdictions
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'county'
+        # Store result instances for bulk loading
+        results = []
+
+        with self._file_handle as xmlfile:
+            tree = etree.parse(xmlfile)
+            races = tree.xpath('/USNVResults/UIPage/Race')
+            for race in races:
+                if self._skip_row(race.attrib['RaceTitle']):
+                    continue
+                rr_kwargs = self._common_kwargs.copy()
+                rr_kwargs.update(self._build_contest_kwargs(race))
+                for candidate in race.xpath('Candidate'):
+                    rr_kwargs.update(self._build_candidate_kwargs(candidate))
+                    for jurisdiction in self.jurisdiction_attrs:
+                        result_kwargs = (self._build_jurisdiction_kwargs(candidate, jurisdiction))
+                        if not result_kwargs['votes'] == 'N/A':
+                            rr_kwargs.update(result_kwargs)
+                            results.append(RawResult(**rr_kwargs))
+            RawResult.objects.insert(results)
+
+    def _skip_row(self, race_title):
+        return race_title.split(',')[0].upper() not in self.target_offices
+
+    def _build_candidate_kwargs(self, candidate):
+        return {
+            'full_name': candidate.attrib['CandidateName'].strip(),
+            'party': candidate.attrib['Party'],
+            'incumbent': candidate.attrib['IsIncumbent'],
+            'winner': candidate.attrib['IsWinner']
+        }
+
+    def _build_jurisdiction_kwargs(self, candidate, jurisdiction):
+        j_obj = [j for j in self.datasource._jurisdictions() if j['jurisdiction'] == jurisdiction][0]
+        key = jurisdiction.replace(' ','')+'Votes'
+        return { 'jurisdiction': j_obj['jurisdiction'], 'ocd_id': j_obj['ocd_id'], 'votes': candidate.attrib[key]}
+
+    def _build_contest_kwargs(self, race):
+        office = race.attrib['RaceTitle'].split(', ')[0].strip()
+        try:
+            district = race.attrib['District']
+        except KeyError:
+            district = None
+        return {
+            'office': office,
+            'district': district,
+            'total_precincts': race.attrib['TotalPrecincts'],
+            'precincts_reported': race.attrib['PrecinctsReported']
+        }
