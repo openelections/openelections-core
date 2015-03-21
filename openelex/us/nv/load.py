@@ -257,7 +257,6 @@ class NVXmlLoader(NVBaseLoader):
             district = race.attrib['District']
         except KeyError:
             if 'District' in race.attrib['RaceTitle']:
-                print race.attrib['RaceTitle']
                 district = race.attrib['RaceTitle'].split(', ')[1].split('District ')[1].split()[0]
             else:
                 district = None
