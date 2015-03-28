@@ -10,11 +10,11 @@ from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
-    
+
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
@@ -27,7 +27,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url']) 
+        return [(item['generated_filename'], item['raw_url'])
                 for item in self.mappings(year)]
 
     def mappings_for_url(self, url):
@@ -74,7 +74,7 @@ class Datasource(BaseDatasource):
         return name
 
     def _jurisdictions(self):
-        """North Carolina counties"""
+        """Georgia counties"""
         m = self.jurisdiction_mappings()
         mappings = [x for x in m if x['county'] != ""]
         return mappings
