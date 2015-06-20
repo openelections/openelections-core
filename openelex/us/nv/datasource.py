@@ -85,9 +85,9 @@ class Datasource(BaseDatasource):
                     })
                 results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == False and x['precinct'] != '']
                 for result in results:
-                    jurisdiction = [c for c in self._jurisdictions() if c['jurisdiction'] == result['jurisdiction']][0]['ocd_id']
-                    generated_filename = result['path']
-                    pre_processed_url = build_raw_github_url(self.state, str(year), result['path'])
+                    jurisdiction = 'ocd-division/country:us/state:nv'
+                    generated_filename = self._generate_statewide_precinct_filename(result)
+                    pre_processed_url = None
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": result['url'],
@@ -109,6 +109,20 @@ class Datasource(BaseDatasource):
             result['race_type'].lower()
         ])
         filename = "__".join(bits) + '.xml'
+        return filename
+
+    def _generate_statewide_precinct_filename(self, result):
+        bits = [
+            result['date'].replace('-',''),
+            self.state,
+        ]
+        if result['party']:
+            bits.append(result['party'].lower())
+        bits.extend([
+            result['race_type'].lower(),
+            'precinct'
+        ])
+        filename = "__".join(bits) + '.csv'
         return filename
 
     def _jurisdictions(self):
