@@ -52,16 +52,15 @@ class Datasource(BaseDatasource):
             if 'special' in election['slug']:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
                 for result in results:
-                    generated_filename = result['path']
-                    jurisdiction = [c for c in self._jurisdictions() if c['jurisdiction'] == result['jurisdiction']][0]
-                    ocd_id = jurisdiction['ocd_id']
-                    name = jurisdiction['jurisdiction']
+                    jurisdiction = 'ocd-division/country:us/state:nv'
+                    generated_filename = self._generate_statewide_precinct_filename(result)
+                    pre_processed_url = None
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": result['url'],
-                        "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
-                        "ocd_id": ocd_id,
-                        "name": name,
+                        "pre_processed_url": None,
+                        "ocd_id": jurisdiction,
+                        "name": 'Nevada',
                         "election": election['slug']
                     })
             else:
@@ -93,7 +92,7 @@ class Datasource(BaseDatasource):
                         "raw_url": result['url'],
                         "pre_processed_url": pre_processed_url,
                         "ocd_id": jurisdiction,
-                        "name": result['jurisdiction'],
+                        "name": 'Nevada',
                         "election": election['slug']
                     })
         return meta
