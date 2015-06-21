@@ -2,6 +2,7 @@ import re
 import csv
 from lxml import etree
 import unicodecsv
+from itertools import islice
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
@@ -9,9 +10,9 @@ from openelex.lib.text import ocd_type_id, slugify
 from .datasource import Datasource
 
 """
-Nevada elections have pre-processed CSV results files for county results from 2000-2012, and
-XML files for 2012 and 2014. Pre-processed precinct-level CSV files are available for elections
-from 2004-2012. All CSV versions are contained in the https://github.com/openelections/openelections-data-nv
+Nevada elections have CSV results files for county results from 2000-2012, and
+XML files for 2012 and 2014. Precinct-level CSV files are available for elections from 2004-2012.
+County-level CSV versions are contained in the https://github.com/openelections/openelections-data-nv
 repository.
 """
 
@@ -23,11 +24,11 @@ class LoadResults(object):
     """
 
     def run(self, mapping):
-        election_id = mapping['pre_processed_url']
-        if mapping['raw_url'] != '':
-            loader = NVXmlLoader()
-        elif 'precinct' in election_id:
+        election_id = mapping['generated_filename']
+        if 'precinct' in election_id:
             loader = NVPrecinctLoader()
+        elif mapping['raw_url'] != '':
+            loader = NVXmlLoader()
         else:
             loader = NVCountyLoader()
         loader.run(mapping)
@@ -111,8 +112,8 @@ class NVPrecinctLoader(NVBaseLoader):
 
     Format:
 
-    Nevada has HTML files that have been converted to CSV files for elections after 2004 primary.
-    Header rows are identical but not always in the same order, so we just use the first row.
+    Nevada has CSV files for elections after 2004 primary.
+    Header rows are the fourth row of the file.
     """
 
     def load(self):
@@ -124,21 +125,26 @@ class NVPrecinctLoader(NVBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, encoding='latin-1', fieldnames=("Jurisdiction", "Precinct", "office", "candidate", "Votes"))
+            next(reader, None)
+            next(reader, None)
+            next(reader, None)
+            next(reader, None)
             for row in reader:
                 if self._skip_row(row):
                     continue
                 rr_kwargs = self._common_kwargs.copy()
                 rr_kwargs.update(self._build_contest_kwargs(row))
                 rr_kwargs.update(self._build_candidate_kwargs(row))
-                jurisdiction = row['precinct'].strip()
-                if row['votes'].strip() == '':
+                ocd_id = [c for c in self.datasource._jurisdictions() if c['jurisdiction'] == row['Jurisdiction']][0]['ocd_id']
+                jurisdiction = row['Jurisdiction'].strip()
+                if row['Votes'].strip() == '*':
                     votes = 'N/A'
                 else:
-                    votes = int(row['votes'].replace(',','').strip())
+                    votes = int(row['Votes'].replace(',','').strip())
                 rr_kwargs.update({
                     'jurisdiction': jurisdiction,
-                    'ocd_id': "{}/precinct:{}".format(self.mapping['ocd_id'], ocd_type_id(jurisdiction)),
+                    'ocd_id': "{}/precinct:{}".format(self.mapping['ocd_id'], ocd_type_id(row['Precinct'])),
                     'votes': votes
                 })
                 results.append(RawResult(**rr_kwargs))
