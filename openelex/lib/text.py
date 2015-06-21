@@ -50,6 +50,8 @@ def ocd_type_id(text, strip_leading_zeros=True):
         u_text = unicode(text, "utf-8")
     # Convert to lowercase
     u_text = u_text.lower()
+    u_text = u_text.replace('(','')
+    u_text = u_text.replace(')','')
     # Convert spaces to underscores
     u_text = re.sub(r'\s', u'_', u_text)
     u_text = re.sub(r'[^\w.\-~]', u'~', u_text)
@@ -87,5 +89,5 @@ def election_slug(state, start_date, race_type, special=False, **kwargs):
         bits.append('special')
 
     bits.append(race_type.lower())
-        
+
     return "-".join(bits)
