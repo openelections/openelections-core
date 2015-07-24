@@ -40,6 +40,7 @@ class PABaseLoader(BaseLoader):
         'AUD',
         'TRE',
         'ATT',
+        'GOV',
         'State Senate',
         'State House',
         'State Representative'
@@ -197,7 +198,10 @@ class CSVLoader(PABaseLoader):
         results = BulkInsertBuffer(RawResult)
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            if '2014' in self.election_id:
+                reader = unicodecsv.DictReader((line.replace('\0','') for line in csvfile), fieldnames = headers, encoding='latin-1')
+            else:
+                reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
             for row in reader:
                 if self._skip_row(row):
                     continue
