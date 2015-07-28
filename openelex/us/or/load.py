@@ -69,6 +69,7 @@ class ORPrecinctLoader(ORBaseLoader):
 
     def load(self):
         headers = [
+            'county',
             'precinct',
             'office',
             'district',

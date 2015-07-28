@@ -60,13 +60,20 @@ class Datasource(BaseDatasource):
                     raw_url = result['url']
                 else:
                     raw_url = None
-                generated_filename = self._generate_filename(election['start_date'], election['race_type'], result)
+                if result['county'] == '':
+                    generated_filename = self._generate_filename(election['start_date'], election['race_type'], result)
+                    ocd_id = 'ocd-division/country:us/state:or'
+                    name = "Oregon"
+                else:
+                    generated_filename = self._generate_county_filename(election['start_date'], result)
+                    ocd_id = 'ocd-division/country:us/state:or/county:%s' % result['county'].lower().replace(" ", "_")
+                    name = result['county']
                 meta.append({
                     "generated_filename": generated_filename,
                     "raw_url": raw_url,
                     "pre_processed_url": build_github_url(self.state, generated_filename),
-                    "ocd_id": 'ocd-division/country:us/state:or',
-                    "name": 'Oregon',
+                    "ocd_id": ocd_id,
+                    "name": name,
                     "election": election['slug']
                 })
         return meta
