@@ -43,6 +43,7 @@ class MSBaseLoader(BaseLoader):
         'Secretary of State',
         'State Auditor',
         'State Treasurer',
+        'Commissioner of Insurance',
         'Commissioner of Agriculture & Commerce',
         'Attorney General',
         'State Senate',
