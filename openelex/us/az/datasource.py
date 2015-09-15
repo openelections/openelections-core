@@ -113,6 +113,8 @@ class Datasource(BaseDatasource):
             bits.append(result['office'].replace(' ', '_').replace('.', '').lower())
             if result['district']:
                 bits.append(result['district'])
+        if result['result_type']:
+            bits.append(result['result_type'])
         filename = "__".join(bits) + '.csv'
         return filename
 
