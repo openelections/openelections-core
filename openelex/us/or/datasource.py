@@ -71,7 +71,7 @@ class Datasource(BaseDatasource):
                 meta.append({
                     "generated_filename": generated_filename,
                     "raw_url": raw_url,
-                    "pre_processed_url": build_github_url(self.state, generated_filename),
+                    "pre_processed_url": build_raw_github_url(self.state, election['start_date'][0:3], generated_filename),
                     "ocd_id": ocd_id,
                     "name": name,
                     "election": election['slug']
