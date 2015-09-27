@@ -24,7 +24,7 @@ class LoadResults(object):
     """
 
     def run(self, mapping):
-        election_id = mapping['pre_processed_url']
+        election_id = mapping['generated_filename']
         if 'precinct' in election_id:
             loader = AZPrecinctLoader()
         elif 'special' in election_id:
@@ -66,7 +66,7 @@ class AZBaseLoader(BaseLoader):
         """
         return False
 
-class AZPrecinctLoader(MSBaseLoader):
+class AZPrecinctLoader(AZBaseLoader):
     """
     Loads Arizona precinct results.
 
@@ -144,13 +144,15 @@ class AZCountyLoader(AZBaseLoader):
 
     def load(self):
         headers = [
-            'candidate',
+            'county',
             'office',
             'district',
             'party',
-            'county',
+            'candidate',
             'votes',
-            'winner'
+            'winner',
+            'write-in',
+            'notes'
         ]
         self._common_kwargs = self._build_common_election_kwargs()
         self._common_kwargs['reporting_level'] = 'county'
@@ -162,24 +164,16 @@ class AZCountyLoader(AZBaseLoader):
             for row in reader:
                 if self._skip_row(row):
                     continue
+                rr_kwargs = self._common_kwargs.copy()
+                rr_kwargs.update(self._build_contest_kwargs(row))
+                rr_kwargs.update(self._build_candidate_kwargs(row))
                 if row['county'].strip() == '':
-                    total_votes = int(row['votes'].strip())
-                    contest_winner = row['winner'].strip()
-                else:
-                    rr_kwargs = self._common_kwargs.copy()
-                    rr_kwargs.update(self._build_contest_kwargs(row))
-                    rr_kwargs.update(self._build_candidate_kwargs(row))
-                    jurisdiction = row['county'].strip()
                     rr_kwargs.update({
-                        'party': row['party'].strip(),
-                        'jurisdiction': jurisdiction,
-                        'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
-                            ocd_type_id(jurisdiction)),
-                        'office': row['office'].strip(),
-                        'district': row['district'].strip(),
-                        'votes': int(row['votes'].strip())
+                        'contest_winner': row['winner'].strip(),
+                        'write_in': row['write-in'],
+                        'notes': row['notes']
                     })
-                    results.append(RawResult(**rr_kwargs))
+                results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
@@ -187,18 +181,23 @@ class AZCountyLoader(AZBaseLoader):
 
     def _build_contest_kwargs(self, row):
         return {
+            'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
+                ocd_type_id(row['county'].strip())),
+            'jurisdiction': row['county'].strip(),
             'office': row['office'].strip(),
             'district': row['district'].strip(),
         }
 
     def _build_candidate_kwargs(self, row):
         return {
-            'full_name': row['candidate'].strip()
+            'full_name': row['candidate'].strip(),
+            'party': row['party'].strip(),
+            'votes': int(row['votes'].strip())
         }
 
 class AZSpecialLoader(AZBaseLoader):
     """
-    Loads Mississippi county-level results for 2003-2013 special elections.
+    Loads Arizona county-level results for 2012 special elections.
 
     Format:
 
@@ -208,12 +207,12 @@ class AZSpecialLoader(AZBaseLoader):
 
     def load(self):
         headers = [
-            'candidate',
+            'county',
             'office',
             'district',
-            'county',
+            'party',
+            'candidate',
             'votes',
-            'winner'
         ]
         self._common_kwargs = self._build_common_election_kwargs()
         self._common_kwargs['reporting_level'] = 'county'
@@ -227,7 +226,6 @@ class AZSpecialLoader(AZBaseLoader):
                     continue
                 if row['county'].strip() == '':
                     total_votes = int(row['votes'].strip())
-                    contest_winner = row['winner'].strip()
                 else:
                     rr_kwargs = self._common_kwargs.copy()
                     rr_kwargs.update(self._build_contest_kwargs(row))
