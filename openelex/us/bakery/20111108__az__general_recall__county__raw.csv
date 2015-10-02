@@ -1,0 +1,4 @@
+updated_at,id,start_date,end_date,election_type,result_type,special,office,district,name_raw,last_name,first_name,suffix,middle_name,party,jurisdiction,division,votes,votes_type,total_votes,winner,write_in,year
+2015-09-26 18:50:44.634000,az-2011-11-08-general-recall,2011-11-08 00:00:00,2011-11-08 00:00:00,general-recall,certified,False,State Senate,18,Russell Pearce,,,,,REP,Maricopa,ocd-division/country:us/state:az/county:maricopa,10121,,,,,2011
+2015-09-26 18:50:44.634000,az-2011-11-08-general-recall,2011-11-08 00:00:00,2011-11-08 00:00:00,general-recall,certified,False,State Senate,18,Jerry Lewis,,,,,REP,Maricopa,ocd-division/country:us/state:az/county:maricopa,12812,,,,,2011
+2015-09-26 18:50:44.634000,az-2011-11-08-general-recall,2011-11-08 00:00:00,2011-11-08 00:00:00,general-recall,certified,False,State Senate,18,Olivia Cortes,,,,,REP,Maricopa,ocd-division/country:us/state:az/county:maricopa,277,,,,,2011

@@ -27,7 +27,7 @@ class LoadResults(object):
         elif 'special' in election_id:
             loader = MSSpecialLoader()
         else:
-            raise "loader not implemented"
+            loader = MSCountyLoader()
         loader.run(mapping)
 
 
@@ -109,6 +109,70 @@ class MSPrecinctLoader(MSBaseLoader):
                         'party': row['party'].strip(),
                         'jurisdiction': jurisdiction,
                         'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
+                        'office': row['office'].strip(),
+                        'district': row['district'].strip(),
+                        'votes': int(row['votes'].strip())
+                    })
+                    results.append(RawResult(**rr_kwargs))
+        RawResult.objects.insert(results)
+
+    def _skip_row(self, row):
+        return row['office'].strip() not in self.target_offices
+
+    def _build_contest_kwargs(self, row):
+        return {
+            'office': row['office'].strip(),
+            'district': row['district'].strip(),
+        }
+
+    def _build_candidate_kwargs(self, row):
+        return {
+            'full_name': row['candidate'].strip()
+        }
+
+class MSCountyLoader(MSBaseLoader):
+    """
+    Loads Mississippi county-level results for 2003-2013 primary and general elections.
+
+    Format:
+
+    Mississippi has PDF files that have been converted to CSV files for elections after 2002.
+    Header rows are identical except that precinct is not present.
+    """
+
+    def load(self):
+        headers = [
+            'candidate',
+            'office',
+            'district',
+            'party',
+            'county',
+            'votes',
+            'winner'
+        ]
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'county'
+        # Store result instances for bulk loading
+        results = []
+
+        with self._file_handle as csvfile:
+            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            for row in reader:
+                if self._skip_row(row):
+                    continue
+                if row['county'].strip() == '':
+                    total_votes = int(row['votes'].strip())
+                    contest_winner = row['winner'].strip()
+                else:
+                    rr_kwargs = self._common_kwargs.copy()
+                    rr_kwargs.update(self._build_contest_kwargs(row))
+                    rr_kwargs.update(self._build_candidate_kwargs(row))
+                    jurisdiction = row['county'].strip()
+                    rr_kwargs.update({
+                        'party': row['party'].strip(),
+                        'jurisdiction': jurisdiction,
+                        'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
+                            ocd_type_id(jurisdiction)),
                         'office': row['office'].strip(),
                         'district': row['district'].strip(),
                         'votes': int(row['votes'].strip())

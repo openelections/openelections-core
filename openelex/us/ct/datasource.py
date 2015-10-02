@@ -40,17 +40,22 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
-            results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+            if election['special']:
+                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
+            else:
+                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] != True]
             for result in results:
+                generated_filename = self._generate_filename(election['start_date'], election['race_type'], result)
                 if election['direct_links']:
                     raw_url = election['direct_links'][0]
+                    github_url = None
                 else:
                     raw_url = None
-                generated_filename = self._generate_filename(election['start_date'], election['race_type'], result)
+                    github_url = build_github_url(self.state, generated_filename)
                 meta.append({
                     "generated_filename": generated_filename,
                     "raw_url": raw_url,
-                    "pre_processed_url": build_github_url(self.state, generated_filename),
+                    "pre_processed_url": github_url,
                     "ocd_id": 'ocd-division/country:us/state:ct',
                     "name": 'Connecticut',
                     "election": election['slug']
