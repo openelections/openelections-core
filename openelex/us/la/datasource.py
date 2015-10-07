@@ -101,7 +101,7 @@ class Datasource(BaseDatasource):
     def _jurisdictions(self):
         """Louisiana parishes"""
         m = self.jurisdiction_mappings()
-        mappings = [x for x in m if x['jurisdiction'] != ""]
+        mappings = [x for x in m if x['name'] != ""]
         return mappings
 
     def _url_for_fetch(self, mapping):
