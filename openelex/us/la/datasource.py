@@ -47,9 +47,20 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
+            # parish-level file
             jurisdiction = 'ocd-division/country:us/state:la'
             generated_filename = self._generate_parish_filename(election)
-            pre_processed_url = None
+            meta.append({
+                "generated_filename": generated_filename,
+                "raw_url": election['portal_link'],
+                "pre_processed_url": build_raw_github_url(self.state, str(year), generated_filename),
+                "ocd_id": jurisdiction,
+                "name": 'Louisiana',
+                "election": election['slug']
+            })
+            # precinct-level file
+            jurisdiction = 'ocd-division/country:us/state:la'
+            generated_filename = self._generate_precinct_filename(election)
             meta.append({
                 "generated_filename": generated_filename,
                 "raw_url": election['portal_link'],
@@ -73,7 +84,7 @@ class Datasource(BaseDatasource):
         filename = "__".join(bits) + '.csv'
         return filename
 
-    def _generate_precinct_filename(self, result):
+    def _generate_precinct_filename(self, election):
         bits = [
             election['start_date'].replace('-',''),
             self.state,
