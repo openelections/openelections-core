@@ -27,7 +27,7 @@ class LoadResults(object):
         if 'precinct' in election_id:
             loader = LAPrecinctLoader()
         else:
-            loader = LACountyLoader()
+            loader = LAParishLoader()
         loader.run(mapping)
 
 
@@ -95,11 +95,16 @@ class LAPrecinctLoader(LABaseLoader):
                 rr_kwargs.update(self._build_contest_kwargs(row))
                 rr_kwargs.update(self._build_candidate_kwargs(row))
                 jurisdiction = row['precinct'].strip()
-                county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+                try:
+                    county_ocd_id = [c for c in self.datasource._jurisdictions() if c['name'].upper().replace(' ','') == row['parish'].upper().replace(' ','')][0]['ocd_id']
+                except:
+                    print row
+                    raise
                 rr_kwargs.update({
                     'party': row['party'].strip(),
                     'jurisdiction': jurisdiction,
-                    'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
+                    'parent_jurisdiction': row['parish'],
+                    'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(row['precinct'])),
                     'office': row['office'].strip(),
                     'district': row['district'].strip(),
                     'votes': int(row['votes'].strip())
@@ -121,9 +126,9 @@ class LAPrecinctLoader(LABaseLoader):
             'full_name': row['candidate'].strip()
         }
 
-class LACountyLoader(LABaseLoader):
+class LAParishLoader(LABaseLoader):
     """
-    Loads Louisiana county-level results for 2000-2014 primary, general and special elections.
+    Loads Louisiana parish-level results for 2000-2014 primary, general and special elections.
 
     Format: pre-processed CSVs.
     """
@@ -138,7 +143,7 @@ class LACountyLoader(LABaseLoader):
             'votes'
         ]
         self._common_kwargs = self._build_common_election_kwargs()
-        self._common_kwargs['reporting_level'] = 'county'
+        self._common_kwargs['reporting_level'] = 'parish'
         # Store result instances for bulk loading
         results = []
 
