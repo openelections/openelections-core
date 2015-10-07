@@ -137,6 +137,7 @@ class RawResult(TimestampMixin, DynamicDocument):
         "This is on result (rather than Candidate) because in some states "
         "(NY, CT, SC ...) candidates can run as the nominee for multiple parties "
         "and results will be per-party.")
+    parent_jurisdiction = StringField(help_text="Political geography from raw results, if present. E.g. for precinct results, a county name.")
     jurisdiction = StringField(required=True, help_text="Political geography from raw results, if present. E.g. county name, congressional district, precinct number."
             "Or default to state + office/district, if not present in data.")
     ocd_id = StringField(help_text="OCD ID of jurisdiction, e.g. state, county, state leg. precinct, etc")
