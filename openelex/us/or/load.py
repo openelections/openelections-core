@@ -23,10 +23,11 @@ class LoadResults(object):
     def run(self, mapping):
         election_id = mapping['pre_processed_url']
         if 'precinct' in election_id:
-            loader = ORPrecinctLoader()
+            pass
+            #loader = ORPrecinctLoader()
         else:
             loader = ORLoader()
-        loader.run(mapping)
+            loader.run(mapping)
 
 
 class ORBaseLoader(BaseLoader):
@@ -96,6 +97,7 @@ class ORPrecinctLoader(ORBaseLoader):
                 rr_kwargs.update({
                     'party': row['party'].strip(),
                     'jurisdiction': jurisdiction,
+                    'parent_jurisdiction': row['county'],
                     'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
                     'office': row['office'].strip(),
                     'district': row['district'].strip(),
