@@ -210,10 +210,12 @@ class CSVLoader(PABaseLoader):
                     rr_kwargs['primary_party'] = row['cand_party_code'].strip()
                 rr_kwargs.update(self._build_contest_kwargs(row))
                 rr_kwargs.update(self._build_candidate_kwargs(row))
+                county = [c for c in self.datasource._jurisdictions() if c['state_id'] == str(row['county_code'])][0]['name']
                 county_ocd_id = [c for c in self.datasource._jurisdictions() if c['state_id'] == str(row['county_code'])][0]['ocd_id']
                 rr_kwargs.update({
                     'party': row['cand_party_code'].strip(),
                     'jurisdiction': str(row['precinct_code']),
+                    'parent_jurisdiction': county,
                     'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(str(row['precinct_code']))),
                     'votes': int(row['votes'].strip()),
                     # PA-specific data

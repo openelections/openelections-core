@@ -123,6 +123,7 @@ class WVLoader(WVBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': row['CountyName'],
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['PartyName'].strip(),
             'votes': self._votes(row['Votes']),

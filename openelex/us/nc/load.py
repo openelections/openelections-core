@@ -177,6 +177,7 @@ class NCTsv2014Loader(NCBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': row['County'],
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['Choice Party'].strip(),
             'votes': self._votes(row['Total Votes']),
@@ -262,6 +263,7 @@ class NCCsvLoader(NCBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': row['county'],
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['party'].strip(),
             'votes': self._votes(row['total votes']),
@@ -367,6 +369,7 @@ class NCTsv2008Loader(NCBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': row['county'],
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['party'].strip(),
             'votes': self._votes(row['total_votes']),
@@ -441,6 +444,7 @@ class NCTextLoader(NCBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': row['county'],
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['party_cd'].strip(),
             'votes': self._votes(row['ballot_count'])
@@ -536,6 +540,7 @@ class NCTsv20022000Loader(NCBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': row['county'],
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['party'].strip(),
             'votes': self._votes(row['total_votes'])
@@ -684,6 +689,7 @@ class NCXlsLoader(NCBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': county,
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': candidate[1],
             'votes': self._votes(votes)

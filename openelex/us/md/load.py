@@ -106,6 +106,8 @@ class MDLoader(MDBaseLoader):
             RawResult.objects.insert(results)
 
     def _skip_row(self, row):
+        if row['Office Name'] == None:
+            return True
         return row['Office Name'].strip() not in self.target_offices
 
     def _build_contest_kwargs(self, row, primary_type):
@@ -230,6 +232,7 @@ class MDLoader(MDBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': self.mapping['name'],
             'ocd_id': ocd_id,
             'party': row['Party'].strip(),
             'votes': self._votes(row['Election Night Votes']),

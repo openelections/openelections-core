@@ -94,17 +94,18 @@ class LAPrecinctLoader(LABaseLoader):
                 rr_kwargs['primary_party'] = row['party'].strip()
                 rr_kwargs.update(self._build_contest_kwargs(row))
                 rr_kwargs.update(self._build_candidate_kwargs(row))
-                jurisdiction = row['precinct'].strip()
-                try:
-                    county_ocd_id = [c for c in self.datasource._jurisdictions() if c['name'].upper().replace(' ','') == row['parish'].upper().replace(' ','')][0]['ocd_id']
-                except:
-                    print row
-                    raise
+                county_ocd_id = [c for c in self.datasource._jurisdictions() if c['name'].upper().replace(' ','') == row['parish'].upper().replace(' ','')][0]['ocd_id']
+                if row['precinct'].strip() == 'Early Voting' or row['precinct'].strip() == 'Provisional Votes':
+                    jurisdiction = None
+                    ocd_id = "{}/parish:{}".format(self.mapping['ocd_id'], ocd_type_id(row['parish'].strip()))
+                else:
+                    ocd_id = "{}/precinct:{}".format(county_ocd_id, ocd_type_id(row['precinct']))
+                    jurisdiction = row['precinct'].strip()
                 rr_kwargs.update({
                     'party': row['party'].strip(),
                     'jurisdiction': jurisdiction,
                     'parent_jurisdiction': row['parish'],
-                    'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(row['precinct'])),
+                    'ocd_id': ocd_id,
                     'office': row['office'].strip(),
                     'district': row['district'].strip(),
                     'votes': int(row['votes'].strip())
@@ -163,7 +164,7 @@ class LAParishLoader(LABaseLoader):
 
     def _build_contest_kwargs(self, row):
         return {
-            'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
+            'ocd_id': "{}/parish:{}".format(self.mapping['ocd_id'],
                 ocd_type_id(row['parish'].strip())),
             'jurisdiction': row['parish'].strip(),
             'office': row['office'].strip(),

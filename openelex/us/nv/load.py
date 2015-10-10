@@ -137,13 +137,14 @@ class NVPrecinctLoader(NVBaseLoader):
                 rr_kwargs.update(self._build_contest_kwargs(row))
                 rr_kwargs.update(self._build_candidate_kwargs(row))
                 ocd_id = [c for c in self.datasource._jurisdictions() if c['jurisdiction'] == row['Jurisdiction']][0]['ocd_id']
-                jurisdiction = row['Jurisdiction'].strip()
+                jurisdiction = row['Precinct'].strip()
                 if row['Votes'].strip() == '*':
                     votes = 'N/A'
                 else:
                     votes = int(row['Votes'].replace(',','').strip())
                 rr_kwargs.update({
                     'jurisdiction': jurisdiction,
+                    'parent_jurisdiction': row['Jurisdiction'],
                     'ocd_id': "{}/precinct:{}".format(self.mapping['ocd_id'], ocd_type_id(row['Precinct'])),
                     'votes': votes
                 })
