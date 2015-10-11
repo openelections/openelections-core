@@ -9,7 +9,7 @@ from openelex.lib.text import ocd_type_id, slugify
 from .datasource import Datasource
 
 """
-Wyoming elections have CSV results files for elections in 2006, along with special elections in 2008 and 2002, 
+Wyoming elections have CSV results files for elections in 2006, along with special elections in 2008 and 2002,
 contained in the https://github.com/openelections/openelections-data-wy repository. Other results files are in Excel
 format, contained in zip files or in converted spreadsheets in the same Github repository. These files have multiple
 worksheets for primaries, one for each party.
@@ -90,6 +90,7 @@ class WYLoader(WYBaseLoader):
     """
     Parse Wyoming election results for all elections except those in 2006 or special elections.
     Works for:
+    2014 general & primary
     2012 general & primary
     2010 general & primary
     2008 general & primary
@@ -136,7 +137,7 @@ class WYLoader(WYBaseLoader):
                 row = [r for r in sheet.row_values(i) if not r == '']
                 # remove empty cells
                 # Skip non-target offices
-                if self._skip_row(row): 
+                if self._skip_row(row):
                     continue
                 else:
                     precinct = str(row[0])
@@ -154,7 +155,7 @@ class WYLoader(WYBaseLoader):
                     grouped_results = zip(candidates, votes)
                     for (candidate, office, candidate_party), votes in grouped_results:
                         if not votes == '-':
-                            results.append(self._prep_precinct_result(precinct, candidate, office, candidate_party, votes))
+                            results.append(self._prep_precinct_result(precinct, self.mapping['name'], candidate, office, candidate_party, votes))
             try:
                 RawResult.objects.insert(results)
             except:
@@ -444,7 +445,7 @@ class WYLoader(WYBaseLoader):
         kwargs.update(candidate_kwargs)
         return kwargs
 
-    def _prep_precinct_result(self, precinct, candidate, office, party, votes):
+    def _prep_precinct_result(self, precinct, county, candidate, office, party, votes):
         # each precinct has multiple candidate totals, plus write-ins, over and under votes
         kwargs = self._base_kwargs(candidate, office, party)
         if party:
@@ -452,6 +453,7 @@ class WYLoader(WYBaseLoader):
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
+            'parent_jurisdiction': county,
             'ocd_id': "{}/precinct:{}".format(self.mapping['ocd_id'],
                 ocd_type_id(precinct)),
             'votes': votes,
@@ -466,7 +468,7 @@ class WYLoader(WYBaseLoader):
         try:
             return int(float(val))
         except ValueError:
-            # Count'y convert value from string   
+            # Count'y convert value from string
             return None
 
     def _writein(self, row):

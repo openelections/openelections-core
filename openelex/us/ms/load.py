@@ -108,6 +108,7 @@ class MSPrecinctLoader(MSBaseLoader):
                     rr_kwargs.update({
                         'party': row['party'].strip(),
                         'jurisdiction': jurisdiction,
+                        'parent_jurisdiction': row['county'],
                         'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
                         'office': row['office'].strip(),
                         'district': row['district'].strip(),
