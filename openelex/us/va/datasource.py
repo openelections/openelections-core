@@ -79,5 +79,5 @@ class Datasource(BaseDatasource):
     def _jurisdictions(self):
         """Virginia counties and cities"""
         m = self.jurisdiction_mappings()
-        mappings = [x for x in m if x['county'] != ""]
+        mappings = [x for x in m if x['name'] != ""]
         return mappings
