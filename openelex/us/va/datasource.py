@@ -41,14 +41,26 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
-            generated_filename = self._generate_filename(election)
-            meta.append({
-                "generated_filename": generated_filename,
-                "raw_url": election['direct_links'][0],
-                "ocd_id": 'ocd-division/country:us/state:va',
-                "name": 'Virginia',
-                "election": election['slug']
-            })
+            results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+            if len(results) > 0:
+                for result in results:
+                    generated_filename = self._generate_filename(election)
+                    meta.append({
+                        "generated_filename": result['path'],
+                        "raw_url": result['url'],
+                        "ocd_id": 'ocd-division/country:us/state:va',
+                        "name": 'Virginia',
+                        "election": election['slug']
+                    })
+            else:
+                generated_filename = self._generate_filename(election)
+                meta.append({
+                    "generated_filename": generated_filename,
+                    "raw_url": election['direct_links'][0],
+                    "ocd_id": 'ocd-division/country:us/state:va',
+                    "name": 'Virginia',
+                    "election": election['slug']
+                })
         return meta
 
     def _generate_filename(self, election):
@@ -62,27 +74,6 @@ class Datasource(BaseDatasource):
             election_type
         ]
         name = "__".join(bits) + '.csv'
-        return name
-
-    def _generate_office_filename(self, election):
-        if result['party'] == '':
-            bits = [
-                    election['start_date'].replace('-',''),
-                    self.state.lower(),
-                    election['race_type'],
-                    result['office'],
-                    'precinct'
-                ]
-        else:
-            bits = [
-                election['start_date'].replace('-',''),
-                self.state.lower(),
-                result['party'],
-                election['race_type'],
-                result['office'],
-                'precinct'
-            ]
-        name = "__".join(bits)+'.xls'
         return name
 
     def _jurisdictions(self):
