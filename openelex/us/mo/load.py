@@ -25,7 +25,8 @@ class LoadResults(object):
         if 'precinct' in election_id:
             loader = MOPrecinctLoader()
         elif 'special' in election_id:
-            loader = MOSpecialLoader()
+            pass
+            #loader = MOSpecialLoader()
         else:
             loader = MOCountyLoader()
         loader.run(mapping)
@@ -39,11 +40,8 @@ class MOBaseLoader(BaseLoader):
         'U.S. Senate',
         'U.S. House',
         'Governor',
-        'Secretary of State',
-        'Corporation Commissioner',
-        'State Treasurer',
-        'State Mine Inspector',
-        'Superintendent of Public Instruction',
+        'Lieutenant Governor',
+        'State Auditor',
         'Attorney General',
         'State Senate',
         'State House',
