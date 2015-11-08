@@ -25,8 +25,7 @@ class LoadResults(object):
         if 'precinct' in election_id:
             loader = MOPrecinctLoader()
         elif 'special' in election_id:
-            pass
-            #loader = MOSpecialLoader()
+            loader = MOSpecialLoader()
         else:
             loader = MOCountyLoader()
         loader.run(mapping)
@@ -41,6 +40,7 @@ class MOBaseLoader(BaseLoader):
         'U.S. House',
         'Governor',
         'Lieutenant Governor',
+        'State Treasurer',
         'State Auditor',
         'Attorney General',
         'State Senate',
@@ -204,7 +204,7 @@ class MOSpecialLoader(MOBaseLoader):
             'votes',
         ]
         self._common_kwargs = self._build_common_election_kwargs()
-        self._common_kwargs['reporting_level'] = 'county'
+        self._common_kwargs['reporting_level'] = 'state'
         # Store result instances for bulk loading
         results = []
 
@@ -213,22 +213,27 @@ class MOSpecialLoader(MOBaseLoader):
             for row in reader:
                 if self._skip_row(row):
                     continue
+                rr_kwargs = self._common_kwargs.copy()
+                rr_kwargs.update(self._build_contest_kwargs(row))
+                rr_kwargs.update(self._build_candidate_kwargs(row))
                 if row['county'].strip() == '':
-                    total_votes = int(row['votes'].strip())
+                    jurisdiction = "Missouri"
+                    ocd_id = "ocd-division/country:us/state:mo"
+                    reporting_level = 'state'
                 else:
-                    rr_kwargs = self._common_kwargs.copy()
-                    rr_kwargs.update(self._build_contest_kwargs(row))
-                    rr_kwargs.update(self._build_candidate_kwargs(row))
                     jurisdiction = row['county'].strip()
-                    rr_kwargs.update({
-                        'jurisdiction': jurisdiction,
-                        'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
-                            ocd_type_id(jurisdiction)),
-                        'office': row['office'].strip(),
-                        'district': row['district'].strip(),
-                        'votes': int(row['votes'].strip())
-                    })
-                    results.append(RawResult(**rr_kwargs))
+                    ocd_id = "{}/county:{}".format(self.mapping['ocd_id'],
+                        ocd_type_id(jurisdiction))
+                    reporting_level = 'county'
+                rr_kwargs.update({
+                    'reporting_level': reporting_level,
+                    'jurisdiction': jurisdiction,
+                    'ocd_id': ocd_id,
+                    'office': row['office'].strip(),
+                    'district': row['district'].strip(),
+                    'votes': int(row['votes'].strip())
+                })
+                results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
