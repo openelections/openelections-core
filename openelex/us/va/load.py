@@ -31,22 +31,35 @@ class VABaseLoader(BaseLoader):
 
     target_offices = set([
         'President and Vice President',
+        'President and Vice President - 2001 CD Lines',
         'President - 2001 CD Lines',
         'United States Senate',
+        'United States Senate - 2001 CD Lines',
         'Governor',
+        'Governor - 2001 CD Lines',
         'Lieutenant Governor',
+        'Lieutenant Governor - 2001 CD Lines',
         'Attorney General',
+        'Attorney General - 2001 CD Lines',
         'Member House of Representatives',
+        'Member House of Representatives - 2001 CD Lines',
         'Member Senate of Virginia',
+        'Member Senate of Virginia - 2001 SD Lines',
         'Member House of Delegates',
+        'Member, House of Delegates',
+        'Member House of Delegates - 2001 LD Lines',
         'State Senate',
         'State House',
     ])
 
     district_offices = set([
         'Member House of Representatives',
+        'Member House of Representatives - 2001 CD Lines'
         'Member Senate of Virginia',
+        'Member Senate of Virginia - 2001 SD Lines',
         'Member House of Delegates',
+        'Member, House of Delegates',
+        'Member House of Delegates - 2001 LD Lines',
         'State Senate',
         'State House',
     ])
@@ -66,14 +79,23 @@ class CSVLoader(VABaseLoader):
 
     offices = {
         'President and Vice President': 'President',
+        'President and Vice President - 2001 CD Lines': 'President',
         'President - 2001 CD Lines': 'President',
         'United States Senate': 'U.S. Senate',
+        'United States Senate - 2001 CD Lines': 'U.S. Senate',
         'Governor': 'Governor',
+        'Governor - 2001 CD Lines': 'Governor',
         'Lieutenant Governor': 'Lieutenant Governor',
+        'Lieutenant Governor - 2001 CD Lines': 'Lieutenant Governor',
         'Attorney General': 'Attorney General',
+        'Attorney General - 2001 CD Lines': 'Attorney General',
         'Member House of Representatives': 'U.S. House',
+        'Member House of Representatives - 2001 CD Lines': 'U.S. House',
         'Member Senate of Virginia': 'State Senate',
-        'Member House of Delegates': 'State House'
+        'Member Senate of Virginia - 2001 SD Lines': 'State Senate',
+        'Member House of Delegates': 'State House',
+        'Member House of Delegates - 2001 LD Lines': 'State House',
+        'Member, House of Delegates': 'State House'
     }
 
     def load(self):
