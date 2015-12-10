@@ -72,7 +72,7 @@ $ cp settings.py.tmplt settings.py
 
 At the very least, you'll want to make sure the values in the ``MONGO`` variable work for the way you've installed and configured MongoDB on your system.
 
-You can put this settings file anywhere on your filesystem.  You'll need to set the ``OPENELEX_SETTINGS`` environment variable to the [absolute path](http://en.wikipedia.org/wiki/Path_(computing)) to the ``settings.py`` file that you created. 
+You can put this settings file anywhere on your filesystem.  You'll need to set the ``OPENELEX_SETTINGS`` environment variable to the [absolute path](http://en.wikipedia.org/wiki/Path_(computing)) to the ``settings.py`` file that you created.
 
 You'll probably want to add a line to the ``postactivate`` [script](http://virtualenvwrapper.readthedocs.org/en/latest/scripts.html) (``$VIRTUAL_ENV/bin/postactivate``) in your virtualenv to set the ``OPENELEX_SETTINGS`` environment variable.
 
@@ -88,8 +88,6 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  archive.delete                 Delete raw state files from S3
-  archive.save                   Save files from cache to s3
   bake.election_file             Write election and candidate data with on...
   bake.results_status_json       Output a JSON file describing available...
   bake.state_file                Write election and candidate data along
@@ -128,15 +126,7 @@ You can also get help on particular commands, e.g. `openelex --help cache.clear`
 If you are going to load results, you need to configure MongoDB connections in
 `openelex/settings.py`.
 
-If you want to archive results files to your own S3 account or are a core
-contributor who needs to publish baked results to one of the GitHub repositories, you will need to define further settings.
-
-To configure S3 to cache your raw results, update these values in `openelex/settings.py`:
-
-```python
-AWS_ACCESS_KEY_ID = ''
-AWS_SECRET_ACCESS_KEY =''
-```
+If you are a core contributor who needs to publish baked results to one of the GitHub repositories, you will need to define further settings.
 
 To set GitHub credentials, you must first create a [personal access token](https://help.github.com/articles/creating-an-access-token-for-command-line-use) and then uncomment and set these values in `openelex/settings.py`:
 
