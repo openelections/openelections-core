@@ -57,7 +57,7 @@ Turn on your virtual environment from the previous step, if you haven't already:
 $ workon openelex
 ```
 
-Then install the openelex package in [editable mode](http://pip.readthedocs.org/en/latest/reference/pip_install.html#editable-installs)
+Then install the openelex package in [editable mode](https://pip.pypa.io/en/latest/reference/pip_install/#editable-installs)
 
 
 ```bash
