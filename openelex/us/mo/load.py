@@ -91,13 +91,13 @@ class MOPrecinctLoader(MOBaseLoader):
                     continue
                 if row['precinct'].strip() == '':
                     total_votes = int(row['votes'].strip())
-                    contest_winner = row['winner'].strip()
                 else:
                     rr_kwargs = self._common_kwargs.copy()
                     rr_kwargs['primary_party'] = row['party'].strip()
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
                     jurisdiction = row['precinct'].strip()
+                    print row['county']
                     county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
                     rr_kwargs.update({
                         'party': row['party'].strip(),
@@ -120,9 +120,16 @@ class MOPrecinctLoader(MOBaseLoader):
         }
 
     def _build_candidate_kwargs(self, row):
-        return {
-            'full_name': row['candidate'].strip()
-        }
+        if 'candidate' in row:
+            return {
+                'full_name': row['candidate'].strip()
+            }
+        else:
+            return {
+                'first_name': row['first_name'].strip(),
+                'last_name': row['last_name'].strip(),
+                'full_name': row['first_name']+' '+row['last_name']
+            }
 
 class MOCountyLoader(MOBaseLoader):
     """
