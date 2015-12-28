@@ -35,7 +35,6 @@ class LoadResults(object):
         '20040203__ia__special__general__state_senate__30__county.csv',
         '20091124__ia__special__general__state_house__33__precinct.csv',
         '20100608__ia__primary__county.csv',
-        '20111108__ia__special__general__state_senate__18__precinct.csv',
     ]
 
     def run(self, mapping):
