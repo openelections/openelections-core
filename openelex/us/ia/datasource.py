@@ -20,7 +20,7 @@ class Datasource(BaseDatasource):
     def _url_for_fetch(self, mapping):
         try:
             return mapping['pre_processed_url']
-        except KeyError: 
+        except KeyError:
             return mapping['raw_url']
 
     def unprocessed_filename_url_pairs(self, year=None):
@@ -61,7 +61,7 @@ class Datasource(BaseDatasource):
                 meta_entry['generated_filename'] = meta_entry['generated_filename'].replace(".pdf", ".csv")
                 meta_entry['pre_processed_url'] = build_github_url(self.state,
                     meta_entry['generated_filename'])
-               
+
             new_entries.append(meta_entry)
 
         return new_entries
@@ -73,7 +73,7 @@ class Datasource(BaseDatasource):
 
         for path in url_paths:
             winners_file = path['winners'].lower() == "true"
-            if winners_file: 
+            if winners_file:
                 # For now, skip winner files
                 continue
 
@@ -94,7 +94,7 @@ class Datasource(BaseDatasource):
                     **filename_kwargs),
                 'raw_url': path['url'],
                 'ocd_id': 'ocd-division/country:us/state:ia',
-                'name': name, 
+                'name': name,
                 'election': election['slug'],
             })
 
@@ -127,7 +127,7 @@ class Datasource(BaseDatasource):
                 **filename_kwargs),
             'raw_url': url,
             'ocd_id': 'ocd-division/country:us/state:ia',
-            'name': "Iowa", 
+            'name': "Iowa",
             'election': election['slug'],
         })
 
@@ -153,24 +153,34 @@ class Datasource(BaseDatasource):
         else:
             name_suffix = ""
 
-        for county in self._counties():
-            raw_filename = "{}{}.{}".format(county['name'], name_suffix,
-                extension)
-            if (year == '2010' and election['race_type'] == 'general' and
-                    raw_filename == "Linn.xls"):
-                # The precinct-level result file for Linn County in the 
-                # 2010-11-02 general election inexplicably has a .xlsx
-                # extension.
-                raw_filename = "Linn.xlsx"
+        if (year == '2014' and election['race_type'] == 'general'):
+            # single statewide file for 2014 general precinct results
             meta_entries.append({
-                "generated_filename": self._standardized_filename(election,
-                    reporting_level='precinct', jurisdiction=county['name'],
-                    extension='.'+extension),
-                'raw_url': base_url + '/' + raw_filename,
-                'ocd_id': county['ocd_id'],
-                'name': county['name'], 
+                "generated_filename": "20141104__ia__general__precinct.xlsx",
+                'raw_url': 'http://sos.iowa.gov/elections/results/xls/2014/general/statewide.xlsx',
+                'ocd_id': 'ocd-division/country:us/state:ia',
+                'name': 'Iowa',
                 'election': election['slug'],
             })
+        else:
+            for county in self._counties():
+                raw_filename = "{}{}.{}".format(county['name'], name_suffix,
+                    extension)
+                if (year == '2010' and election['race_type'] == 'general' and
+                        raw_filename == "Linn.xls"):
+                    # The precinct-level result file for Linn County in the
+                    # 2010-11-02 general election inexplicably has a .xlsx
+                    # extension.
+                    raw_filename = "Linn.xlsx"
+                meta_entries.append({
+                    "generated_filename": self._standardized_filename(election,
+                        reporting_level='precinct', jurisdiction=county['name'],
+                        extension='.'+extension),
+                    'raw_url': base_url + '/' + raw_filename,
+                    'ocd_id': county['ocd_id'],
+                    'name': county['name'],
+                    'election': election['slug'],
+                })
 
         return meta_entries
 
@@ -206,7 +216,7 @@ class Datasource(BaseDatasource):
 
     def _build_metadata_2008_general(self, election):
         meta_entries = []
-        # In addition to the results in Excel format at 
+        # In addition to the results in Excel format at
         # http://sos.iowa.gov/elections/results/xls/2008/Lyon.xls
         # There are also precinct-level results in PDF format that include
         # the precinct absentee breakdown at URLs like
@@ -219,7 +229,7 @@ class Datasource(BaseDatasource):
                     extension='.pdf'),
                 'raw_url': self.BASE_URL + '/pdf/'  + raw_filename,
                 'ocd_id': county['ocd_id'],
-                'name': county['name'], 
+                'name': county['name'],
                 'election': election['slug'],
             })
 
