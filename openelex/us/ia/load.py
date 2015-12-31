@@ -22,9 +22,6 @@ class LoadResults(object):
     # haven't been converted yet in favor of higher-value files
     SKIP_FILES = [
         # These files originate as PDFs and haven't been extracted yet
-        '20010612__ia__special__general__state_house__85__county.csv',
-        '20010612__ia__special__general__state_senate__43__county.csv',
-        '20011106__ia__special__general__state_house__82__county.csv',
         '20100608__ia__primary__county.csv',
         '20021105__ia__general__precinct.csv',
         '20141104__ia__general__precinct.csv',
