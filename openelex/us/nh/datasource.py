@@ -48,7 +48,7 @@ class Datasource(BaseDatasource):
                 if result['county'] == '':
                     generated_filename = self._generate_filename(election, result)
                 else:
-                    generated_filename = self._generate_county_filename(election, result)                    
+                    generated_filename = self._generate_county_filename(election, result)
                 generated_ocd_id = self._generate_ocd_id(result)
                 generated_name = self._generate_name(result)
                 meta.append({
@@ -116,7 +116,7 @@ class Datasource(BaseDatasource):
 
     def _generate_name(self, result):
         if result['county'] == '':
-            'New Hampshire'
+            return 'New Hampshire'
         else:
             return result['county']
 
