@@ -125,3 +125,7 @@ class Datasource(BaseDatasource):
         m = self.jurisdiction_mappings()
         mappings = [x for x in m if x['county'] != ""]
         return mappings
+
+    def _places(self):
+        """New Hampshire places with political districts"""
+        return self.place_mappings()
