@@ -22,11 +22,13 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if 'county' in mapping['ocd_id']:
+        if 'county' in mapping['ocd_id'] and 'governor' in mapping['generated_filename'] and 'belknap' not in mapping['generated_filename']:
             loader = NHXlsCountyLoader()
+            loader.run(mapping)
         else:
-            loader = NHXlsLoader()
-        loader.run(mapping)
+            pass
+            #loader = NHXlsLoader()
+        #loader.run(mapping)
 
 
 class NHBaseLoader(BaseLoader):
@@ -62,7 +64,8 @@ class NHBaseLoader(BaseLoader):
 
 class NHXlsCountyLoader(NHBaseLoader):
     """
-    Loads New Hampshire county-specific XLS files containing precinct results.
+    Loads New Hampshire county-specific XLS files containing precinct results for the following offices:
+    Governor, Senate, President?
     """
 
     def load(self):
@@ -87,7 +90,7 @@ class NHXlsCountyLoader(NHBaseLoader):
 
     def _get_office_and_primary_party(self, row):
         if "-" in row[1]:
-            return row[1].split(' - ')
+            return [r.strip() for r in row[1].split('-')]
         else:
             return [row[1].strip(), None]
 
@@ -95,6 +98,8 @@ class NHXlsCountyLoader(NHBaseLoader):
         if row == []:
             return True
         elif row[0].strip() == '':
+            return True
+        elif 'Correction received from clerk' in row[0]:
             return True
         else:
             return False
