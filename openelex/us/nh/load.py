@@ -31,7 +31,7 @@ class LoadResults(object):
         elif 'belknap__governor' in generated_filename:
             #loader = NHBelknapCountyLoader()
             pass
-        elif '__senate.xls' in generated_filename:
+        elif '__senate.xls' in generated_filename and 'belknap' not in generated_filename:
             loader = NHSenateCountyLoader()
             loader.run(mapping)
             #pass
@@ -104,14 +104,15 @@ class NHSenateCountyLoader(NHBaseLoader):
         sheet = xlsfile.sheets()[0]
         office, primary_party = self._get_office_and_primary_party(sheet.row_values(1))
         district = None
-        start_row = 3
-        for i in xrange(start_row, sheet.nrows):
+        for i in xrange(2, sheet.nrows):
             row = [r for r in sheet.row_values(i)]
             if self._skip_row(row):
                 continue
-            if " County" in row[0]:
+            if " County" in str(row[0]):
                 county = row[0].split(' County')[0]
                 precincts = [c for c in row[1:] if c.strip() != '']
+            elif office in str(row[1]):
+                continue
             else:
                 candidate = row[0]
                 for idx, precinct in enumerate(precincts):
@@ -121,16 +122,18 @@ class NHSenateCountyLoader(NHBaseLoader):
     def _skip_row(self, row):
         if row == []:
             return True
-        elif row[0].strip() == '':
+        elif str(row[0]).strip() == '':
             return True
-        elif 'Correction received from clerk' in row[0]:
+        elif 'Correction received from clerk' in str(row[0]):
+            return True
+        elif any('State of New Hampshire' in str(c) for c in row):
             return True
         else:
             return False
 
 
     def _build_candidate_kwargs(self, candidate):
-        if ", " in candidate:
+        if ", " in str(candidate):
             cand, party = candidate.split(", ")
             party = party.upper()
         else:
