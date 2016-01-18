@@ -110,7 +110,7 @@ class Datasource(BaseDatasource):
             })
             payload.append(gen_meta)
 
-            general_county_url = [g for g in general['direct_links'] if 'results' in g][0]
+            general_county_url = [g for g in general['direct_links'] if 'esults' in g][0]
             general_county_filename = self._generate_county_filename(general_county_url, general['start_date'], 'general', None)
             gen_county_meta = meta.copy()
             gen_county_meta.update({
@@ -161,6 +161,8 @@ class Datasource(BaseDatasource):
 
     def _generate_county_filename(self, url, start_date, election_type, party):
         # example: 20121106__oh__general__county.xlsx
+        if party:
+            election_type = party+"__"+election_type
         bits = [
             start_date.replace('-',''),
             self.state.lower(),
