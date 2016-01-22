@@ -76,6 +76,8 @@ class Datasource(BaseDatasource):
                     "name": name,
                     "election": election['slug']
                 })
+                # generate precinct files
+
         return meta
 
     def _generate_filename(self, start_date, election_type, result):

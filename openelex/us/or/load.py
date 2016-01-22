@@ -21,13 +21,12 @@ class LoadResults(object):
     """
 
     def run(self, mapping):
-        election_id = mapping['pre_processed_url']
+        election_id = mapping['generated_filename']
         if 'precinct' in election_id:
-            pass
-            #loader = ORPrecinctLoader()
+            loader = ORPrecinctLoader()
         else:
             loader = ORLoader()
-            loader.run(mapping)
+        loader.run(mapping)
 
 
 class ORBaseLoader(BaseLoader):
@@ -69,31 +68,25 @@ class ORPrecinctLoader(ORBaseLoader):
     """
 
     def load(self):
-        headers = [
-            'county',
-            'precinct',
-            'office',
-            'district',
-            'party',
-            'candidate',
-            'votes',
-        ]
         self._common_kwargs = self._build_common_election_kwargs()
         self._common_kwargs['reporting_level'] = 'precinct'
         # Store result instances for bulk loading
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            next(reader, None)
             for row in reader:
                 if self._skip_row(row):
+                    continue
+                if row['votes'] == 'X':
                     continue
                 rr_kwargs = self._common_kwargs.copy()
                 rr_kwargs['primary_party'] = row['party'].strip()
                 rr_kwargs.update(self._build_contest_kwargs(row))
                 rr_kwargs.update(self._build_candidate_kwargs(row))
                 jurisdiction = row['precinct'].strip()
-                county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+                county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].strip().upper() == row['county'].strip().upper()][0]['ocd_id']
                 rr_kwargs.update({
                     'party': row['party'].strip(),
                     'jurisdiction': jurisdiction,
@@ -101,7 +94,7 @@ class ORPrecinctLoader(ORBaseLoader):
                     'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
                     'office': row['office'].strip(),
                     'district': row['district'].strip(),
-                    'votes': int(row['votes'].strip())
+                    'votes': int(float(row['votes']))
                 })
                 results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
