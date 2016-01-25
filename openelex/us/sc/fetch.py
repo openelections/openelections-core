@@ -52,10 +52,10 @@ class FetchResults(BaseFetcher):
                 local_file_name = os.path.join(self.cache.abspath,
                     mapping['generated_filename'])
                 if overwrite or not os.path.exists(local_file_name):
-                    zipf.extract(mapping['raw_extracted_filename'],
+                    zipf.extract('detail.xml',
                         self.cache.abspath)
                     extracted_file_name = os.path.join(self.cache.abspath,
-                        mapping['raw_extracted_filename'])
+                        'detail.xml')
                     os.rename(extracted_file_name, local_file_name)
                     print "Added to cache: %s" % local_file_name
                 else:
