@@ -4,8 +4,6 @@ import urllib
 import urlparse
 from zipfile import ZipFile
 
-import requests
-
 from openelex.base.fetch import BaseFetcher
 from openelex.us.sc.datasource import Datasource
 

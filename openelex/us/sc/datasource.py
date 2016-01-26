@@ -58,8 +58,8 @@ class Datasource(BaseDatasource):
                         "name": 'South Carolina',
                         "election": election['slug']
                     })
-            elif year > 2006:
-            # county-level results
+            elif 'summary.html' in election['direct_links'][0]:
+                # county-level results
                 j = clarify.Jurisdiction(url=election['direct_links'][0], level='state') # check for clarity url
                 ocd_id = 'ocd-division/country:us/state:sc'
                 generated_filename = self._generate_county_filename(election)
@@ -74,17 +74,19 @@ class Datasource(BaseDatasource):
                 # precinct-level results, one file per county
                 subs = j.get_subjurisdictions()
                 for county in self._jurisdictions():
-                    print county['name']
-                    subj = [s for s in subs if s.name.strip() == county['name'].strip()][0]
-                    generated_filename = self._generate_precinct_filename(election, county)
-                    meta.append({
-                        "generated_filename": generated_filename,
-                        "pre_processed_url": None,
-                        "raw_url": subj.report_url('xml'),
-                        "ocd_id": county['ocd_id'],
-                        "name": county['name'],
-                        "election": election['slug']
-                    })
+                    try:
+                        subj = [s for s in subs if s.name.strip() == county['name'].strip()][0]
+                        generated_filename = self._generate_precinct_filename(election, county)
+                        meta.append({
+                            "generated_filename": generated_filename,
+                            "pre_processed_url": None,
+                            "raw_url": subj.report_url('xml'),
+                            "ocd_id": county['ocd_id'],
+                            "name": county['name'],
+                            "election": election['slug']
+                        })
+                    except IndexError:
+                        continue
         return meta
 
     def _generate_county_filename(self, election):
