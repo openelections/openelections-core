@@ -62,6 +62,20 @@ class TXBaseLoader(BaseLoader):
         """
         return False
 
+    def _votes(self, val):
+        """
+        Returns cleaned version of votes or 0 if it's a non-numeric value.
+        """
+        if type(val) is str:
+            if val.strip() == '':
+                return 0
+
+        try:
+            return int(float(val))
+        except ValueError:
+            # Count'y convert value from string
+            return 0
+
 class TXPrecinctLoader(TXBaseLoader):
     """
     Loads Texas precinct-level results.
@@ -99,7 +113,7 @@ class TXPrecinctLoader(TXBaseLoader):
                     'jurisdiction': jurisdiction,
                     'parent_jurisdiction': row['county'],
                     'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
-                    'votes': int(row['votes'].strip())
+                    'votes': self._votes(row['votes'])
                 })
                 results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
@@ -154,7 +168,7 @@ class TXCountyLoader(TXBaseLoader):
                     'parent_jurisdiction': "Texas",
                     'ocd_id': "{}/county:{}".format(self.mapping['ocd_id'],
                         ocd_type_id(jurisdiction)),
-                    'votes': int(row['votes'].strip())
+                    'votes': self._votes(row['votes'])
                 })
                 results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
@@ -206,7 +220,7 @@ class TXLoader(TXBaseLoader):
                 rr_kwargs.update({
                     'jurisdiction': "Texas",
                     'ocd_id': "ocd-division/country:us/state:tx",
-                    'votes': int(row['votes'].strip())
+                    'votes': self._votes(row['votes'])
                 })
                 results.append(RawResult(**rr_kwargs))
         RawResult.objects.insert(results)
