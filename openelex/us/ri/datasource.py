@@ -49,7 +49,7 @@ class Datasource(BaseDatasource):
         year_int = int(year)
         for election in elections:
             if 'special' in election['slug']:
-                generated_filename = self._generate_filename(election)
+                generated_filename = self._generate_filename(election, 'csv')
                 meta.append({
                     "generated_filename": generated_filename,
                     "raw_url": election['direct_links'][0],
@@ -60,8 +60,12 @@ class Datasource(BaseDatasource):
                 })
             else:
                 result = [x for x in self._url_paths() if x['date'] == election['start_date']][0]
+                if result['raw_extracted_filename']:
+                    format = result['raw_extracted_filename'].split('.')[1]
+                else:
+                    format = 'csv'
                 meta.append({
-                    "generated_filename": self._generate_filename(election),
+                    "generated_filename": self._generate_filename(election, format),
                     "raw_url": election['direct_links'][0],
                     "raw_extracted_filename": result['raw_extracted_filename'],
                     "pre_processed_url": None,
@@ -72,7 +76,7 @@ class Datasource(BaseDatasource):
 
         return meta
 
-    def _generate_filename(self, election):
+    def _generate_filename(self, election, format):
         bits = [
             election['start_date'].replace('-',''),
             self.state,
@@ -82,7 +86,7 @@ class Datasource(BaseDatasource):
         bits.extend(
             election['race_type'].split('-')
         )
-        filename = "__".join(bits) + '.txt'
+        filename = "__".join(bits) + '.' + format
         return filename
 
     def _jurisdictions(self):
