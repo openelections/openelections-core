@@ -36,10 +36,10 @@ class Datasource(BaseDatasource):
         try:
             return mapping['pre_processed_url']
         except KeyError:
-            return mapping['raw_url']
+            return mapping['url']
 
     def mappings_for_url(self, url):
-        return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
+        return [mapping for mapping in self.mappings() if mapping['url'] == url]
 
     # PRIVATE METHODS
 
@@ -47,56 +47,50 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
-            if 'special' in election['slug']:
-                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
+            if election['slug'] == 'nc-2000-05-02-primary':
+                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    generated_filename = result['path']
-                    if result['county']:
-                        ocd_id = 'ocd-division/country:us/state:ms/county:' + result['county'].replace(' ','_').lower()
-                    else:
-                        ocd_id = 'ocd-division/country:us/state:ms'
+                    generated_filename = self._generate_office_filename(election, result)
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": result['url'],
-                        "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
-                        "ocd_id": ocd_id,
-                        "name": 'Mississippi',
+                        "ocd_id": 'ocd-division/country:us/state:co',
+                        "name": 'Colorado',
                         "election": election['slug']
                     })
             else:
-                # primary, general and runoff statewide elections have 1 or 2 files per county
-                # some general runoffs will have smaller numbers of files
-                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == False]
+                results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
-                    county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
-                    generated_filename = self._generate_county_filename(election['start_date'], result)
+                    if result['date'] in ('2004-08-10', '2004-11-02', '2006-08-08', '2006-11-07', '2008-08-12', '2008-11-04', '2010-11-02', '2014-06-24', '2014-11-04'):
+                        format = '.txt'
+                    else:
+                        format = '.csv'
+                    generated_filename = self._generate_filename(election, format)
                     meta.append({
                         "generated_filename": generated_filename,
-                        "raw_url": result['url'],
-                        "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
-                        "ocd_id": county['ocd_id'],
-                        "name": result['county'],
+                        'raw_url': result['url'],
+                        'raw_extracted_filename': result['raw_extracted_filename'],
+                        "ocd_id": 'ocd-division/country:us/state:co',
+                        "name": 'Colorado',
                         "election": election['slug']
                     })
         return meta
 
-    def _generate_county_filename(self, start_date, result):
+    def _generate_filename(self, election, format):
+        if election['special']:
+            election_type = 'special__' + election['race_type'].replace("-","__")
+        else:
+            election_type = election['race_type'].replace("-","__")
         bits = [
-            start_date.replace('-',''),
-            self.state,
+            election['start_date'].replace('-',''),
+            self.state.lower(),
+            election_type
         ]
-        if result['party']:
-            bits.append(result['party'].lower())
-        bits.extend([
-            result['race_type'].lower(),
-            result['county'].replace(' ','_').lower()
-        ])
-        bits.append('precinct')
-        filename = "__".join(bits) + '.csv'
-        return filename
+        name = "__".join(bits) + format
+        return name
 
     def _jurisdictions(self):
-        """Mississippi counties"""
+        """Colorado counties"""
         m = self.jurisdiction_mappings()
         mappings = [x for x in m if x['county'] != ""]
         return mappings
@@ -105,4 +99,4 @@ class Datasource(BaseDatasource):
         if mapping['pre_processed_url']:
             return mapping['pre_processed_url']
         else:
-            return mapping['raw_url']
+            return mapping['url']
