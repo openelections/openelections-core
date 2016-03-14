@@ -17,7 +17,7 @@ MAPPING_FIELDNAMES = [
     'ocd_id',
     'name',
 ]
-"""Base fields in mapping dictionaries""" 
+"""Base fields in mapping dictionaries"""
 
 class BaseDatasource(StateBase):
     """
@@ -45,8 +45,8 @@ class BaseDatasource(StateBase):
             for all years.
 
         Returns:
-            A dictionary, keyed by year.  Each value is a list of dictonariess, 
-            each representing an election and its metadata for that year.  
+            A dictionary, keyed by year.  Each value is a list of dictonariess,
+            each representing an election and its metadata for that year.
 
             The election dictionaries match the output of the
             Metadata API (http://docs.openelections.net/metadata-api/).
@@ -122,7 +122,7 @@ class BaseDatasource(StateBase):
             "Delaware".
 
             A file containing results for Worcester County, Maryland would
-            have an ocd_id of 
+            have an ocd_id of
             ``ocd-division/country:us/state:md/county:worcester`` and a name
             of "Worcester".
 
@@ -188,7 +188,7 @@ class BaseDatasource(StateBase):
         from the state, for example, to convert PDFs to CSV.  In most cases,
         you won't have to implement this.
 
-        Args: 
+        Args:
             year: Only return URLs for elections from the specified year.
                  Default is to return URL and filename pairs for all elections.
 
@@ -204,7 +204,7 @@ class BaseDatasource(StateBase):
 
         Args:
             filename: Filename of the CSV file containing jurisdictional
-            mappings.  Default is 
+            mappings.  Default is
             openelex/us/{state_abbrev}/mappings/{state_abbrev}.csv.
 
         Returns:
@@ -235,6 +235,19 @@ class BaseDatasource(StateBase):
                 self._cached_jurisdiction_mappings = [row for row in reader]
 
             return self._cached_jurisdiction_mappings
+
+    def place_mappings(self, filename=None):
+        try:
+            return self._cached_place_mappings
+        except AttributeError:
+            if filename is None:
+                filename = join(self.mappings_dir, self.state + '_places.csv')
+
+            with open(filename, 'rU') as csvfile:
+                reader = unicodecsv.DictReader(csvfile)
+                self._cached_place_mappings = [row for row in reader]
+
+            return self._cached_place_mappings
 
     def _counties(self):
         """
@@ -269,8 +282,8 @@ class BaseDatasource(StateBase):
         """
         # Delete the 'state' key in the election attrs, because its a
         # dict with multiple values we don't care about and we want
-        # to just pass the value of self.state to election_slug.  
-        # We can probably delete the key from argument without consequence, 
+        # to just pass the value of self.state to election_slug.
+        # We can probably delete the key from argument without consequence,
         # but to be safe and avoid side effects,copy the argument first.
         election_attrs = election.copy()
         try:
@@ -310,7 +323,7 @@ class BaseDatasource(StateBase):
                 reader = unicodecsv.DictReader(csvfile)
                 for row in reader:
                     cached.append(self._parse_url_path(row))
-            return cached 
+            return cached
 
     def _parse_url_path(self, row):
         """
@@ -329,10 +342,10 @@ class BaseDatasource(StateBase):
         clean_row = row.copy()
         # Convert the special flag from string to boolean
         clean_row['special'] = row['special'].lower() == 'true'
-        # Add an election_slug entry if it doesn't already exist 
+        # Add an election_slug entry if it doesn't already exist
         if 'election_slug' not in clean_row:
             clean_row['election_slug'] = election_slug(self.state,
-                clean_row['date'], clean_row['race_type'], clean_row['special']) 
+                clean_row['date'], clean_row['race_type'], clean_row['special'])
         return clean_row
 
     def _url_paths_for_election(self, election, filename=None):
@@ -376,7 +389,7 @@ class BaseDatasource(StateBase):
                 office.
             office_district: String representing the office district numver if
                the results in the file are for a single office.
-            extension: Filename extension, including the leading '.'. 
+            extension: Filename extension, including the leading '.'.
                   Defaults to extension of first file in election's
                   ``direct_links``.
 
@@ -420,7 +433,7 @@ class BaseDatasource(StateBase):
         if reporting_level:
             bits.append(reporting_level)
 
-        return "__".join(bits) + extension 
+        return "__".join(bits) + extension
 
     def _filename_extension(self, url):
         parts = urlparse.urlparse(url)

@@ -22,20 +22,10 @@ class LoadResults(object):
     # haven't been converted yet in favor of higher-value files
     SKIP_FILES = [
         # These files originate as PDFs and haven't been extracted yet
-        '20010612__ia__special__general__state_house__85__county.csv',
-        '20010612__ia__special__general__state_senate__43__county.csv',
-        '20011106__ia__special__general__state_house__82__county.csv',
-        '20020122__ia__special__general__state_house__28__county.csv',
-        '20020219__ia__special__general__state_senate__39__county.csv',
-        '20021105__ia__general__precinct.csv',
-        '20030114__ia__special__general__state_senate__26__county.csv',
-        '20030211__ia__special__general__state_house__62__county.csv',
-        '20030805__ia__special__general__state_house__100__county.csv',
-        '20030826__ia__special__general__state_house__30__county.csv',
-        '20040203__ia__special__general__state_senate__30__county.csv',
-        '20091124__ia__special__general__state_house__33__precinct.csv',
         '20100608__ia__primary__county.csv',
-        '20111108__ia__special__general__state_senate__18__precinct.csv',
+        '20021105__ia__general__precinct.csv',
+        '20141104__ia__general__precinct.csv',
+        '20141104__ia__general__county.csv',
     ]
 
     def run(self, mapping):
@@ -82,8 +72,7 @@ class LoadResults(object):
             return ExcelPrecinct2012ResultLoader()
         elif (election_year == 2013 and generated_filename.endswith('xls')):
             return ExcelPrecinct2013ResultLoader()
-        elif (election_year == 2014 and generated_filename.endswith('xlsx')
-              and 'primary' in election_id):
+        elif (election_year == 2014 and generated_filename.endswith('xlsx')):
             return ExcelPrecinct2014ResultLoader()
         elif 'pre_processed_url' in mapping:
             return PreprocessedResultsLoader()
@@ -191,6 +180,8 @@ class PreprocessedResultsLoader(BaseLoader):
             # candidates.  I guess this should set the write_in flag on the
             # model
             if re.search(r'Write[- ]In', row['candidate']):
+                kwargs['write_in']  = True
+            if ("SCATTERED" in row['candidate'] or "SCATTERING" in row['candidate']):
                 kwargs['write_in']  = True
         except KeyError:
             # Some results files, such as the 2000-11-07 general election's
@@ -438,7 +429,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                 if cell0 in self.HEADER_CELLS:
                     continue
 
-                office, district = self._parse_office(cell0)
+                office, district = self._parse_office(cell0.strip())
                 if office is None:
                     logging.info("Skipping office {}".format(cell0))
 
@@ -451,7 +442,7 @@ class ExcelPrecinctPre2010ResultLoader(ExcelPrecinctResultLoader):
                 common_kwargs.update(base_kwargs)
                 continue
 
-            if cell0 != "" and cell1 != "":
+            if cell0 != "" and cell1 != "" and office:
                 # Result row
                 row_results = self._parse_result_row(row, candidates, county,
                     county_ocd_id, **common_kwargs)
@@ -2191,12 +2182,9 @@ class ExcelPrecinct2013ResultLoader(ExcelPrecinctResultLoader):
 
 class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
     """
-    Parse 2014 primary precinct-level results
+    Parse 2014 primary and general precinct-level results
 
-    At the time of authoring, the 2014 general election results were not
-    yet available.
-
-    The 2014 primary results files have the following format:
+    The 2014 results files have the following format:
 
     The first row is a header row.
 
@@ -2206,13 +2194,11 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
 
     * Office
     * Candidate
-    * Candidate Party
+    * Candidate Party (primary only)
     * Votes for each precinct with separate columns for polling, absentee and
       total votes.
     * A total column for the county.
     """
-    # TODO: See if 2014 general election results follow same format as
-    # the primary results
 
     offices = [
         'U.S. Senator',
@@ -2237,7 +2223,7 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
         county = mapping['name']
         county_ocd_id = mapping['ocd_id']
         base_kwargs = self._build_common_election_kwargs()
-        if county == "Van Buren":
+        if county == "Van Buren" and 'primary' in mapping['election']:
             # Van Buren County has an empty initial sheet
             sheet_index = 1
         else:
@@ -2322,7 +2308,11 @@ class ExcelPrecinct2014ResultLoader(ExcelPrecinctResultLoader):
             return results
 
         is_primary = (common_kwargs['election_type']  == 'primary')
-        party = row[2].strip()
+        if county == 'Chickasaw' or county == 'Henry':
+            party = None
+        else:
+            party = row[2].strip()
+
         base_kwargs = {
           'office': m.group('office'),
           'district': m.group('district'),

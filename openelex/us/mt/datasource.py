@@ -1,10 +1,11 @@
 """
-Oregon has CSV files containing precinct-level results for each county and all offices
-for all years back to 2000. All of the files are pre-processed and available on Github at
-https://github.com/openelections/openelections-data-or.
+Montana has CSV files containing county-level results and all offices
+for all years back to 2000, with the exception of state legislative races in 2000.
+All of the files are pre-processed and available on Github at
+https://github.com/openelections/openelections-data-mt.
 
-For regular primary and general elections, there are statewide county-level files. Each county has a
-precinct-level results file. Special and runoff elections for non-statewide offices are contained in a single file for each office.
+Some elections have a single statewide precinct-level file, while others have county-specific
+precinct-level files.
 """
 from os.path import join
 import json
@@ -13,7 +14,7 @@ import urlparse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
-from openelex.lib import build_github_url, build_raw_github_url
+from openelex.lib import build_raw_github_url
 
 class Datasource(BaseDatasource):
 
@@ -51,52 +52,35 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
-            if election['special']:
-                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
-            else:
-                results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == False]
+            results = [x for x in self._url_paths() if x['date'] == election['start_date']]
             for result in results:
-                if result['url']:
-                    raw_url = result['url']
-                else:
-                    raw_url = None
-                if result['county'] == '':
-                    generated_filename = self._generate_filename(election['start_date'], election['race_type'], result)
-                    ocd_id = 'ocd-division/country:us/state:or'
-                    name = "Oregon"
-                else:
-                    generated_filename = self._generate_county_filename(election['start_date'], result)
-                    ocd_id = 'ocd-division/country:us/state:or/county:%s' % result['county'].lower().replace(" ", "_")
+                if result['county']:
+                    ocd_id = [o['ocd_id'] for o in self._jurisdictions() if result['county'] == o['county']][0]
                     name = result['county']
+                else:
+                    ocd_id = 'ocd-division/country:us/state:mt'
+                    name = "Montana"
+                generated_filename = self._generate_filename(election['start_date'], result)
                 meta.append({
                     "generated_filename": generated_filename,
-                    "raw_url": raw_url,
-                    "pre_processed_url": build_raw_github_url(self.state, election['start_date'][0:4], generated_filename),
+                    "raw_url": result['url'],
+                    "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
                     "ocd_id": ocd_id,
                     "name": name,
                     "election": election['slug']
                 })
-                # generate precinct files
-
         return meta
 
-    def _generate_filename(self, start_date, election_type, result):
-        if result['district'] == '':
-            office = result['office'].lower().replace(' ','_')
-        else:
-            office = result['office'].lower().replace(' ','_') + '__' + result['district']
-        if result['special']:
-            election_type = 'special__' + election_type
+    def _generate_filename(self, start_date, result):
         bits = [
             start_date.replace('-',''),
-            self.state.lower(),
-            election_type,
-            office
+            self.state,
         ]
-        if office == '':
-            bits.remove(office)
-        name = "__".join(bits) + '.csv'
-        return name
+        bits.extend([
+            result['race_type'].lower(),
+        ])
+        filename = "__".join(bits) + '.csv'
+        return filename
 
     def _generate_county_filename(self, start_date, result):
         bits = [
@@ -114,7 +98,7 @@ class Datasource(BaseDatasource):
         return filename
 
     def _jurisdictions(self):
-        """Oregon counties"""
+        """Montana counties"""
         m = self.jurisdiction_mappings()
         mappings = [x for x in m if x['county'] != ""]
         return mappings

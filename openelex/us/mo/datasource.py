@@ -73,7 +73,7 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == False]
                 for result in results:
                     ocd_id = 'ocd-division/country:us/state:mo'
-                    generated_filename = self._generate_filename(election['start_date'], result)
+                    generated_filename = result['path']
                     meta.append({
                         "generated_filename": generated_filename,
                         "raw_url": result['url'],

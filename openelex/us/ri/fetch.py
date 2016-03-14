@@ -5,7 +5,7 @@ import urlparse
 from zipfile import ZipFile
 
 from openelex.base.fetch import BaseFetcher
-from openelex.us.sc.datasource import Datasource
+from openelex.us.ri.datasource import Datasource
 
 class FetchResults(BaseFetcher):
     def __init__(self):
@@ -19,8 +19,7 @@ class FetchResults(BaseFetcher):
         # file.  If we've already fetched this URL, exit early.
         if url in self._fetched:
             return
-
-        if url.endswith('.zip'):
+        if url.endswith('.zip') and url != 'http://www.elections.ri.gov/publications/Data_Files/PRI2000FEDSTATE.zip':
             # Fetch the zip file, using the automatically generated filename
             zip_fname = self._local_zip_file_name(url)
             super(FetchResults, self).fetch(url, zip_fname, overwrite)
@@ -49,11 +48,11 @@ class FetchResults(BaseFetcher):
             for mapping in self._datasource.mappings_for_url(url):
                 local_file_name = os.path.join(self.cache.abspath,
                     mapping['generated_filename'])
-                if overwrite or not os.path.exists(local_file_name):
-                    zipf.extract('detail.xml',
+                if not os.path.exists(local_file_name):
+                    zipf.extract(mapping['raw_extracted_filename'],
                         self.cache.abspath)
                     extracted_file_name = os.path.join(self.cache.abspath,
-                        'detail.xml')
+                        mapping['raw_extracted_filename'])
                     os.rename(extracted_file_name, local_file_name)
                     print "Added to cache: %s" % local_file_name
                 else:

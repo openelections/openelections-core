@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 
 # TODO: More informative message about Python version support, version reflected
-# classifiers argument to setup(). Perhaps setup should fail altogether for 
+# classifiers argument to setup(). Perhaps setup should fail altogether for
 # unsupported Python versions.
 if sys.version_info < (2,7) or sys.version_info >= (3,):
     print("This package is primarily developed and tested using Python 2.7.*. "
@@ -21,7 +21,6 @@ setup(
     install_requires=[
         'beautifulsoup4==4.3.2',
         'blinker==1.3',
-        'boto==2.9.7',
         'ipython==0.13.2',
         'mongoengine==0.8.4',
         'nameparser==0.2.7',

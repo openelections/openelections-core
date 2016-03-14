@@ -6,14 +6,12 @@ from fetch import fetch
 from shell import shell
 from publish import publish
 
-import archive, cache, datasource, load, load_metadata, transform, validate, bake
+import cache, datasource, load, load_metadata, transform, validate, bake
 
 @click.group()
 def cli():
     pass
 
-cli.add_command(archive.save)
-cli.add_command(archive.delete)
 cli.add_command(bake.state_file)
 cli.add_command(bake.election_file)
 cli.add_command(bake.results_status_json)
