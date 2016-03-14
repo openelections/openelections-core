@@ -1,6 +1,6 @@
 """
-Colorado has county-level files in a variety of formats, mainly delimited text, and also used Clarity for the 2012 elections.
-Some text files (some zipped, others not) are available on Github at https://github.com/openelections/openelections-data-co.
+New Mexico has precinct-level Excel files for the 2014 elections 
+ are available on Github at https://github.com/openelections/openelections-data-co.
 """
 from os.path import join
 import json
