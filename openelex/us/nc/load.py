@@ -49,6 +49,19 @@ class NCBaseLoader(BaseLoader):
         'PRESIDENT-VICE PRESIDENT',
         'STRAIGHT PARTY',
         'US HOUSE OF REPRESENTATIVES',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 1',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 2',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 3',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 4',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 5',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 6',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 7',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 8',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 9',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 10',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 11',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 12',
+        'US HOUSE OF REPRESENTATIVES DISTRICT 13',
         'US HOUSE OF REP.',
         'US CONGRESS',
         'US CONGRESS DISTRICT',
@@ -219,7 +232,7 @@ class NCCsvLoader(NCBaseLoader):
             RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        if " ".join(row['contest'].split(' ')[:3]) in self.target_offices:
+        if row['contest'] in self.target_offices:
             return False
         else:
             return True
