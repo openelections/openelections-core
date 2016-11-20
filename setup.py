@@ -25,6 +25,7 @@ setup(
         'mongoengine==0.8.4',
         'nameparser==0.2.7',
         'ordered-set==1.1',
+        'pymongo==2.8',
         'requests>=2.0',
         'unicodecsv==0.9.4',
         'us==0.7',
