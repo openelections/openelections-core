@@ -17,7 +17,7 @@ class TestMDLoader2008Special(MongoTestCase):
             fh = self.loader._file_handle
         except IOError:
             self.skipTest("Cached file for 2008 special election not found. "
-                "Run 'invoke fetch --state=md --datefilter=2008' first.")
+                "Run 'openelex fetch --state=md --datefilter=2008' first.")
 
     def _get_mapping(self):
         for mapping in self.loader.datasource.mappings('2008'): 
