@@ -15,9 +15,9 @@ File-name convention on MD site (2004-2012):
 
     Exceptions: 2000 + 2002
 
-To run mappings from invoke task:
+To run mappings from a shell:
 
-    invoke datasource.mappings -s md
+    openelex datasource.mappings -s md
 
 """
 import re

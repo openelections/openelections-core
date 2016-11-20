@@ -115,8 +115,8 @@ def format_date(datestr):
     """
     Convert date string into a format used within a searchable data field.
 
-    This is needed because calling code, likely an invoke task uses dates
-    in "%Y%m%d" format and the data store uses dates in "%Y-%m-%d" format.
+    This is needed because calling code uses dates in "%Y%m%d" format and
+    the data store uses dates in "%Y-%m-%d" format.
 
     Args:
         datestr (string): Date string in "%Y%m%d" format.
