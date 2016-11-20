@@ -1,5 +1,6 @@
 import re
 import xlrd
+from fuzzywuzzy import process
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
@@ -27,18 +28,19 @@ class LoadResults(object):
 
         if 'county' in mapping['ocd_id'] and 'governor' in generated_filename and 'belknap' not in generated_filename:
             loader = NHXlsCountyLoader()
-            loader.run(mapping)
         elif 'belknap__governor' in generated_filename:
             #loader = NHBelknapCountyLoader()
             pass
         elif '__senate.xls' in generated_filename and 'belknap' not in generated_filename:
             loader = NHSenateCountyLoader()
-            loader.run(mapping)
-            #pass
+        elif '__state_senate' in generated_filename or '__house' in generated_filename or '__executive_council' in generated_filename:
+            loader = NHDistrictLoader()
+        elif '__state_house' in generated_filename:
+            pass
         else:
             pass
             #loader = NHXlsLoader()
-        #loader.run(mapping)
+        loader.run(mapping)
 
 
 class NHBaseLoader(BaseLoader):
@@ -88,11 +90,44 @@ class NHBaseLoader(BaseLoader):
             'district': district,
         }
 
+    def _find_precinct_details(self, precinct, office, district):
+        places = [p for p in self.datasource()._places() if p[office] == str(district)]
+        match = process.extractOne(precinct, [p['place'] for p in places])
+        return [p for p in places if p['place'] == match[0]][0]
+
+class NHDistrictLoader(NHBaseLoader):
+    """
+    Loads New Hampshire XLS files containing precinct results for district-specific
+    races: state senate, U.S. House., executive council.
+    """
+
+    def load(self):
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'precinct'
+        # Store result instances for bulk loading
+        results = []
+        xlsfile = xlrd.open_workbook(self._xls_file_path)
+        sheet = xlsfile.sheets()[0]
+        # get office, district, primary_party from url_path?
+        for i in xrange(2, sheet.nrows):
+            row = [r for r in sheet.row_values(i)]
+            if self._skip_row(row):
+                continue
+            if " County" in str(row[0]):
+                county = row[0].split(' County')[0]
+                precincts = [c for c in row[1:] if c.strip() != '']
+            elif office in str(row[1]):
+                continue
+            else:
+                candidate = row[0]
+                for idx, precinct in enumerate(precincts):
+                    results.append(self._prep_precinct_result(row, office, district, primary_party, precinct, candidate, county, row[idx+1]))
+        RawResult.objects.insert(results)
 
 class NHSenateCountyLoader(NHBaseLoader):
     """
     Loads New Hampshire county-specific XLS files containing precinct results for the following offices:
-    Governor, President?
+    U.S. Senate
     """
 
     def load(self):
