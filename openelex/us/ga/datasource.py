@@ -7,6 +7,7 @@ import datetime
 import urlparse
 
 from openelex import PROJECT_ROOT
+from openelex.lib import build_github_url
 from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
@@ -39,7 +40,6 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
-            print election
             if election['special']:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == True]
             else:
@@ -49,57 +49,89 @@ class Datasource(BaseDatasource):
                     raw_url = result['url']
                 else:
                     raw_url = None
-                if result['county'] == '':
-                    generated_filename = self._generate_filename(election['start_date'], result)
+                if result['special']:
                     ocd_id = 'ocd-division/country:us/state:ga'
                     name = "Georgia"
+                    generated_filename = self._generate_filename(election)
+                    meta.append({
+                        "generated_filename": generated_filename,
+                        "raw_url": raw_url,
+                        "pre_processed_url": build_github_url(self.state, generated_filename),
+                        "ocd_id": ocd_id,
+                        "name": 'Georgia',
+                        "election": election['slug']
+                    })                    
+                    generated_filename = self._generate_special_filename(election, result)
+                    meta.append({
+                        "generated_filename": generated_filename,
+                        "raw_url": raw_url,
+                        "pre_processed_url": build_github_url(self.state, generated_filename),
+                        "ocd_id": ocd_id,
+                        "name": 'Georgia',
+                        "election": election['slug']
+                    })
                 else:
-                    generated_filename = self._generate_county_filename(election['start_date'], result)
-                    ocd_id = 'ocd-division/country:us/state:ga/county:%s' % result['county'].lower().replace(" ", "_")
-                    name = result['county']
-                meta.append({
-                    "generated_filename": generated_filename,
-                    "raw_url": raw_url,
-                    "pre_processed_url": build_github_url(self.state, generated_filename),
-                    "ocd_id": ocd_id,
-                    "name": name,
-                    "election": election['slug']
-                })
+                    generated_filename = self._generate_filename(election)
+                    ocd_id = 'ocd-division/country:us/state:ga'
+                    name = "Georgia"
+                    for jurisdiction in self._jurisdictions():
+                        generated_filename = self._generate_county_filename(election, jurisdiction['county'], result)
+                        ocd_id = 'ocd-division/country:us/state:ga/county:%s' % result['county'].lower().replace(" ", "_")
+                        meta.append({
+                            "generated_filename": generated_filename,
+                            "raw_url": raw_url,
+                            "pre_processed_url": build_github_url(self.state, generated_filename),
+                            "ocd_id": ocd_id,
+                            "name": jurisdiction['county'],
+                            "election": election['slug']
+                        })
         return meta
 
-    def _generate_filename(self, election, format):
+    def _generate_filename(self, election):
         if election['special']:
-            election_type = 'special__' + election['race_type'].replace("-","__") + '__precinct'
+            election_type = 'special__' + election['race_type'].replace("-","__")
         else:
-            election_type = election['race_type'].replace("-","__") + '__precinct'
+            election_type = election['race_type'].replace("-","__")
         bits = [
             election['start_date'].replace('-',''),
             self.state.lower(),
             election_type
         ]
-        name = "__".join(bits) + format
+        name = "__".join(bits) + '.csv'
         return name
 
-    def _generate_office_filename(self, election, result):
-        if result['party'] == '':
-            bits = [
-                    election['start_date'].replace('-',''),
-                    self.state.lower(),
-                    election['race_type'],
-                    result['office'],
-                    'precinct'
-                ]
+    def _generate_county_filename(self, election, county, result):
+        if election['special']:
+            election_type = 'special__' + election['race_type'].replace("-","__")
         else:
-            bits = [
-                election['start_date'].replace('-',''),
-                self.state.lower(),
-                result['party'],
-                election['race_type'],
-                result['office'],
-                'precinct'
-            ]
-        name = "__".join(bits)+'.xls'
-        return name
+            election_type = election['race_type'].replace("-","__")
+        bits = [
+            election['start_date'].replace('-',''),
+            self.state.lower(),
+        ]
+        if result['party']:
+            bits.append(result['party'].lower())
+        bits.extend([
+            election_type,
+            county.replace(' ','_').lower()
+        ])
+        bits.append('precinct')
+        filename = "__".join(bits) + '.csv'
+        return filename
+
+    def _generate_special_filename(self, election, result):
+        bits = [
+            election['start_date'].replace('-',''),
+            self.state.lower(),
+        ]
+        if result['party']:
+            bits.append(result['party'].lower())
+        bits.extend([
+            'special__' + election['race_type'].replace("-","__")
+        ])
+        bits.append('precinct')
+        filename = "__".join(bits) + '.csv'
+        return filename
 
     def _jurisdictions(self):
         """Georgia counties"""
