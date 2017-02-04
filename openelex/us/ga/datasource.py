@@ -60,7 +60,7 @@ class Datasource(BaseDatasource):
                         "ocd_id": ocd_id,
                         "name": 'Georgia',
                         "election": election['slug']
-                    })                    
+                    })
                     generated_filename = self._generate_special_filename(election, result)
                     meta.append({
                         "generated_filename": generated_filename,
