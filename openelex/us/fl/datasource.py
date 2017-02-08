@@ -43,6 +43,15 @@ class Datasource(BaseDatasource):
                 "name": 'Florida',
                 "election": election['slug']
             })
+            if year > 2011:
+                meta.append({
+                    "generated_filename": self._generate_precinct_filename(election),
+                    "raw_url": election['direct_links'][1],
+                    "ocd_id": 'ocd-division/country:us/state:fl',
+                    "name": 'Florida',
+                    "election": election['slug']
+                })
+
         return meta
 
     def _generate_filename(self, election):
@@ -57,6 +66,19 @@ class Datasource(BaseDatasource):
             election['start_date'].replace('-',''),
             self.state.lower(),
             race_type
+        ]
+        name = "__".join(bits) + '.tsv'
+        return name
+
+    def _generate_precinct_filename(self, election):
+        if election['special']:
+            election_type = 'special__' + election['race_type'].replace("-","__") + '__precinct'
+        else:
+            election_type = election['race_type'].replace("-","__") + '__precinct'
+        bits = [
+            election['start_date'].replace('-',''),
+            self.state.lower(),
+            election_type
         ]
         name = "__".join(bits) + '.tsv'
         return name

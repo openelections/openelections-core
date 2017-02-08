@@ -7,19 +7,34 @@ from openelex.models import RawResult
 
 from .datasource import Datasource
 
-class LoadResults(BaseLoader):
+class LoadResults(object):
+    """Entry point for data loading.
+
+    Determines appropriate loader for file and triggers load process.
+
+    """
+
+    def run(self, mapping):
+        if 'precinct' in mapping['generated_filename']:
+            loader = PrecinctLoader()
+        else:
+            loader = FlLoader()
+        loader.run(mapping)
+
+
+class FlLoader(BaseLoader):
     """
     Loads Florida election results.
 
     Florida results are provided in tab-delimited text files.
-    
-    A description of fields is available at 
+
+    A description of fields is available at
     https://doe.dos.state.fl.us/elections/resultsarchive/downloadresults.asp?ElectionDate=11/6/2012
 
     Notes:
 
     Some elections appear to have multiple rows representing the same data
-    e.g. ``20120814__fl__primary.tsv``. 
+    e.g. ``20120814__fl__primary.tsv``.
 
     Results with an ``OfficeDesc`` value of "U.S. President by Congressional
     District" are by county and congressional district.  The county is in
@@ -30,7 +45,7 @@ class LoadResults(BaseLoader):
 
     Name suffixes are in the ``CanNameLast`` field, e.g. "Braynon,, II"
 
-    Write-in candidates are identified by a value of "Write-In" in the 
+    Write-in candidates are identified by a value of "Write-In" in the
     ``PartyName`` field.
 
     "No Party Affiliation" is also a possibility.  This is different than
@@ -39,7 +54,7 @@ class LoadResults(BaseLoader):
     Some contests force the last names of the governor and lieutenant
     governor into the ``CanNameLast`` and ``CanNameFirst`` fields.
     For these records, the value of ``CanNameMiddle`` is '/'.
- 
+
     """
     datasource = Datasource()
 
@@ -74,7 +89,7 @@ class LoadResults(BaseLoader):
                 encoding='latin-1')
             for row in reader:
                 # Skip non-target offices
-                if self._skip_row(row): 
+                if self._skip_row(row):
                     office_name = row['OfficeDesc'].strip()
                     # Log skipped office names in case we forgot to add them
                     # to our list of target offices.  Ignore long office names
@@ -107,7 +122,7 @@ class LoadResults(BaseLoader):
         result_kwargs = self._common_kwargs.copy()
         # Extract remaining fields from the row of data
         result_kwargs.update(self._build_contest_kwargs(row))
-        result_kwargs.update(self._build_candidate_kwargs(row)) 
+        result_kwargs.update(self._build_candidate_kwargs(row))
         result_kwargs.update(self._build_result_kwargs(row))
         return RawResult(**result_kwargs)
 
@@ -139,7 +154,7 @@ class LoadResults(BaseLoader):
         if row['OfficeDesc'].strip() == "U.S. President by Congressional District":
             # Primary results for some contests provide the results
             # by congressional district in each county
-            kwargs['reporting_level'] = 'congressional_district_by_county' 
+            kwargs['reporting_level'] = 'congressional_district_by_county'
             kwargs['reporting_district'] = row['Juris1num'].strip()
         else:
             kwargs['reporting_level'] = 'county'
@@ -163,3 +178,81 @@ class LoadResults(BaseLoader):
             pass
 
         return '-'.join(bits)
+
+    def _votes(self, val):
+        """
+        Returns cleaned version of votes or 0 if it's a non-numeric value.
+        """
+        if type(val) is str:
+            if val.strip() == '':
+                return 0
+
+        try:
+            return int(float(val))
+        except ValueError:
+            # Count'y convert value from string
+            return 0
+
+class PrecinctLoader(FlLoader):
+    """
+    Loads Florida precinct results in tab-delimited format.
+    """
+
+    def load(self):
+        self._common_kwargs = self._build_common_election_kwargs()
+        self._common_kwargs['reporting_level'] = 'precinct'
+        # Store result instances for bulk loading
+        results = []
+        fieldnames = ['county_code', 'county_name', 'election_number', 'election_date', 'election_name', 'precinct_id', 'polling_location', 'registered_voters', 'registered_republicans', 'registered_democrats', 'registered_others', 'contest_name', 'district', 'contest_code', 'candidate', 'party', 'candidate_id', 'doe_candidate_number', 'votes']
+        with self._file_handle as tsvfile:
+            tsv = [x.replace('\0', '') for x in tsvfile] # remove NULL bytes
+            reader = unicodecsv.DictReader(tsv, fieldnames=fieldnames, delimiter='\t', encoding='latin-1')
+            for row in reader:
+                if self._skip_row(row):
+                    continue
+                results.append(self._prep_precinct_result(row))
+        RawResult.objects.insert(results)
+
+    def _skip_row(self, row):
+        if any(o in row['contest_name'] for o in self.target_offices):
+            return False
+        else:
+            return True
+
+    def _build_contest_kwargs(self, row):
+        kwargs = {
+            'office': row['contest_name'],
+            'district': row['district'].strip(),
+        }
+        return kwargs
+
+    def _build_candidate_kwargs(self, row):
+        if row['candidate'].strip() == 'UnderVotes':
+            row['candidate'] = 'Under Votes'
+        elif row['candidate'].strip() == 'OverVotes':
+            row['candidate'] = 'Over Votes'
+        elif row['candidate'].strip() == 'WriteinVotes':
+            row['candidate'] = 'Write-ins'
+        full_name = row['candidate'].strip()
+        slug = slugify(full_name, substitute='-')
+        kwargs = {
+            'full_name': full_name,
+            'name_slug': slug,
+        }
+        return kwargs
+
+    def _prep_precinct_result(self, row):
+        kwargs = self._common_kwargs.copy()
+        kwargs.update(self._build_contest_kwargs(row))
+        kwargs.update(self._build_candidate_kwargs(row))
+        precinct = str(row['precinct_id']+' '+row['polling_location']).strip()
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county_name'].upper() + ' COUNTY'][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'precinct',
+            'jurisdiction': precinct,
+            'parent_jurisdiction': row['county_name'],
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(str(row['precinct_id']))),
+            'party': row['party'].strip(),
+            'votes': self._votes(row['votes'])
+        })
+        return RawResult(**kwargs)
