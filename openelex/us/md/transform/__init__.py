@@ -20,7 +20,7 @@ meta_fields = ['source', 'election_id', 'state',]
 
 contest_fields = meta_fields + ['start_date', 'end_date',
     'election_type', 'primary_type', 'result_type', 'special',]
-candidate_fields = meta_fields + ['full_name', 'given_name', 
+candidate_fields = meta_fields + ['full_name', 'given_name',
     'family_name', 'additional_name']
 result_fields = meta_fields + ['reporting_level', 'jurisdiction',
     'votes', 'votes_type', 'total_votes', 'vote_breakdowns']
@@ -87,7 +87,7 @@ class BaseTransform(Transform):
         Returns a dict of fields and values that can be passed to the
         model constructor.
         """
-        return { k:getattr(raw_result, k) for k in field_names } 
+        return { k:getattr(raw_result, k) for k in field_names }
 
     def _get_office(self, raw_result):
         office_query = {
@@ -95,7 +95,7 @@ class BaseTransform(Transform):
             'name': self._clean_office(raw_result.office),
         }
 
-        # Handle president, where state = "US" 
+        # Handle president, where state = "US"
         if office_query['name'] == "President":
             office_query['state'] = "US"
 
@@ -119,7 +119,7 @@ class BaseTransform(Transform):
     def _clean_office(self, office):
         lc_office = office.lower()
         if "president" in lc_office:
-            return "President" 
+            return "President"
         elif "u.s. senat" in lc_office:
             return "U.S. Senate"
         elif "congress" in lc_office:
@@ -192,7 +192,7 @@ class BaseTransform(Transform):
                 del fields['additional_name']
             else:
                 bits.append(fields['additional_name'])
-            bits.append(fields['family_name'])   
+            bits.append(fields['family_name'])
             fields['full_name'] = ' '.join(bits)
 
         return fields
@@ -240,7 +240,7 @@ class CreateContestsTransform(BaseTransform):
 
     def reverse(self):
         old = Contest.objects.filter(state='MD')
-        print "\tDeleting %d previously created contests" % old.count() 
+        print "\tDeleting %d previously created contests" % old.count()
         old.delete()
 
     def _contest_key(self, raw_result):
@@ -262,7 +262,7 @@ class CreateCandidatesTransform(BaseTransform):
             key = (rr.election_id, rr.contest_slug, rr.candidate_slug)
             if key not in seen:
                 fields = self.get_candidate_fields(rr)
-                fields['contest'] = self.get_contest(rr) 
+                fields['contest'] = self.get_contest(rr)
                 if "other" in fields['full_name'].lower():
                     if fields['full_name'] == "Other Write-Ins":
                         fields['flags'] = ['aggregate',]
@@ -277,16 +277,16 @@ class CreateCandidatesTransform(BaseTransform):
                 seen.add(key)
 
         Candidate.objects.insert(candidates, load_bulk=False)
-        print "Created %d candidates." % len(candidates) 
+        print "Created %d candidates." % len(candidates)
 
 
     def reverse(self):
         old = Candidate.objects.filter(state='MD')
-        print "\tDeleting %d previously created candidates" % old.count() 
+        print "\tDeleting %d previously created candidates" % old.count()
         old.delete()
 
 
-class CreateResultsTransform(BaseTransform): 
+class CreateResultsTransform(BaseTransform):
     name = 'create_unique_results'
 
     auto_reverse = True
@@ -306,7 +306,7 @@ class CreateResultsTransform(BaseTransform):
         return Result.objects.filter(election_id__in=election_ids)
 
     def __call__(self):
-        results = self._create_results_collection() 
+        results = self._create_results_collection()
 
         for rr in self.get_rawresults():
             fields = self._get_fields(rr, result_fields)
@@ -314,7 +314,7 @@ class CreateResultsTransform(BaseTransform):
             fields['candidate'] = self.get_candidate(rr, extra={
                 'contest': fields['contest'],
             })
-            fields['contest'] = fields['candidate'].contest 
+            fields['contest'] = fields['candidate'].contest
             fields['raw_result'] = rr
             party = self.get_party(rr)
             if party:
@@ -342,7 +342,7 @@ class CreateResultsTransform(BaseTransform):
         Creates the list-like object that will be used to hold the
         constructed Result instances.
         """
-        return BulkInsertBuffer(Result) 
+        return BulkInsertBuffer(Result)
 
     def _create_results(self, results):
         """
@@ -353,7 +353,7 @@ class CreateResultsTransform(BaseTransform):
 
     def reverse(self):
         old_results = self.get_results()
-        print "\tDeleting %d previously loaded results" % old_results.count() 
+        print "\tDeleting %d previously loaded results" % old_results.count()
         old_results.delete()
 
     def get_candidate(self, raw_result, extra={}):
@@ -363,7 +363,7 @@ class CreateResultsTransform(BaseTransform):
         Keyword arguments:
 
         * extra - Dictionary of extra query parameters that will
-                  be used to select the candidate. 
+                  be used to select the candidate.
         """
         key = (raw_result.election_id, raw_result.contest_slug,
             raw_result.candidate_slug)
@@ -376,9 +376,9 @@ class CreateResultsTransform(BaseTransform):
             try:
                 candidate = Candidate.objects.get(**fields)
             except Candidate.DoesNotExist:
-                print fields 
+                print fields
                 raise
-            self._candidate_cache[key] = candidate 
+            self._candidate_cache[key] = candidate
             return candidate
 
     def _parse_winner(self, raw_result):
@@ -417,7 +417,7 @@ class CreateResultsTransform(BaseTransform):
 
         Arguments:
             raw_result: the RawResult instance used to determine the OCD ID
-            jurisdiction: the jurisdiction for which the OCD ID should be 
+            jurisdiction: the jurisdiction for which the OCD ID should be
                 created.
                 Default is the raw result's jurisdiction field.
             reporting_level: the reporting level to reflect in the OCD ID.
@@ -442,7 +442,7 @@ class CreateResultsTransform(BaseTransform):
         elif reporting_level == "precinct":
             county_ocd_id = "/".join(raw_result.ocd_id.split('/')[:-1])
             return "%s/precinct:%s" % (county_ocd_id, juris_ocd)
-        else: 
+        else:
             return None
 
 
@@ -452,7 +452,7 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
     by county.
     """
 
-    name = 'create_district_results_from_county_splits' 
+    name = 'create_district_results_from_county_splits'
 
     auto_reverse = True
 
@@ -463,14 +463,14 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
     def __call__(self):
         results = []
 
-        for rr in self.get_rawresults(): 
+        for rr in self.get_rawresults():
             # We only grab the meta fields here because we're aggregating results.
-            # 
+            #
             # We'll grab the votes explicitely later.
             #
             # Don't parse winner because it looks like it's reported as the
             # contest winner and not the jurisdiction winner.
-            # 
+            #
             # Don't parse write-in because this case is only for primaries and
             # I'm pretty sure there aren't any write-in candidates in those
             # contests.
@@ -484,14 +484,14 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
             fields['jurisdiction'] = self._strip_leading_zeros(rr.reporting_district)
             fields['ocd_id'] = "ocd-division/country:us/state:md/cd:%s" % (
                 ocd_type_id(fields['jurisdiction']))
-          
+
             # Instantiate a new result for this candidate, contest and jurisdiction,
             # but only do it once.
             result, instantiated = self._get_or_instantiate_result(fields)
             if instantiated:
                 results.append(result)
 
-            # Contribute votes from this particular raw result 
+            # Contribute votes from this particular raw result
             votes = result.votes if result.votes else 0
             rr_votes = rr.votes if rr.votes else 0
             votes += rr_votes
@@ -531,7 +531,7 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
         """
         count = 0
         # Delete house results
-        results = self._get_house_results() 
+        results = self._get_house_results()
         count += results.count()
         results.delete()
 
@@ -540,7 +540,7 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
         count += results.count()
         results.delete()
 
-        print "\tDeleted %d previously loaded results" % count 
+        print "\tDeleted %d previously loaded results" % count
 
     def _get_or_instantiate_result(self, fields):
         slug = Result.make_slug(election_id=fields['election_id'],
@@ -633,7 +633,7 @@ class RemoveBaltimoreCityComptroller(BaseTransform):
     """
     Remove Baltimore City comptroller results.
 
-    Maryland election results use the string "Comptroller" for both the 
+    Maryland election results use the string "Comptroller" for both the
     state comptroller and the Baltimore City Comptroller.  We're only
     interested in the state comptroller.
 
@@ -653,14 +653,14 @@ class RemoveBaltimoreCityComptroller(BaseTransform):
 class CombineUncommittedPresStateLegislativeResults(BaseTransform):
     """
     Combine "Uncommitted to Any Presidential Candidate" results.
-    
+
     In the 2008 Democratic primary, in the results aggregated at the State
     Legislative level, there are multiple rows for the
     "Uncommitted to Any Presidential Candidate" pseudo-candidate, with empty
     values for many of the state legislative district.  There appears to be
     one row per county.  Most of these entries are empty.
 
-    Combine these into a single result per state legislative district. 
+    Combine these into a single result per state legislative district.
     """
     name = 'combine_uncommitted_pres_state_leg_results'
 
@@ -673,7 +673,7 @@ class CombineUncommittedPresStateLegislativeResults(BaseTransform):
         assert len(districts) == 65
         for district in districts:
             district_results = results.filter(jurisdiction=district)
-            assert district_results.count() == 24 
+            assert district_results.count() == 24
             total_votes = 0
             # Save the first result.  We'll use this for the combined results
             first_result = district_results[0]

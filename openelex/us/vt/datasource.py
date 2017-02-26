@@ -8,7 +8,7 @@ We will be given some election id, we can then query election results with:
 
 To run mappings from a shell:
 
-    openelex datasource.mappings -s md
+    openelex datasource.mappings -s vt
 
 """
 import re
@@ -16,15 +16,16 @@ import urllib2
 from bs4 import BeautifulSoup
 from string import Template
 from multiprocessing.pool import ThreadPool
+from datetime import datetime
 
+from openelex.lib import format_date, standardized_filename
 from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
 
-    base_url = "http://www.elections.state.md.us/elections/%(year)s/election_data/"
-
     # PUBLIC INTERFACE
     def mappings(self, year=None):
+        print(str(datetime.now()), "mappings begin")
         """Return array of dicts  containing source url and
         standardized filename for raw results file, along
         with other pieces of metadata
@@ -32,6 +33,7 @@ class Datasource(BaseDatasource):
         mappings = []
         for yr, elecs in self.elections(year).items():
             mappings.extend(self._build_metadata(yr, elecs))
+        print(str(datetime.now()), "mappings end")
         return mappings
 
     def target_urls(self, year=None):
@@ -61,19 +63,74 @@ class Datasource(BaseDatasource):
 
         return election['race_type'].lower()
 
+    def _jurisdictions(self):
+        m = self.jurisdiction_mappings()
+        mappings = [x for x in m if x['url_name'] != ""]
+        return mappings
+    def _jurisdictionOcdMap(self, _patern):
+        m = self.jurisdiction_mappings()
+        mappings = [x for x in m if _patern in x['ocd_id']]
+        return mappings
+    def _jurisdictionOcdMapForStateSenate(self):
+        return self._jurisdictionOcdMap("sldu")
+    def _jurisdictionOcdMapForStateRep(self):
+        return self._jurisdictionOcdMap("sldl")
+    def _jurisdictionOcdMapForStateWide(self):
+        m = self.jurisdiction_mappings()
+        mappings = [x for x in m if x['fips'] == "50"]
+        return mappings
+
     def _build_metadata(self, year, elections):
         year_int = int(year)
         meta = []
-        meta += self._state_leg_meta(year, elections)
+        meta += self._state_leg_meta(year, elections, self.StateWideOfficeId, self._jurisdictionOcdMapForStateWide())
+        meta += self._state_leg_meta(year, elections, [self.STATE_SENATE_ELEC_OFFICE_ID], self._jurisdictionOcdMapForStateSenate())
+        meta += self._state_leg_meta(year, elections, [self.STATE_REP_ELEC_OFFICE_ID], self._jurisdictionOcdMapForStateRep())
         return meta
 
+    #US Races
     PRESIDENT_ELEC_OFFICE_ID = 1
     US_SENATE_ELEC_OFFICE_ID = 6
     US_HOUSE_ELEC_OFFICE_ID = 5
+    # State wide sate races
     STATE_GOV_ELEC_OFFICE_ID = 3
     STATE_LT_GOV_ELEC_OFFICE_ID = 4
+    STATE_TREASURER_ELEC_OFFICE_ID = 53
+    STATE_SEC_OF_STATE_ELEC_OFFICE_ID = 44
+    STATE_AUDITOR_ELEC_OFFICE_ID = 13
+    STATE_ATTORNEY_GEN_ELEC_OFFICE_ID = 12
+    STATE_TREASURER_ELEC_OFFICE_ID = 53
+    # State office per district
     STATE_SENATE_ELEC_OFFICE_ID = 9
     STATE_REP_ELEC_OFFICE_ID = 8
+    #TODO County officials.
+
+    StateWideOfficeId = [
+        PRESIDENT_ELEC_OFFICE_ID,
+        US_SENATE_ELEC_OFFICE_ID,
+        US_HOUSE_ELEC_OFFICE_ID,
+        STATE_GOV_ELEC_OFFICE_ID,
+        STATE_LT_GOV_ELEC_OFFICE_ID,
+        STATE_TREASURER_ELEC_OFFICE_ID,
+        STATE_SEC_OF_STATE_ELEC_OFFICE_ID,
+        STATE_AUDITOR_ELEC_OFFICE_ID,
+        STATE_ATTORNEY_GEN_ELEC_OFFICE_ID,
+    ]
+
+    OfficeIdToOfficeNameMap = {
+        PRESIDENT_ELEC_OFFICE_ID:           "president",
+        US_SENATE_ELEC_OFFICE_ID:           "senate",
+        US_HOUSE_ELEC_OFFICE_ID:            "house",
+        STATE_GOV_ELEC_OFFICE_ID:           "governor",
+        STATE_LT_GOV_ELEC_OFFICE_ID:        "lieutenant_governor",
+        STATE_TREASURER_ELEC_OFFICE_ID:     "treasurer",
+        STATE_SEC_OF_STATE_ELEC_OFFICE_ID:  "secretary_of_state",
+        STATE_AUDITOR_ELEC_OFFICE_ID:       "auditor",
+        STATE_ATTORNEY_GEN_ELEC_OFFICE_ID:  "attorney_general",
+        STATE_SENATE_ELEC_OFFICE_ID:        "state_senate",
+        STATE_REP_ELEC_OFFICE_ID:           "state_house"
+    }
+
     search_url_expr = "http://vtelectionarchive.sec.state.vt.us/elections/search/year_from:$year/year_to:$year/office_id:$office_id"
     electionViewUrl = "http://vtelectionarchive.sec.state.vt.us/elections/download/$electionId/precincts_include:$isPrecinct/"
     def _getElectionViewUrl(self, elecId, isPrecinct):
@@ -99,97 +156,58 @@ class Datasource(BaseDatasource):
         return filter(lambda e: e['stage'] == str, elecDict)
 
     def _officeNameFromId(self, officeId):
-        nameMap = {
-            self.PRESIDENT_ELEC_OFFICE_ID: "president",
-            self.US_SENATE_ELEC_OFFICE_ID: "senate",
-            self.US_HOUSE_ELEC_OFFICE_ID: "house",
-            self.STATE_GOV_ELEC_OFFICE_ID: "state_gov",
-            self.STATE_LT_GOV_ELEC_OFFICE_ID: "state_ltgov",
-            self.STATE_SENATE_ELEC_OFFICE_ID: "state_senate",
-            self.STATE_REP_ELEC_OFFICE_ID: "state_house"
-        }
-        return nameMap[officeId]
-    def _generatedNameForElectionStateLeg(self, elecVt, election, isPrecinct):
-        officeId = elecVt['officeId']
-        bits = [
-            election['start_date'].replace('-',''),
-            self.state,
-        ]
-
-        primaryPattern = re.compile(r"(?P<party>Democratic|Republican) Primary", re.IGNORECASE )
-        primarySearchRes = re.search(primaryPattern, elecVt['stage'])
-        isPrimary = False
-        primaryParty = ""
-        if primarySearchRes:
-            isPrimary = True
-            matches = primarySearchRes.groupdict()
-            primaryParty = matches['party'].lower()
-
-        if isPrimary:
-            bits.append(primaryParty)
-            bits.append("primary")
-        else:
-            bits.append("general")
-
-        bits.append(self._officeNameFromId(officeId))
-
-        if isPrecinct:
-            bits.append("precinct")
-
-        filename = "__".join(bits) + '.csv'
-        return filename
-
-    def _generatedOneStateLegElectionMetaData(self, elecVt, election, isPrecinct):
-        meta = {
-            'ocd_id': 'ocd-division/country:us/state:vt',
-            'name': 'Vermont',
-        }
-        meta.update({
-            'raw_url': self._getElectionViewUrl(elecVt['id'], isPrecinct),
-            'generated_filename': self._generatedNameForElectionStateLeg(elecVt, election, isPrecinct),
-            'election': election['slug']
-        })
-        return meta
+        return self.OfficeIdToOfficeNameMap[officeId]
 
 
-    def _state_leg_meta(self, year, elections):
+    def _state_leg_meta(self, year, elections, officeIds, jurisdictions):
         year_int = int(year)
         payload = []
         general, primary, special = self._races_by_type(elections)
 
-        AllStatePositions = [
-            self.PRESIDENT_ELEC_OFFICE_ID,
-            self.US_SENATE_ELEC_OFFICE_ID,
-            self.US_HOUSE_ELEC_OFFICE_ID,
-            self.STATE_GOV_ELEC_OFFICE_ID,
-            self.STATE_LT_GOV_ELEC_OFFICE_ID]
+        electByPosition = ThreadPool(20).imap_unordered( lambda x: self._getElectionList(year_int, x), officeIds)
 
-        electByPosition = ThreadPool(20).imap_unordered( lambda x: self._getElectionList(year_int, x), AllStatePositions)
-        electionResMapping = {}
-        for officeId, r in electByPosition:
-            electionResMapping[officeId] = r
-
-        for positionId in AllStatePositions:
-            presElecs = electionResMapping[positionId]
-
+        for positionId, elecDict in electByPosition:
             for precinct_val in (True, False):
                 if general:
-                    genElect = self._findElecByType(presElecs, "General Election")
-                    if len(genElect) > 0:
-                        payload.append(self._generatedOneStateLegElectionMetaData(genElect[0], general, precinct_val))
-                        # print(genElect)
+                    genElections = self._findElecByType(elecDict, "General Election")
+                    for genElect in genElections:
+                        payload.append(self._generatedOneStateLegElectionMetaData(genElect, general, None, jurisdictions, precinct_val))
 
                 if primary:
-                    for party in ['Democratic', 'Republican']:
+                    for party in ['Democratic', 'Republican', 'Progressive', 'Liberty Union']:
                         electionType = party + " Primary"
-                        dpElect = self._findElecByType(presElecs, electionType)
-                        if len(dpElect) > 0:
-                            payload.append(self._generatedOneStateLegElectionMetaData(dpElect[0], primary, precinct_val))
-                            # print(dpElect)
+                        primElections = self._findElecByType(elecDict, electionType)
+                        for primElect in primElections:
+                            payload.append(self._generatedOneStateLegElectionMetaData(primElect, primary, party, jurisdictions, precinct_val))
 
         return payload
 
-    def _jurisdictions(self):
-        m = self.jurisdiction_mappings()
-        mappings = [x for x in m if x['url_name'] != ""]
-        return mappings
+
+    def _generatedOneStateLegElectionMetaData(self, elecVt, election, primaryParty, jurisdictions, isPrecinct):
+        raceType = "primary" if primaryParty else "general"
+        office = self._officeNameFromId(elecVt['officeId'])
+
+        jurisdiction = elecVt['district']
+        if jurisdiction == "Statewide":
+            jurisdiction = "Vermont"
+
+        generatedFileName = standardized_filename('vt', election['start_date'], '.csv',
+            party=primaryParty,
+            race_type=raceType,
+            reporting_level= "precinct" if isPrecinct  else None,
+            jurisdiction=jurisdiction,
+            office=office)
+
+        meta = {
+            'name'                  : jurisdiction,
+            'raw_url'               : self._getElectionViewUrl(elecVt['id'], isPrecinct),
+            'generated_filename'    : generatedFileName,
+            'election'              : election['slug'],
+            # specific for VT
+            'isPrecinct'    : isPrecinct,
+            'office'        : office,
+            'isPrimary'     : raceType == "general",
+            'primaryParty'  : primaryParty,
+            'officeDistrict': jurisdiction,
+            }
+        return meta

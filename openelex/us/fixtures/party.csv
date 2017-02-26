@@ -1,4 +1,19 @@
 "name","state_name","abbrev","fec_abbrev","state_abbrev","state","description"
+"Vote KISS", ,"VKS","VKS",,"US",
+"Peace and Prosperity", ,"PEP","PEP",,"US",
+"Justice Party", ,"JUS","JUS",,"US",
+"Socialist Party USA", ,"SUS","SUS",,"US",
+"United States Marijuana", ,"USM","USM",,"US",
+"Progressive", ,"PRO","PRO",,"US",
+"Natural Law Party", ,"NLP","NLP",,"US",
+"Grassroots", ,"GRT","GRT",,"US",
+"Socialist Workers Party", ,"SWP","SWP",,"US",
+"Socialist And Liberation", ,"SLP","SLP",,"US",
+"We the People", ,"WTP","WTP",,"US",
+"Vermont Grassroots Party", ,"VGP","VGP","VGP","VT",
+"Vermont Progressive Party", ,"VPP","VPP","VPP","VT",
+
+
 "Democrat",,"D","D",,"US",
 "Republican",,"R","R",,"US",
 "Constitution",,"CON","CON",,"US",
@@ -31,3 +46,4 @@
 "Natural Law Party of Florida","Natural Law Party","NLF","NLF","LAW","FL",
 "Workers World","Workers World Party","WW","WW","WWP","FL",
 "Christian Party",,"CHR",,"CHR","FL",
+"Liberty Union",,"LUP",,"LUP","VT",
