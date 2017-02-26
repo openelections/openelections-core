@@ -135,7 +135,6 @@ class Datasource(BaseDatasource):
 
         if isPrecint:
             bits.append("precint")
-        bits.append("state_legislative")
 
         filename = "__".join(bits) + '.csv'
         return filename
@@ -143,7 +142,7 @@ class Datasource(BaseDatasource):
     def _generatedOneStateLegElectionMetaData(self, elecVt, election, isPrecint):
         meta = {
             'ocd_id': 'ocd-division/country:us/state:vt/sldl:all',
-            'name': 'State Legislative Districts',
+            'name': 'Vermont',
         }
         meta.update({
             'raw_url': self._getElectionViewUrl(elecVt['id'], isPrecint),
@@ -154,7 +153,6 @@ class Datasource(BaseDatasource):
 
 
     def _state_leg_meta(self, year, elections):
-        # print(elections)
         year_int = int(year)
         payload = []
         meta = {
