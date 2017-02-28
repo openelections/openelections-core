@@ -75,9 +75,9 @@ class Datasource(BaseDatasource):
     STATE_SENATE_ELEC_OFFICE_ID = 9
     STATE_REP_ELEC_OFFICE_ID = 8
     search_url_expr = "http://vtelectionarchive.sec.state.vt.us/elections/search/year_from:$year/year_to:$year/office_id:$office_id"
-    electionViewUrl = "http://vtelectionarchive.sec.state.vt.us/elections/download/$electionId/precincts_include:$isPrecint/"
-    def _getElectionViewUrl(self, elecId, isPrecint):
-        return Template(self.electionViewUrl).substitute(electionId=elecId, isPrecint=(1 if isPrecint else 0))
+    electionViewUrl = "http://vtelectionarchive.sec.state.vt.us/elections/download/$electionId/precincts_include:$isPrecinct/"
+    def _getElectionViewUrl(self, elecId, isPrecinct):
+        return Template(self.electionViewUrl).substitute(electionId=elecId, isPrecinct=(1 if isPrecinct else 0))
 
     def _getElectionList(self, year, officeId):
         payload = []
@@ -109,7 +109,7 @@ class Datasource(BaseDatasource):
             self.STATE_REP_ELEC_OFFICE_ID: "state_house"
         }
         return nameMap[officeId]
-    def _generatedNameForElectionStateLeg(self, elecVt, election, isPrecint):
+    def _generatedNameForElectionStateLeg(self, elecVt, election, isPrecinct):
         officeId = elecVt['officeId']
         bits = [
             election['start_date'].replace('-',''),
@@ -133,20 +133,20 @@ class Datasource(BaseDatasource):
 
         bits.append(self._officeNameFromId(officeId))
 
-        if isPrecint:
-            bits.append("precint")
+        if isPrecinct:
+            bits.append("precinct")
 
         filename = "__".join(bits) + '.csv'
         return filename
 
-    def _generatedOneStateLegElectionMetaData(self, elecVt, election, isPrecint):
+    def _generatedOneStateLegElectionMetaData(self, elecVt, election, isPrecinct):
         meta = {
-            'ocd_id': 'ocd-division/country:us/state:vt/sldl:all',
+            'ocd_id': 'ocd-division/country:us/state:vt',
             'name': 'Vermont',
         }
         meta.update({
-            'raw_url': self._getElectionViewUrl(elecVt['id'], isPrecint),
-            'generated_filename': self._generatedNameForElectionStateLeg(elecVt, election, isPrecint),
+            'raw_url': self._getElectionViewUrl(elecVt['id'], isPrecinct),
+            'generated_filename': self._generatedNameForElectionStateLeg(elecVt, election, isPrecinct),
             'election': election['slug']
         })
         return meta
@@ -155,11 +155,6 @@ class Datasource(BaseDatasource):
     def _state_leg_meta(self, year, elections):
         year_int = int(year)
         payload = []
-        meta = {
-            'ocd_id': 'ocd-division/country:us/state:vt/sldl:all',
-            'name': 'State Legislative Districts',
-        }
-
         general, primary, special = self._races_by_type(elections)
 
         AllStatePositions = [
