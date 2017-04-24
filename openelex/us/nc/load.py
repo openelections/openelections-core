@@ -26,8 +26,8 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2014']):
-            loader = NCTsv2014Loader()
+        if any(s in election_id for s in ['2014', '2016']):
+            loader = NCTsvLoader()
         elif any(s in election_id for s in ['nc-2008-11-04-general', '2010', '2012']):
             loader = NCCsvLoader()
         elif election_id == 'nc-2008-05-06-primary':
@@ -47,6 +47,7 @@ class NCBaseLoader(BaseLoader):
     target_offices = set([
         'PRESIDENT AND VICE PRESIDENT OF THE UNITED STATES',
         'PRESIDENT-VICE PRESIDENT',
+        'US PRESIDENT',
         'STRAIGHT PARTY',
         'US HOUSE OF REPRESENTATIVES',
         'US HOUSE OF REPRESENTATIVES DISTRICT 1',
@@ -128,7 +129,7 @@ class NCBaseLoader(BaseLoader):
         kwargs = self._build_common_election_kwargs()
         return kwargs
 
-class NCTsv2014Loader(NCBaseLoader):
+class NCTsvLoader(NCBaseLoader):
     """
     Loads North Carolina results in tab-delimited format.
     Absentee, provisional and 'transfer' vote totals are also included, but as "precincts" so need to be handled.

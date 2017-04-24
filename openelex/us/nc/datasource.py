@@ -1,5 +1,5 @@
 """
-North Carolina has CSV files containing precinct-level results for each county and all offices 
+North Carolina has CSV files containing precinct-level results for each county and all offices
 for all years back to 2000, except for the 2000 primary. There is one zip file per election,
 with additional text files for county and race-level summaries. For the 2000 primary, individual
 Excel files are available for each office and party combination.
@@ -13,11 +13,11 @@ from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
 
 class Datasource(BaseDatasource):
-    
+
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
@@ -30,7 +30,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url']) 
+        return [(item['generated_filename'], item['raw_url'])
                 for item in self.mappings(year)]
 
     def mappings_for_url(self, url):
