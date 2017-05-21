@@ -1,0 +1,261 @@
+ocd_id,fips,url_name,name,web-id
+ocd-division/country:us/state:vt,50,Vermont,Vermont,
+ocd-division/country:us/state:vt/county:addison,50001,Addison,Addison,33495
+ocd-division/country:us/state:vt/county:bennington,50003,Bennington,Bennington,33496
+ocd-division/country:us/state:vt/county:caledonia,50005,Caledonia,Caledonia,33497
+ocd-division/country:us/state:vt/county:chittenden,50007,Chittenden,Chittenden,33498
+ocd-division/country:us/state:vt/county:essex,50009,Essex,Essex,33499
+ocd-division/country:us/state:vt/county:franklin,50011,Franklin,Franklin,33500
+ocd-division/country:us/state:vt/county:grand-isle,50013,Grand_Isle,Grand Isle,33501
+ocd-division/country:us/state:vt/county:lamoille,50015,Lamoille,Lamoille,33502
+ocd-division/country:us/state:vt/county:orange,50017,Orange,Orange,33503
+ocd-division/country:us/state:vt/county:orleans,50019,Orleans,Orleans,33504
+ocd-division/country:us/state:vt/county:rutland,50021,Rutland,Rutland,33505
+ocd-division/country:us/state:vt/county:washington,50023,Washington,Washington,33506
+ocd-division/country:us/state:vt/county:windham,50025,Windham,Windham,33507
+ocd-division/country:us/state:vt/county:windsor,50027,Windsor,Windsor,33508
+ocd-division/country:us/state:vt/sldu:addison,,Addison,Addison,33622
+ocd-division/country:us/state:vt/sldu:bennington,,Bennington,Bennington,33626
+ocd-division/country:us/state:vt/sldu:caledonia,,Caledonia,Caledonia,33628
+ocd-division/country:us/state:vt/sldu:chittenden,,Chittenden,Chittenden,33632
+ocd-division/country:us/state:vt/sldu:essex,,Essex,Essex,33857
+ocd-division/country:us/state:vt/sldu:essex-orleans,,Essex_Orleans,Essex-Orleans,33623
+ocd-division/country:us/state:vt/sldu:franklin,,Franklin,Franklin,33624
+ocd-division/country:us/state:vt/sldu:grand-isle,,Grand_Isle,Grand Isle,33634
+ocd-division/country:us/state:vt/sldu:lamoille,,Lamoille,Lamoille,33630
+ocd-division/country:us/state:vt/sldu:orange,,Orange,Orange,33633
+ocd-division/country:us/state:vt/sldu:orleans,,Orleans,Orleans,33858
+ocd-division/country:us/state:vt/sldu:rutland,,Rutland,Rutland,33631
+ocd-division/country:us/state:vt/sldu:washington,,Washington,Washington,33629
+ocd-division/country:us/state:vt/sldu:windham,,Windham,Windham,33627
+ocd-division/country:us/state:vt/sldu:windsor,,Windsor,Windsor,33625
+ocd-division/country:us/state:vt/sldl:addison-1,,Addison_1,Addison 1,33594
+ocd-division/country:us/state:vt/sldl:addison-2,,Addison_2,Addison 2,33567
+ocd-division/country:us/state:vt/sldl:addison-3,,Addison_3,Addison 3,33518
+ocd-division/country:us/state:vt/sldl:addison-4,,Addison_4,Addison 4,33546
+ocd-division/country:us/state:vt/sldl:addison-4-1,,Addison_4-1,Addison 4-1,33867
+ocd-division/country:us/state:vt/sldl:addison-4-2,,Addison_4-2,Addison 4-2,33868
+ocd-division/country:us/state:vt/sldl:addison-5,,Addison_5,Addison 5,33545
+ocd-division/country:us/state:vt/sldl:addison-rutland,,Addison-Rutland,Addison-Rutland,33532
+ocd-division/country:us/state:vt/sldl:addison-rutland-1,,Addison-Rutland_1,Addison-Rutland 1,33798
+ocd-division/country:us/state:vt/sldl:addison-rutland-2,,Addison-Rutland_2,Addison-Rutland 2,33869
+ocd-division/country:us/state:vt/sldl:addison-washington-1,,Addison-Washington_1,Addison-Washington 1,33912
+ocd-division/country:us/state:vt/sldl:bennington-1,,Bennington_1,Bennington 1,33600
+ocd-division/country:us/state:vt/sldl:bennington-2-1,,Bennington_2-1,Bennington 2-1,33530
+ocd-division/country:us/state:vt/sldl:bennington-2-2,,Bennington_2-2,Bennington 2-2,33531
+ocd-division/country:us/state:vt/sldl:bennington-2-3,,Bennington_2-3,Bennington 2-3,33870
+ocd-division/country:us/state:vt/sldl:bennington-2-4,,Bennington_2-4,Bennington 2-4,33871
+ocd-division/country:us/state:vt/sldl:bennington-3,,Bennington_3,Bennington 3,33612
+ocd-division/country:us/state:vt/sldl:bennington-4,,Bennington_4,Bennington 4,33522
+ocd-division/country:us/state:vt/sldl:bennington-5,,Bennington_5,Bennington 5,33799
+ocd-division/country:us/state:vt/sldl:bennington-rutland,,Bennington-Rutland,Bennington-Rutland,33569
+ocd-division/country:us/state:vt/sldl:bennington-rutland-1,,Bennington-Rutland_1,Bennington-Rutland 1,33800
+ocd-division/country:us/state:vt/sldl:bennington-rutland-2,,Bennington-Rutland_2,Bennington-Rutland 2,33913
+ocd-division/country:us/state:vt/sldl:bennington-windham-1,,Bennington-Windham_1,Bennington-Windham 1,33914
+ocd-division/country:us/state:vt/sldl:caledonia-1,,Caledonia_1,Caledonia 1,33526
+ocd-division/country:us/state:vt/sldl:caledonia-2,,Caledonia_2,Caledonia 2,33585
+ocd-division/country:us/state:vt/sldl:caledonia-3,,Caledonia_3,Caledonia 3,33611
+ocd-division/country:us/state:vt/sldl:caledonia-3-1,,Caledonia_3-1,Caledonia 3-1,33915
+ocd-division/country:us/state:vt/sldl:caledonia-3-2,,Caledonia_3-2,Caledonia 3-2,33916
+ocd-division/country:us/state:vt/sldl:caledonia-4,,Caledonia_4,Caledonia 4,33549
+ocd-division/country:us/state:vt/sldl:caledonia-essex-1,,Caledonia-Essex_1,Caledonia-Essex 1,33917
+ocd-division/country:us/state:vt/sldl:caledonia-essex-2,,Caledonia-Essex_2,Caledonia-Essex 2,33918
+ocd-division/country:us/state:vt/sldl:caledonia-orange-1,,Caledonia-Orange_1,Caledonia-Orange 1,33919
+ocd-division/country:us/state:vt/sldl:caledonia-washington,,Caledonia-Washington,Caledonia-Washington,33557
+ocd-division/country:us/state:vt/sldl:caledonia-washington-1,,Caledonia-Washington_1,Caledonia-Washington 1,33801
+ocd-division/country:us/state:vt/sldl:chittdenden-7-1,,Chittdenden_7-1,Chittdenden 7-1,33861
+ocd-division/country:us/state:vt/sldl:chittdenden-7-2,,Chittdenden_7-2,Chittdenden 7-2,33862
+ocd-division/country:us/state:vt/sldl:chittdenden-8,,Chittdenden_8,Chittdenden 8,33863
+ocd-division/country:us/state:vt/sldl:chittenden-1,,Chittenden_1,Chittenden 1,33601
+ocd-division/country:us/state:vt/sldl:chittenden-1-1,,Chittenden_1-1,Chittenden 1-1,33802
+ocd-division/country:us/state:vt/sldl:chittenden-1-2,,Chittenden_1-2,Chittenden 1-2,33803
+ocd-division/country:us/state:vt/sldl:chittenden-1-3,,Chittenden_1-3,Chittenden 1-3,33872
+ocd-division/country:us/state:vt/sldl:chittenden-10,,Chittenden_10,Chittenden 10,33596
+ocd-division/country:us/state:vt/sldl:chittenden-2,,Chittenden_2,Chittenden 2,33621
+ocd-division/country:us/state:vt/sldl:chittenden-2-1,,Chittenden_2-1,Chittenden 2-1,33873
+ocd-division/country:us/state:vt/sldl:chittenden-2-2,,Chittenden_2-2,Chittenden 2-2,33874
+ocd-division/country:us/state:vt/sldl:chittenden-2-3,,Chittenden_2-3,Chittenden 2-3,33875
+ocd-division/country:us/state:vt/sldl:chittenden-2-4,,Chittenden_2-4,Chittenden 2-4,33876
+ocd-division/country:us/state:vt/sldl:chittenden-3,,Chittenden_3,Chittenden 3,33591
+ocd-division/country:us/state:vt/sldl:chittenden-3-1,,Chittenden_3-1,Chittenden 3-1,33804
+ocd-division/country:us/state:vt/sldl:chittenden-3-10,,Chittenden_3-10,Chittenden 3-10,33805
+ocd-division/country:us/state:vt/sldl:chittenden-3-2,,Chittenden_3-2,Chittenden 3-2,33806
+ocd-division/country:us/state:vt/sldl:chittenden-3-3,,Chittenden_3-3,Chittenden 3-3,33807
+ocd-division/country:us/state:vt/sldl:chittenden-3-4,,Chittenden_3-4,Chittenden 3-4,33808
+ocd-division/country:us/state:vt/sldl:chittenden-3-5,,Chittenden_3-5,Chittenden 3-5,33809
+ocd-division/country:us/state:vt/sldl:chittenden-3-6,,Chittenden_3-6,Chittenden 3-6,33810
+ocd-division/country:us/state:vt/sldl:chittenden-3-7,,Chittenden_3-7,Chittenden 3-7,33811
+ocd-division/country:us/state:vt/sldl:chittenden-3-8,,Chittenden_3-8,Chittenden 3-8,33812
+ocd-division/country:us/state:vt/sldl:chittenden-3-9,,Chittenden_3-9,Chittenden 3-9,33813
+ocd-division/country:us/state:vt/sldl:chittenden-4,,Chittenden_4,Chittenden 4,33814
+ocd-division/country:us/state:vt/sldl:chittenden-4-1,,Chittenden_4-1,Chittenden 4-1,33562
+ocd-division/country:us/state:vt/sldl:chittenden-4-2,,Chittenden_4-2,Chittenden 4-2,33588
+ocd-division/country:us/state:vt/sldl:chittenden-5,,Chittenden_5,Chittenden 5,33860
+ocd-division/country:us/state:vt/sldl:chittenden-5-1,,Chittenden_5-1,Chittenden 5-1,33613
+ocd-division/country:us/state:vt/sldl:chittenden-5-2,,Chittenden_5-2,Chittenden 5-2,33610
+ocd-division/country:us/state:vt/sldl:chittenden-5-3,,Chittenden_5-3,Chittenden 5-3,33877
+ocd-division/country:us/state:vt/sldl:chittenden-5-4,,Chittenden_5-4,Chittenden 5-4,33878
+ocd-division/country:us/state:vt/sldl:chittenden-6,,Chittenden_6,Chittenden 6,33879
+ocd-division/country:us/state:vt/sldl:chittenden-6-1,,Chittenden_6-1,Chittenden 6-1,33550
+ocd-division/country:us/state:vt/sldl:chittenden-6-2,,Chittenden_6-2,Chittenden 6-2,33551
+ocd-division/country:us/state:vt/sldl:chittenden-6-3,,Chittenden_6-3,Chittenden 6-3,33552
+ocd-division/country:us/state:vt/sldl:chittenden-6-4,,Chittenden_6-4,Chittenden 6-4,33553
+ocd-division/country:us/state:vt/sldl:chittenden-6-5,,Chittenden_6-5,Chittenden 6-5,33554
+ocd-division/country:us/state:vt/sldl:chittenden-6-6,,Chittenden_6-6,Chittenden 6-6,33555
+ocd-division/country:us/state:vt/sldl:chittenden-6-7,,Chittenden_6-7,Chittenden 6-7,33556
+ocd-division/country:us/state:vt/sldl:chittenden-7-1,,Chittenden_7-1,Chittenden 7-1,33615
+ocd-division/country:us/state:vt/sldl:chittenden-7-10,,Chittenden_7-10,Chittenden 7-10,33885
+ocd-division/country:us/state:vt/sldl:chittenden-7-2,,Chittenden_7-2,Chittenden 7-2,33616
+ocd-division/country:us/state:vt/sldl:chittenden-7-3,,Chittenden_7-3,Chittenden 7-3,33617
+ocd-division/country:us/state:vt/sldl:chittenden-7-4,,Chittenden_7-4,Chittenden 7-4,33618
+ocd-division/country:us/state:vt/sldl:chittenden-7-5,,Chittenden_7-5,Chittenden 7-5,33880
+ocd-division/country:us/state:vt/sldl:chittenden-7-6,,Chittenden_7-6,Chittenden 7-6,33881
+ocd-division/country:us/state:vt/sldl:chittenden-7-7,,Chittenden_7-7,Chittenden 7-7,33882
+ocd-division/country:us/state:vt/sldl:chittenden-7-8,,Chittenden_7-8,Chittenden 7-8,33883
+ocd-division/country:us/state:vt/sldl:chittenden-7-9,,Chittenden_7-9,Chittenden 7-9,33884
+ocd-division/country:us/state:vt/sldl:chittenden-8,,Chittenden_8,Chittenden 8,33815
+ocd-division/country:us/state:vt/sldl:chittenden-8-1,,Chittenden_8-1,Chittenden 8-1,33577
+ocd-division/country:us/state:vt/sldl:chittenden-8-2,,Chittenden_8-2,Chittenden 8-2,33578
+ocd-division/country:us/state:vt/sldl:chittenden-8-3,,Chittenden_8-3,Chittenden 8-3,33579
+ocd-division/country:us/state:vt/sldl:chittenden-9,,Chittenden_9,Chittenden 9,33816
+ocd-division/country:us/state:vt/sldl:chittenden-9-1,,Chittenden_9-1,Chittenden 9-1,33565
+ocd-division/country:us/state:vt/sldl:chittenden-9-2,,Chittenden_9-2,Chittenden 9-2,33566
+ocd-division/country:us/state:vt/sldl:chittenden-franklin-1,,Chittenden-Franklin_1,Chittenden-Franklin 1,33920
+ocd-division/country:us/state:vt/sldl:chittenden-washington-1,,Chittenden-Washington_1,Chittenden-Washington 1,33921
+ocd-division/country:us/state:vt/sldl:essex-1,,Essex_1,Essex 1,33922
+ocd-division/country:us/state:vt/sldl:essex-caldeonia-orleans,,Essex-Caldeonia-Orleans,Essex-Caldeonia-Orleans,33864
+ocd-division/country:us/state:vt/sldl:essex-caledonia,,Essex-Caledonia,Essex-Caledonia,33548
+ocd-division/country:us/state:vt/sldl:essex-caledonia-1,,Essex-Caledonia_1,Essex-Caledonia 1,33886
+ocd-division/country:us/state:vt/sldl:essex-caledonia-2,,Essex-Caledonia_2,Essex-Caledonia 2,33887
+ocd-division/country:us/state:vt/sldl:essex-caledonia-orleans,,Essex-Caledonia-Orleans,Essex-Caledonia-Orleans,33536
+ocd-division/country:us/state:vt/sldl:franklin-1,,Franklin_1,Franklin 1,33581
+ocd-division/country:us/state:vt/sldl:franklin-2,,Franklin_2,Franklin 2,33580
+ocd-division/country:us/state:vt/sldl:franklin-3,,Franklin_3,Franklin 3,33817
+ocd-division/country:us/state:vt/sldl:franklin-3-1,,Franklin_3-1,Franklin 3-1,33608
+ocd-division/country:us/state:vt/sldl:franklin-3-2,,Franklin_3-2,Franklin 3-2,33609
+ocd-division/country:us/state:vt/sldl:franklin-4,,Franklin_4,Franklin 4,33614
+ocd-division/country:us/state:vt/sldl:franklin-5,,Franklin_5,Franklin 5,33533
+ocd-division/country:us/state:vt/sldl:franklin-5-1,,Franklin_5-1,Franklin 5-1,33888
+ocd-division/country:us/state:vt/sldl:franklin-5-2,,Franklin_5-2,Franklin 5-2,33889
+ocd-division/country:us/state:vt/sldl:franklin-6,,Franklin_6,Franklin 6,33524
+ocd-division/country:us/state:vt/sldl:franklin-6-1,,Franklin_6-1,Franklin 6-1,33923
+ocd-division/country:us/state:vt/sldl:franklin-6-2,,Franklin_6-2,Franklin 6-2,33924
+ocd-division/country:us/state:vt/sldl:franklin-7,,Franklin_7,Franklin 7,33576
+ocd-division/country:us/state:vt/sldl:franklin-grand-isle-1,,Franklin-Grand_Isle_1,Franklin-Grand Isle 1,33890
+ocd-division/country:us/state:vt/sldl:franklin-lamoille-1,,Franklin-Lamoille_1,Franklin-Lamoille 1,33925
+ocd-division/country:us/state:vt/sldl:grand-isle-1,,Grand_Isle_1,Grand Isle 1,33891
+ocd-division/country:us/state:vt/sldl:grand-isle-chittenden,,Grand_Isle-Chittenden,Grand Isle-Chittenden,33520
+ocd-division/country:us/state:vt/sldl:grand-isle-chittenden-1,,Grand_Isle-Chittenden_1,Grand Isle-Chittenden 1,33859
+ocd-division/country:us/state:vt/sldl:grand-isle-chittenden-1-1,,Grand_Isle-Chittenden_1-1,Grand Isle-Chittenden 1-1,33818
+ocd-division/country:us/state:vt/sldl:lamoille-1,,Lamoille_1,Lamoille 1,33620
+ocd-division/country:us/state:vt/sldl:lamoille-2,,Lamoille_2,Lamoille 2,33529
+ocd-division/country:us/state:vt/sldl:lamoille-2-1,,Lamoille_2-1,Lamoille 2-1,33892
+ocd-division/country:us/state:vt/sldl:lamoille-2-2,,Lamoille_2-2,Lamoille 2-2,33893
+ocd-division/country:us/state:vt/sldl:lamoille-3,,Lamoille_3,Lamoille 3,33559
+ocd-division/country:us/state:vt/sldl:lamoille-4,,Lamoille_4,Lamoille 4,33819
+ocd-division/country:us/state:vt/sldl:lamoille-washington,,Lamoille-Washington,Lamoille-Washington,33575
+ocd-division/country:us/state:vt/sldl:lamoille-washington-1,,Lamoille-Washington_1,Lamoille-Washington 1,33820
+ocd-division/country:us/state:vt/sldl:orange-1,,Orange_1,Orange 1,33563
+ocd-division/country:us/state:vt/sldl:orange-2,,Orange_2,Orange 2,33538
+ocd-division/country:us/state:vt/sldl:orange-3,,Orange_3,Orange 3,33894
+ocd-division/country:us/state:vt/sldl:orange-4,,Orange_4,Orange 4,33895
+ocd-division/country:us/state:vt/sldl:orange-addison-1,,Orange-Addison_1,Orange-Addison 1,33821
+ocd-division/country:us/state:vt/sldl:orange-caledonia,,Orange-Caledonia,Orange-Caledonia,33582
+ocd-division/country:us/state:vt/sldl:orange-caledonia-1,,Orange-Caledonia_1,Orange-Caledonia 1,33822
+ocd-division/country:us/state:vt/sldl:orange-washington-addison,,Orange-Washington-Addison,Orange-Washington-Addison,33539
+ocd-division/country:us/state:vt/sldl:orange-windsor-1,,Orange-Windsor_1,Orange-Windsor 1,33926
+ocd-division/country:us/state:vt/sldl:orleans-1,,Orleans_1,Orleans 1,33547
+ocd-division/country:us/state:vt/sldl:orleans-2,,Orleans_2,Orleans 2,33568
+ocd-division/country:us/state:vt/sldl:orleans-3,,Orleans_3,Orleans 3,33927
+ocd-division/country:us/state:vt/sldl:orleans-3--recessed-election,,Orleans_3__Recessed_Election,Orleans 3  Recessed Election,33935
+ocd-division/country:us/state:vt/sldl:orleans-4,,Orleans_4,Orleans 4,33928
+ocd-division/country:us/state:vt/sldl:orleans-caledonia,,Orleans-Caledonia,Orleans-Caledonia,33519
+ocd-division/country:us/state:vt/sldl:orleans-caledonia-1,,Orleans-Caledonia_1,Orleans-Caledonia 1,33823
+ocd-division/country:us/state:vt/sldl:orleans-franklin-1,,Orleans-Franklin_1,Orleans-Franklin 1,33824
+ocd-division/country:us/state:vt/sldl:orleans-lamoille,,Orleans-Lamoille,Orleans-Lamoille,33574
+ocd-division/country:us/state:vt/sldl:rutland-1,,Rutland_1,Rutland 1,33589
+ocd-division/country:us/state:vt/sldl:rutland-1-1,,Rutland_1-1,Rutland 1-1,33825
+ocd-division/country:us/state:vt/sldl:rutland-1-2,,Rutland_1-2,Rutland 1-2,33826
+ocd-division/country:us/state:vt/sldl:rutland-2,,Rutland_2,Rutland 2,33564
+ocd-division/country:us/state:vt/sldl:rutland-3,,Rutland_3,Rutland 3,33560
+ocd-division/country:us/state:vt/sldl:rutland-4,,Rutland_4,Rutland 4,33607
+ocd-division/country:us/state:vt/sldl:rutland-5,,Rutland_5,Rutland 5,33896
+ocd-division/country:us/state:vt/sldl:rutland-5-1,,Rutland_5-1,Rutland 5-1,33603
+ocd-division/country:us/state:vt/sldl:rutland-5-2,,Rutland_5-2,Rutland 5-2,33604
+ocd-division/country:us/state:vt/sldl:rutland-5-3,,Rutland_5-3,Rutland 5-3,33605
+ocd-division/country:us/state:vt/sldl:rutland-5-4,,Rutland_5-4,Rutland 5-4,33606
+ocd-division/country:us/state:vt/sldl:rutland-6,,Rutland_6,Rutland 6,33540
+ocd-division/country:us/state:vt/sldl:rutland-6-1,,Rutland_6-1,Rutland 6-1,33897
+ocd-division/country:us/state:vt/sldl:rutland-6-2,,Rutland_6-2,Rutland 6-2,33898
+ocd-division/country:us/state:vt/sldl:rutland-6-3,,Rutland_6-3,Rutland 6-3,33899
+ocd-division/country:us/state:vt/sldl:rutland-6-4,,Rutland_6-4,Rutland 6-4,33900
+ocd-division/country:us/state:vt/sldl:rutland-7,,Rutland_7,Rutland 7,33827
+ocd-division/country:us/state:vt/sldl:rutland-8,,Rutland_8,Rutland 8,33828
+ocd-division/country:us/state:vt/sldl:rutland-benington-1,,Rutland-Benington_1,Rutland-Benington 1,33901
+ocd-division/country:us/state:vt/sldl:rutland-bennington,,Rutland-Bennington,Rutland-Bennington,33595
+ocd-division/country:us/state:vt/sldl:rutland-bennington-1,,Rutland-Bennington_1,Rutland-Bennington 1,33937
+ocd-division/country:us/state:vt/sldl:rutland-windsor-1,,Rutland-Windsor_1,Rutland-Windsor 1,33544
+ocd-division/country:us/state:vt/sldl:rutland-windsor-2,,Rutland-Windsor_2,Rutland-Windsor 2,33592
+ocd-division/country:us/state:vt/sldl:shelburne-5-2,,Shelburne_5-2,Shelburne 5-2,33866
+ocd-division/country:us/state:vt/sldl:washington-1,,Washington_1,Washington 1,33534
+ocd-division/country:us/state:vt/sldl:washington-2,,Washington_2,Washington 2,33528
+ocd-division/country:us/state:vt/sldl:washington-3,,Washington_3,Washington 3,33527
+ocd-division/country:us/state:vt/sldl:washington-3-1,,Washington_3-1,Washington 3-1,33829
+ocd-division/country:us/state:vt/sldl:washington-3-2,,Washington_3-2,Washington 3-2,33830
+ocd-division/country:us/state:vt/sldl:washington-3-3,,Washington_3-3,Washington 3-3,33831
+ocd-division/country:us/state:vt/sldl:washington-4,,Washington_4,Washington 4,33597
+ocd-division/country:us/state:vt/sldl:washington-4-1,,Washington_4-1,Washington 4-1,33902
+ocd-division/country:us/state:vt/sldl:washington-4-2,,Washington_4-2,Washington 4-2,33903
+ocd-division/country:us/state:vt/sldl:washington-4-3,,Washington_4-3,Washington 4-3,33929
+ocd-division/country:us/state:vt/sldl:washington-5,,Washington_5,Washington 5,33573
+ocd-division/country:us/state:vt/sldl:washington-5-1,,Washington_5-1,Washington 5-1,33930
+ocd-division/country:us/state:vt/sldl:washington-5-2,,Washington_5-2,Washington 5-2,33931
+ocd-division/country:us/state:vt/sldl:washington-6,,Washington_6,Washington 6,33558
+ocd-division/country:us/state:vt/sldl:washington-7,,Washington_7,Washington 7,33572
+ocd-division/country:us/state:vt/sldl:washington-addison-1,,Washington-Addison_1,Washington-Addison 1,33904
+ocd-division/country:us/state:vt/sldl:washington-chittenden,,Washington-Chittenden,Washington-Chittenden,33537
+ocd-division/country:us/state:vt/sldl:washington-chittenden-1,,Washington-Chittenden_1,Washington-Chittenden 1,33832
+ocd-division/country:us/state:vt/sldl:washington-lamoille-1-1,,Washington-Lamoille_1-1,Washington-Lamoille 1-1,33905
+ocd-division/country:us/state:vt/sldl:windham-1,,Windham_1,Windham 1,33583
+ocd-division/country:us/state:vt/sldl:windham-2,,Windham_2,Windham 2,33833
+ocd-division/country:us/state:vt/sldl:windham-2-1,,Windham_2-1,Windham 2-1,33541
+ocd-division/country:us/state:vt/sldl:windham-2-2,,Windham_2-2,Windham 2-2,33542
+ocd-division/country:us/state:vt/sldl:windham-2-3,,Windham_2-3,Windham 2-3,33543
+ocd-division/country:us/state:vt/sldl:windham-3,,Windham_3,Windham 3,33523
+ocd-division/country:us/state:vt/sldl:windham-3-1,,Windham_3-1,Windham 3-1,33834
+ocd-division/country:us/state:vt/sldl:windham-3-2,,Windham_3-2,Windham 3-2,33835
+ocd-division/country:us/state:vt/sldl:windham-3-3,,Windham_3-3,Windham 3-3,33836
+ocd-division/country:us/state:vt/sldl:windham-4,,Windham_4,Windham 4,33571
+ocd-division/country:us/state:vt/sldl:windham-5,,Windham_5,Windham 5,33593
+ocd-division/country:us/state:vt/sldl:windham-6,,Windham_6,Windham 6,33584
+ocd-division/country:us/state:vt/sldl:windham-bennington-windosr-1,,Windham_Bennington_Windosr_1,Windham Bennington Windosr 1,33865
+ocd-division/country:us/state:vt/sldl:windham-bennington,,Windham-Bennington,Windham-Bennington,33570
+ocd-division/country:us/state:vt/sldl:windham-bennington-1,,Windham-Bennington_1,Windham-Bennington 1,33837
+ocd-division/country:us/state:vt/sldl:windham-bennington-windsor,,Windham-Bennington-Windsor,Windham-Bennington-Windsor,33590
+ocd-division/country:us/state:vt/sldl:windham-bennington-windsor-1,,Windham-Bennington-Windsor_1,Windham-Bennington-Windsor 1,33838
+ocd-division/country:us/state:vt/sldl:windham-windsor-1,,Windham-Windsor_1,Windham-Windsor 1,33932
+ocd-division/country:us/state:vt/sldl:windsor-1,,Windsor_1,Windsor 1,33587
+ocd-division/country:us/state:vt/sldl:windsor-1-1,,Windsor_1-1,Windsor 1-1,33839
+ocd-division/country:us/state:vt/sldl:windsor-1-2,,Windsor_1-2,Windsor 1-2,33840
+ocd-division/country:us/state:vt/sldl:windsor-2,,Windsor_2,Windsor 2,33561
+ocd-division/country:us/state:vt/sldl:windsor-2-1,,Windsor_2-1,Windsor 2-1,33906
+ocd-division/country:us/state:vt/sldl:windsor-2-2,,Windsor_2-2,Windsor 2-2,33907
+ocd-division/country:us/state:vt/sldl:windsor-2-3,,Windsor_2-3,Windsor 2-3,33908
+ocd-division/country:us/state:vt/sldl:windsor-3,,Windsor_3,Windsor 3,33841
+ocd-division/country:us/state:vt/sldl:windsor-3-1,,Windsor_3-1,Windsor 3-1,33521
+ocd-division/country:us/state:vt/sldl:windsor-3-2,,Windsor_3-2,Windsor 3-2,33619
+ocd-division/country:us/state:vt/sldl:windsor-4,,Windsor_4,Windsor 4,33842
+ocd-division/country:us/state:vt/sldl:windsor-4-1,,Windsor_4-1,Windsor 4-1,33525
+ocd-division/country:us/state:vt/sldl:windsor-4-2,,Windsor_4-2,Windsor 4-2,33586
+ocd-division/country:us/state:vt/sldl:windsor-5,,Windsor_5,Windsor 5,33599
+ocd-division/country:us/state:vt/sldl:windsor-5-1,,Windsor_5-1,Windsor 5-1,33933
+ocd-division/country:us/state:vt/sldl:windsor-5-2,,Windsor_5-2,Windsor 5-2,33934
+ocd-division/country:us/state:vt/sldl:windsor-6,,Windsor_6,Windsor 6,33909
+ocd-division/country:us/state:vt/sldl:windsor-6-1,,Windsor_6-1,Windsor 6-1,33843
+ocd-division/country:us/state:vt/sldl:windsor-6-2,,Windsor_6-2,Windsor 6-2,33844
+ocd-division/country:us/state:vt/sldl:windsor-orange-1,,Windsor-Orange_1,Windsor-Orange 1,33602
+ocd-division/country:us/state:vt/sldl:windsor-orange-2,,Windsor-Orange_2,Windsor-Orange 2,33598
+ocd-division/country:us/state:vt/sldl:windsor-rutland,,Windsor-Rutland,Windsor-Rutland,33535
+ocd-division/country:us/state:vt/sldl:windsor-rutland-1,,Windsor-Rutland_1,Windsor-Rutland 1,33845
+ocd-division/country:us/state:vt/sldl:windsor-rutland-2,,Windsor-Rutland_2,Windsor-Rutland 2,33846
+ocd-division/country:us/state:vt/sldl:windsor-windham-1-1,,Windsor-Windham_1-1,Windsor-Windham 1-1,33910
