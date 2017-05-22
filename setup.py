@@ -22,7 +22,7 @@ setup(
         'beautifulsoup4==4.3.2',
         'blinker==1.3',
         'ipython==0.13.2',
-        'mongoengine==0.8.4',
+        'mongoengine==0.9.0',
         'nameparser==0.2.7',
         'ordered-set==1.1',
         'pymongo==2.8',
