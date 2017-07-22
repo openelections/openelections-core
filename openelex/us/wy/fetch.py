@@ -28,10 +28,6 @@ class FetchResults(BaseFetcher):
             zip_fname = self._local_zip_file_name(url)
             super(FetchResults, self).fetch(url, zip_fname, overwrite)
             self._extract_zip(url, zip_fname, overwrite)
-        elif '08Results/Special' in url:
-            super(FetchResults, self).fetch('https://raw.githubusercontent.com/openelections/openelections-data-wy/master/20081125__wy__special__general__state_house__22.csv', fname, overwrite)
-        elif 'Recount' in url:
-            super(FetchResults, self).fetch('https://github.com/openelections/openelections-data-wy/blob/master/raw/20021105/NA-HD36-Recount.xls?raw=true', fname, overwrite)
         else:
             super(FetchResults, self).fetch(url, fname, overwrite)
 

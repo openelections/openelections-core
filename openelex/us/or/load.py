@@ -60,7 +60,7 @@ class ORBaseLoader(BaseLoader):
 
 class ORPrecinctLoader(ORBaseLoader):
     """
-    Loads Oregon precinct results for 2004-2014.
+    Loads Oregon precinct results for 2004-2016.
 
     Format:
 
@@ -115,7 +115,7 @@ class ORPrecinctLoader(ORBaseLoader):
 
 class ORLoader(ORBaseLoader):
     """
-    Loads Oregon county-level results for 2004-2014 elections.
+    Loads Oregon county-level results for 2004-2016 elections.
 
     Format:
 

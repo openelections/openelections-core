@@ -4,7 +4,6 @@ import urllib
 import urlparse
 from zipfile import ZipFile
 
-from bs4 import BeautifulSoup
 import requests
 
 from openelex.base.fetch import BaseFetcher

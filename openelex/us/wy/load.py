@@ -39,6 +39,7 @@ class WYBaseLoader(BaseLoader):
     target_offices = set([
         'U.S. President',
         'United States President',
+        'United States President, Continued',
         'U.S. Senate',
         'United States Senator',
         'U.S. House',
@@ -132,6 +133,7 @@ class WYLoader(WYBaseLoader):
                     candidates = self._build_candidates_2000(sheet, party, primary)
             else:
                 candidates = self._build_candidates(sheet, party)
+                print candidates
 
             for i in xrange(sheet.nrows):
                 row = [r for r in sheet.row_values(i) if not r == '']
@@ -141,6 +143,7 @@ class WYLoader(WYBaseLoader):
                     continue
                 else:
                     precinct = str(row[0])
+                    print precinct
                     if self.source == '20021126__wy__special__general__natrona__state_house__36__precinct.xls':
                         votes = [v for v in row[1:] if not v == '']
                     elif len(candidates) == 1:
@@ -159,7 +162,6 @@ class WYLoader(WYBaseLoader):
             try:
                 RawResult.objects.insert(results)
             except:
-                print grouped_results
                 raise
 
     def _get_sheets(self, xlsfile):
@@ -291,8 +293,10 @@ class WYLoader(WYBaseLoader):
             raw_offices = sheet.row_values(1)[1:]
         if raw_offices[0] == '' or raw_offices[0] == 'Total':
             del raw_offices[0]
+        if 'United States President, Continued' in raw_offices:
+            raw_offices[raw_offices.index('United States President, Continued')] = ''
         office_labels = [x for x in raw_offices if " ".join(x.split()[0:2]).strip() in self.office_segments]
-        office_labels = list(set(office_labels)) # unique it
+#        office_labels = list(set(office_labels)) # unique it
         offices = []
         for o in raw_offices:
             if o in office_labels:
@@ -394,8 +398,8 @@ class WYLoader(WYBaseLoader):
                 else:
                     parties.append(None)
                     cands.append(cand)
-            candidates = [c.replace('\n', ' ') for c in cands[1:-1]][:len(offices)]
-            parties = parties[1:-1][:len(offices)]
+            candidates = [c.replace('\n', ' ') for c in cands[2:]][:len(offices)]
+            parties = parties[2:][:len(offices)]
         else:
             cands = []
             parties = []
