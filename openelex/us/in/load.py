@@ -6,7 +6,9 @@ and, where available, precinct-level elections data for each of the
 state's counties.  The CSV versions of those are contained in the
 https://github.com/openelections/openelections-data-in repository.
 """
+from __future__ import print_function
 
+from builtins import object
 import logging
 import unicodecsv
 
@@ -61,7 +63,7 @@ class INPrecinctLoader(BaseLoader):
                 # by additionally printing debug information.
                 try:
                     rr_kwargs.update({'votes': int(row['votes'])})
-                except ValueError, e:
+                except ValueError as e:
                     print('Bad votes in row {}'.format(row))
                     raise e
 

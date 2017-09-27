@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 
 from openelex.models import Contest, Candidate, Office, Result
@@ -294,7 +295,7 @@ def validate_results_2008_special():
         },
     }
 
-    for candidate, props in candidates.items():
+    for candidate, props in list(candidates.items()):
         result = Result.objects.get(election_id='md-2008-06-17-special-general',
             candidate_slug=candidate, jurisdiction="Montgomery County")
         assert result.votes == props['votes_montgomery']
@@ -406,7 +407,7 @@ def validate_unique_prez_2012_general():
     expected = 1
     try:
         assert count == expected
-        print "PASS: %s general prez contest found for 2012" % count
+        print("PASS: %s general prez contest found for 2012" % count)
     except AssertionError:
         raise AssertionError("expected 2012 general prez contest count (%s) did not match actual count (%s)" % (expected, count))
 
@@ -420,7 +421,7 @@ def validate_obama_candidacies_2012():
     expected = 2
     try:
         assert count == expected
-        print "PASS: %s obama candidacies found for %s" % (count, '2012')
+        print("PASS: %s obama candidacies found for %s" % (count, '2012'))
     except AssertionError:
         raise AssertionError("expected obama 2012 candidacies (%s) did not match actual count(%s)" % (expected, count))
 
@@ -434,7 +435,7 @@ def validate_obama_primary_candidacy_2012():
     }
     try:
         cand = Candidate.objects.get(**kwargs)
-        print "PASS: 1 obama primary candidacy found for 2012: %s" % "-".join(cand.key)
+        print("PASS: 1 obama primary candidacy found for 2012: %s" % "-".join(cand.key))
     except Candidate.DoesNotExist:
         raise Candidate.DoesNotExist("zero obama primary candidacies found for 2012")
     except Candidate.MultipleObjectsReturned as e:
@@ -531,7 +532,7 @@ def validate_unique_contests():
             assert expected == count
         except AssertionError:
             raise AssertionError("%s contests expected for elec_id '%s', but %s found" % (expected, elec_id, count))
-    print "PASS: unique contests counts found for all elections"
+    print("PASS: unique contests counts found for all elections")
 
 def validate_unique_candidates():
     """Should have a unique set of candidates for all contests"""
@@ -544,7 +545,7 @@ def validate_unique_candidates():
         count = candidates.count()
         assert count == expected, msg.format(expected, election_id,
             contest.slug, count) 
-    print "PASS: unique candidates found for all elections"
+    print("PASS: unique candidates found for all elections")
 
 def validate_no_baltimore_city_comptroller():
     """Should not have contest, candidates or results for a Baltimore City comptroller"""

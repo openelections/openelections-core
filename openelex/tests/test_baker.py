@@ -28,7 +28,7 @@ class FieldTransformTestCase(TestCase):
         }
         data = transform.transform(test_data.copy())
         self.assertNotIn('vote_breakdowns', data)
-        for k, v in test_data['vote_breakdowns'].items():
+        for k, v in list(test_data['vote_breakdowns'].items()):
             self.assertEqual(data[k], v)
 
 class RollerTestCase(MongoTestCase):

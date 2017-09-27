@@ -1,10 +1,11 @@
+from future import standard_library
+standard_library.install_aliases()
 import os.path
 import re
-import urlparse
+import urllib.parse
 
 from bs4 import BeautifulSoup
 import requests
-import clarify
 import unicodecsv
 
 from openelex.base.datasource import BaseDatasource
@@ -26,7 +27,7 @@ class Datasource(BaseDatasource):
 
     def mappings(self, year=None):
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

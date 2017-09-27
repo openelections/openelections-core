@@ -1,12 +1,13 @@
+from __future__ import absolute_import
 import click
 from mongoengine import ConnectionError
 
 from openelex.db import init_db
-from fetch import fetch
-from shell import shell
-from publish import publish
+from .fetch import fetch
+from .shell import shell
+from .publish import publish
 
-import cache, datasource, load, load_metadata, transform, validate, bake
+from . import cache, datasource, load, load_metadata, transform, validate, bake
 
 @click.group()
 def cli():

@@ -1,3 +1,8 @@
+from __future__ import print_function
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
 import re
 import csv
 import xlrd
@@ -243,7 +248,7 @@ class NCCsvLoader(NCBaseLoader):
             try:
                 office, district = row['contest'].split(' DISTRICT ')
             except:
-                print row['contest']
+                print(row['contest'])
                 raise
         else:
             office = row['contest'].strip()
@@ -624,8 +629,8 @@ class NCXlsLoader(NCBaseLoader):
                 cands = [c for c in sheet.row_values(2)[2:] if c != '']
                 parties = [x.replace('(','').replace(')','') for x in sheet.row_values(3)[2:] if x != '']
                 start_row = 2
-            candidates = zip(cands, parties)
-            for i in xrange(start_row, sheet.nrows):
+            candidates = list(zip(cands, parties))
+            for i in range(start_row, sheet.nrows):
                 row = [r for r in sheet.row_values(i)]
                 if self._skip_row(row):
                     continue

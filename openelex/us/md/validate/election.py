@@ -1,9 +1,12 @@
+from __future__ import print_function
+from builtins import object
 import os
 
 import unicodecsv
 
 from openelex.models import Contest, Candidate, Result
 from openelex.us.md import jurisdiction
+from functools import reduce
 
 # Classes that describe election attributes
 
@@ -48,7 +51,7 @@ class MDElection(object):
         """
         Return a list of contest slugs.
         """
-        return self.candidate_counts.keys()
+        return list(self.candidate_counts.keys())
 
     def candidate_counts_filename(self): 
         bits = self.election_id.split('-')
@@ -92,8 +95,8 @@ class MDElection(object):
             try:
                 count += self.candidate_counts[contest]
             except KeyError:
-                print "WARN: no candidate count for contest '{0}'".format(
-                    contest)
+                print("WARN: no candidate count for contest '{0}'".format(
+                    contest))
 
         return count
         
@@ -136,7 +139,7 @@ class MDElection(object):
     def validate_candidate_count(self):
         candidate_counts = self.candidate_counts
         candidates = Candidate.objects.filter(election_id=self.election_id)
-        for contest_slug, expected_count in candidate_counts.items():
+        for contest_slug, expected_count in list(candidate_counts.items()):
             count = candidates.filter(contest_slug=contest_slug).count() 
             assert count == expected_count, ("There should be %d candidates "
                 "for the contest '%s', but there are %d" %
@@ -150,7 +153,7 @@ class MDElection(object):
             try:
                 self._validate_result_count_for_reporting_level(level)
             except AssertionError as e:
-                print e
+                print(e)
                 failed_levels.append(level)
         
         assert len(failed_levels) == 0, ("Result count does not match the expected "
@@ -194,7 +197,7 @@ class StateLegislativeResultsMixin(object):
     @property
     def num_state_legislative_results(self):
         total_candidates = reduce(lambda x, y: x+y,
-            self.candidate_counts.values())
+            list(self.candidate_counts.values()))
         return total_candidates * len(self.state_legislative_districts)
 
 

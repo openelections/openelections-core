@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import str
+from builtins import object
 import re
 import csv
 import xlrd
@@ -24,14 +27,14 @@ class LoadResults(object):
     def run(self, mapping):
         loader = VTBaseLoader()
 
-        print("loading: ", mapping)
+        print(("loading: ", mapping))
         loader.run(mapping)
 
 class VTBaseLoader(BaseLoader):
     datasource = Datasource()
 
     def load(self):
-        print(str(datetime.now()), "load begin")
+        print((str(datetime.now()), "load begin"))
         results = []
         self._common_kwargs = self._build_common_election_kwargs()
 
@@ -41,7 +44,7 @@ class VTBaseLoader(BaseLoader):
             readerData = list(reader)
             candListRow = readerData[0]
             if not self._isValidHeaderRow(candListRow):
-                print("Error: Header not valid: ", candListRow)
+                print(("Error: Header not valid: ", candListRow))
                 return []
             partyAffil = readerData[1]
             kwargs = self._build_common_election_kwargs()

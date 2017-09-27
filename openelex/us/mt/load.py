@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -165,7 +167,7 @@ class MTCountyLoader(MTBaseLoader):
                     else:
                         votes = int(row['votes'].strip())
                     jurisdiction = row['county'].strip()
-                    print row['county']
+                    print(row['county'])
                     ocd_id = [o['ocd_id'] for o in self.datasource._jurisdictions() if row['county'].strip() == o['county']][0]
                 rr_kwargs.update({
                     'party': row['party'].strip(),

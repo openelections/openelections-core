@@ -3,10 +3,13 @@ Rhode Island has a combination of text, Excel and HTML files containing city-lev
 for all years back to 2000. Special election results are pre-processed and available on Github at
 https://github.com/openelections/openelections-data-ri.
 """
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 from os.path import join
 import json
 import datetime
-import urlparse
+import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
@@ -21,7 +24,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

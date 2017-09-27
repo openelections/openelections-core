@@ -1,3 +1,4 @@
+from __future__ import print_function
 import click
 
 from openelex.base.cache import StateCache
@@ -22,7 +23,7 @@ def files(state, datefilter=''):
         msg = "No files found"
         if datefilter:
             msg += " using date filter: %s" % datefilter
-        print msg 
+        print(msg) 
 
 
 @click.command(name='cache.clear', help="Delete files in state cache diretory")

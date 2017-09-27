@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 import errno
 import os
 import shutil
@@ -26,7 +28,7 @@ class StateCache(object):
                         if datefilter.strip() in f]
         else:
             files = os.listdir(self.path)
-            filtered = filter(lambda path: datefilter.strip() in path, files)
+            filtered = [path for path in files if datefilter.strip() in path]
         filtered.sort()
         return filtered
 
@@ -43,5 +45,5 @@ class StateCache(object):
                 shutil.rmtree(os.path.join(self.path, f))
 
         remaining = self.list_dir()
-        print "%s files deleted" % len(files)
-        print "%s files still in cache" % len(remaining)
+        print("%s files deleted" % len(files))
+        print("%s files still in cache" % len(remaining))

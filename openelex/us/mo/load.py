@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -97,7 +99,7 @@ class MOPrecinctLoader(MOBaseLoader):
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
                     jurisdiction = row['precinct'].strip()
-                    print row['county']
+                    print(row['county'])
                     county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
                     rr_kwargs.update({
                         'party': row['party'].strip(),

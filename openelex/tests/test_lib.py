@@ -44,7 +44,7 @@ class TestText(TestCase):
           },
         }
 
-        for slug, attrs in elec_attrs.items():
+        for slug, attrs in list(elec_attrs.items()):
             self.assertEqual(election_slug(**attrs), slug)
 
 

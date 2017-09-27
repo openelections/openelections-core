@@ -1,3 +1,4 @@
+from builtins import object
 from datetime import datetime
 
 from mongoengine import Document, DynamicDocument

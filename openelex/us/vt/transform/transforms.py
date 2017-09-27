@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import str
 from datetime import datetime
 import logging
 import time
@@ -162,7 +164,7 @@ class BaseTransform(Transform):
             except Office.DoesNotExist:
                 print (raw_resultDict.get('office', ""))
                 print (self._clean_office(raw_resultDict.get('office', "")))
-                print "No office matching query %s" % (office_query)
+                print("No office matching query %s" % (office_query))
                 raise
 
     def _cleanDistrict(self, district):
@@ -220,13 +222,13 @@ class BaseTransform(Transform):
             return self._party_cache[clean_abbrev]
         except KeyError:
             try:
-                print('getting party for ', party, clean_abbrev)
+                print(('getting party for ', party, clean_abbrev))
                 party = Party.objects.get(abbrev=clean_abbrev)
                 self._party_cache[clean_abbrev] = party
                 return party
             except Party.DoesNotExist:
                 print(raw_resultDict)
-                print "No party with abbreviation %s" % (clean_abbrev)
+                print("No party with abbreviation %s" % (clean_abbrev))
                 raise
 
     def _clean_party(self, party):
@@ -267,7 +269,7 @@ class CreateContestsTransform(BaseTransform):
     auto_reverse = True
 
     def __call__(self):
-        print(str(datetime.now()), "CreateContestsTransform begin")
+        print((str(datetime.now()), "CreateContestsTransform begin"))
         contests = []
 
         contestElem = {c: 1 for c in contest_fields}
@@ -295,11 +297,11 @@ class CreateContestsTransform(BaseTransform):
 
         if len(contests) > 0:
             Contest.objects.insert(contests, load_bulk=False)
-        print (str(datetime.now()), "Created %d contests." % len(contests))
+        print((str(datetime.now()), "Created %d contests." % len(contests)))
 
     def reverse(self):
         old = Contest.objects.filter(state='VT')
-        print "\tDeleting %d previously created contests" % old.count()
+        print("\tDeleting %d previously created contests" % old.count())
         old.delete()
 
 
@@ -310,7 +312,7 @@ class CreateCandidates(BaseTransform):
     auto_reverse = True
 
     def __call__(self):
-        print(str(datetime.now()), "CreateCandidates begin")
+        print((str(datetime.now()), "CreateCandidates begin"))
         candidates = []
 
         candidateElem = {c: 1 for c in candidate_fields}
@@ -328,7 +330,7 @@ class CreateCandidates(BaseTransform):
             {"$group"  : candidateElemGroups }
             ]
 
-        print ("pipeline", pipeline)
+        print(("pipeline", pipeline))
         aggregatedResults = RawResult.objects.aggregate(*pipeline)
 
         for rr in aggregatedResults:
@@ -343,12 +345,12 @@ class CreateCandidates(BaseTransform):
 
         if len(candidates) > 0:
             Candidate.objects.insert(candidates, load_bulk=False)
-        print (str(datetime.now()), "Created %d candidates." % len(candidates))
+        print((str(datetime.now()), "Created %d candidates." % len(candidates)))
 
 
     def reverse(self):
         old = Candidate.objects.filter(state='VT')
-        print "\tDeleting %d previously created candidates" % old.count()
+        print("\tDeleting %d previously created candidates" % old.count())
         old.delete()
 
 class CreateResultsTransform(BaseTransform):
@@ -365,7 +367,7 @@ class CreateResultsTransform(BaseTransform):
         return Result.objects.filter(election_id__in=election_ids)
 
     def __call__(self):
-        print(str(datetime.now()), "CreateResultsTransform begin")
+        print((str(datetime.now()), "CreateResultsTransform begin"))
         results = self._create_results_collection()
 
         pipeline = [{"$match": {"state":'VT'} }]
@@ -413,11 +415,11 @@ class CreateResultsTransform(BaseTransform):
             results.append(result)
 
         self._create_results(results)
-        print (str(datetime.now()), "Created %d results." % results.count())
+        print((str(datetime.now()), "Created %d results." % results.count()))
 
     def reverse(self):
         old_results = self.get_results()
-        print "\tDeleting %d previously loaded results" % old_results.count()
+        print("\tDeleting %d previously loaded results" % old_results.count())
         old_results.delete()
 
 
@@ -433,7 +435,7 @@ class CreateResultsTransform(BaseTransform):
         Create the Result objects in the database.
         """
         results.flush()
-        print "Created %d results." % results.count()
+        print("Created %d results." % results.count())
 
 
     def _alter_result_fields(self, fields, raw_resultDict):
@@ -464,7 +466,7 @@ class CreateResultsTransform(BaseTransform):
                 print(fields)
                 candidate = Candidate.objects.get(**fields)
             except Candidate.DoesNotExist:
-                print fields
+                print(fields)
                 raise
             self._candidate_cache[key] = candidate
             return candidate

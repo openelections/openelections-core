@@ -1,5 +1,8 @@
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import os.path
-import urlparse
+import urllib.parse
 from zipfile import ZipFile
 
 from openelex.base.fetch import BaseFetcher
@@ -38,7 +41,7 @@ class FetchResults(BaseFetcher):
         We don't care too much about the format because we can delete the
         zip file later.
         """
-        parsed = urlparse.urlsplit(url)
+        parsed = urllib.parse.urlsplit(url)
         fname = parsed.path.split('/')[-1]
         return os.path.join(self.cache.abspath, fname)
 
@@ -79,9 +82,9 @@ class FetchResults(BaseFetcher):
                     extracted_file_name = os.path.join(self.cache.abspath,
                         mapping['raw_extracted_filename'])
                     os.rename(extracted_file_name, local_file_name)
-                    print "Added to cache: %s" % local_file_name
+                    print("Added to cache: %s" % local_file_name)
                 else:
-                    print "File is cached: %s" % local_file_name
+                    print("File is cached: %s" % local_file_name)
 
         if remove:
             os.remove(zip_fname)

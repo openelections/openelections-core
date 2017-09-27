@@ -24,11 +24,13 @@ direct link to the most detailed data for that election (precinct-level, if avai
 If precinct-level results file is available, grab that. If not, run the _url_paths function to load details about the location and scope of HTML (aspx)
 files. Use the path attribute and the base_url to construct the full raw results URLs.
 """
+from future import standard_library
+standard_library.install_aliases()
 import os
 from os.path import join
 import json
 import unicodecsv
-import urlparse
+import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
@@ -42,7 +44,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 
@@ -154,7 +156,7 @@ class Datasource(BaseDatasource):
             election_type,
             'precinct'
         ]
-        path = urlparse.urlparse(url).path
+        path = urllib.parse.urlparse(url).path
         ext = os.path.splitext(path)[1]
         name = "__".join(bits)+ ext
         return name
@@ -169,7 +171,7 @@ class Datasource(BaseDatasource):
             election_type,
             'county'
         ]
-        path = urlparse.urlparse(url).path
+        path = urllib.parse.urlparse(url).path
         ext = os.path.splitext(path)[1]
         name = "__".join(bits)+ ext
         return name
@@ -197,7 +199,7 @@ class Datasource(BaseDatasource):
                 election_type,
                 office
             ]
-        path = urlparse.urlparse(url).path
+        path = urllib.parse.urlparse(url).path
         name = "__".join(bits)+'.html'
         return name
 

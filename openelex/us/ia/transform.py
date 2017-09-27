@@ -1,3 +1,4 @@
+from __future__ import print_function
 from openelex.base.transform import Transform, registry
 from openelex.models import RawResult
 

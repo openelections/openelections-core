@@ -8,10 +8,12 @@ files have been converted from the original Quattro Pro source to XLS files.
 For 2006, precinct-level results are contained in county-specific PDF files. The CSV versions of those are contained in the
 https://github.com/openelections/openelections-data-wy repository. Special elections are also contained in that repository.
 """
+from future import standard_library
+standard_library.install_aliases()
 from os.path import join
 import json
 import datetime
-import urlparse
+import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
@@ -26,7 +28,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

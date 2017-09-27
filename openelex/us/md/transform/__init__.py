@@ -1,3 +1,4 @@
+from __future__ import print_function
 from datetime import datetime
 import logging
 
@@ -113,7 +114,7 @@ class BaseTransform(Transform):
                 self._office_cache[key] = office
                 return office
             except Office.DoesNotExist:
-                print "No office matching query %s" % (office_query)
+                print("No office matching query %s" % (office_query))
                 raise
 
     def _clean_office(self, office):
@@ -152,7 +153,7 @@ class BaseTransform(Transform):
                 self._party_cache[clean_abbrev] = party
                 return party
             except Party.DoesNotExist:
-                print "No party with abbreviation %s" % (clean_abbrev)
+                print("No party with abbreviation %s" % (clean_abbrev))
                 raise
 
     def _clean_party(self, party):
@@ -213,7 +214,7 @@ class BaseTransform(Transform):
             try:
                 contest = Contest.objects.get(**fields)
             except Exception:
-                print fields
+                print(fields)
                 raise
             self._contest_cache[key] = contest
             return contest
@@ -236,11 +237,11 @@ class CreateContestsTransform(BaseTransform):
                 seen.add(key)
 
         Contest.objects.insert(contests, load_bulk=False)
-        print "Created %d contests." % len(contests)
+        print("Created %d contests." % len(contests))
 
     def reverse(self):
         old = Contest.objects.filter(state='MD')
-        print "\tDeleting %d previously created contests" % old.count()
+        print("\tDeleting %d previously created contests" % old.count())
         old.delete()
 
     def _contest_key(self, raw_result):
@@ -277,12 +278,12 @@ class CreateCandidatesTransform(BaseTransform):
                 seen.add(key)
 
         Candidate.objects.insert(candidates, load_bulk=False)
-        print "Created %d candidates." % len(candidates)
+        print("Created %d candidates." % len(candidates))
 
 
     def reverse(self):
         old = Candidate.objects.filter(state='MD')
-        print "\tDeleting %d previously created candidates" % old.count()
+        print("\tDeleting %d previously created candidates" % old.count())
         old.delete()
 
 
@@ -349,11 +350,11 @@ class CreateResultsTransform(BaseTransform):
         Create the Result objects in the database.
         """
         results.flush()
-        print "Created %d results." % results.count()
+        print("Created %d results." % results.count())
 
     def reverse(self):
         old_results = self.get_results()
-        print "\tDeleting %d previously loaded results" % old_results.count()
+        print("\tDeleting %d previously loaded results" % old_results.count())
         old_results.delete()
 
     def get_candidate(self, raw_result, extra={}):
@@ -376,7 +377,7 @@ class CreateResultsTransform(BaseTransform):
             try:
                 candidate = Candidate.objects.get(**fields)
             except Candidate.DoesNotExist:
-                print fields
+                print(fields)
                 raise
             self._candidate_cache[key] = candidate
             return candidate
@@ -499,7 +500,7 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
 
         Result.objects.insert(results, load_bulk=False)
 
-        print "Created %d results." % len(results)
+        print("Created %d results." % len(results))
 
     def get_rawresults(self):
         return RawResult.objects.filter(state='MD',
@@ -540,7 +541,7 @@ class CreateDistrictResultsTransform(CreateResultsTransform):
         count += results.count()
         results.delete()
 
-        print "\tDeleted %d previously loaded results" % count
+        print("\tDeleted %d previously loaded results" % count)
 
     def _get_or_instantiate_result(self, fields):
         slug = Result.make_slug(election_id=fields['election_id'],
@@ -581,7 +582,7 @@ class Create2000PrimaryCongressCountyResultsTransform(CreateResultsTransform):
 
     def _create_results(self, results):
         Result.objects.insert(results, load_bulk=False)
-        print "Created %d results." % len(results)
+        print("Created %d results." % len(results))
 
     def get_results(self):
         return Result.objects.filter(state='MD',

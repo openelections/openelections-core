@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import range
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -177,7 +180,7 @@ class MDLoader(MDBaseLoader):
         except KeyError as e:
             pass
         results = []
-        for field, val in row.items():
+        for field, val in list(row.items()):
             clean_field = field.strip()
             # Legislative fields prefixed with LEGS
             if not clean_field.startswith('LEGS'):
@@ -470,7 +473,7 @@ class MDLoader2000Primary(MDBaseLoader):
         results = []
         cols = [x.strip() for x in row if x != '']
         county = cols[0].strip()
-        cand_results = zip(candidates, cols[1:])
+        cand_results = list(zip(candidates, cols[1:]))
 
         for cand, votes in cand_results:
             result_kwargs = common_kwargs.copy()
@@ -533,7 +536,7 @@ class MDLoader2008Special(CountyOCDMixin, BaseLoader):
         RawResult.objects.insert(results)
 
     def _get_html_table(self):
-        soup = BeautifulSoup(self._file_handle)
+        soup = BeautifulSoup(self._file_handle, 'html.parser')
         return soup.find(text=re.compile("Donna Edwards")).parent.parent.parent
 
     def _parse_html_table(self, table):
