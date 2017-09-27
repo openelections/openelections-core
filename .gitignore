@@ -43,3 +43,6 @@ pip-log.txt
 .idea/
 .project
 .settings
+
+# Environment Variables
+.env
