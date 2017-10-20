@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import range
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -83,7 +86,7 @@ class OH2014CountyLoader(OHBaseLoader):
         last_office_column = self._get_last_office_column(raw_offices)
         offices = self._get_offices(raw_offices, last_office_column)
         candidates = [c.value for c in worksheet.row(1)[5:last_office_column+7]]
-        combined = zip(offices, candidates)
+        combined = list(zip(offices, candidates))
         for i in range(4, worksheet.nrows):
             row = [c.value for c in worksheet.row(i)[:last_office_column+5]]
             county = row[0]
@@ -242,7 +245,7 @@ class OH2010PrecinctLoader(OHBaseLoader):
         except KeyError as e:
             pass
         results = []
-        for field, val in row.items():
+        for field, val in list(row.items()):
             clean_field = field.strip()
             # Legislative fields prefixed with LEGS
             if not clean_field.startswith('LEGS'):

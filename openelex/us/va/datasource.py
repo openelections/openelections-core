@@ -3,10 +3,12 @@ Virginia has CSV files on an FTP site containing precinct-level results for each
 and all offices for all years back to 2005. Prior to 2005, they have CSV files with precinct and municipality-
 level results available from http://historical.elections.virginia.gov/.
 """
+from future import standard_library
+standard_library.install_aliases()
 from os.path import join
 import json
 import datetime
-import urlparse
+import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
@@ -20,7 +22,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

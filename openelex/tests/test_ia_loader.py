@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import next
+from builtins import object
 import datetime
 import re
 from unittest import skipUnless, TestCase

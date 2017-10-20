@@ -35,7 +35,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 
@@ -284,7 +284,7 @@ class Datasource(BaseDatasource):
         if race_type:
             return urls[race_type]
         else:
-            return urls.values()
+            return list(urls.values())
 
     def _generate_2002_filename(self, url):
         if url.endswith('g_all_offices.txt'):

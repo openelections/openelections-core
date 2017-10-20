@@ -1,3 +1,8 @@
+from __future__ import print_function
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
 import re
 import xlrd
 import operator
@@ -133,9 +138,9 @@ class WYLoader(WYBaseLoader):
                     candidates = self._build_candidates_2000(sheet, party, primary)
             else:
                 candidates = self._build_candidates(sheet, party)
-                print candidates
+                print(candidates)
 
-            for i in xrange(sheet.nrows):
+            for i in range(sheet.nrows):
                 row = [r for r in sheet.row_values(i) if not r == '']
                 # remove empty cells
                 # Skip non-target offices
@@ -143,7 +148,7 @@ class WYLoader(WYBaseLoader):
                     continue
                 else:
                     precinct = str(row[0])
-                    print precinct
+                    print(precinct)
                     if self.source == '20021126__wy__special__general__natrona__state_house__36__precinct.xls':
                         votes = [v for v in row[1:] if not v == '']
                     elif len(candidates) == 1:
@@ -155,7 +160,7 @@ class WYLoader(WYBaseLoader):
                         votes = [v for v in row[2:len(candidates)] if not v == '']
                     else:
                         votes = [v for v in row[1:len(candidates)] if not v == '']
-                    grouped_results = zip(candidates, votes)
+                    grouped_results = list(zip(candidates, votes))
                     for (candidate, office, candidate_party), votes in grouped_results:
                         if not votes == '-':
                             results.append(self._prep_precinct_result(precinct, self.mapping['name'], candidate, office, candidate_party, votes))
@@ -322,7 +327,7 @@ class WYLoader(WYBaseLoader):
             else:
                 parties.append(party)
                 candidates.append(cand)
-        return zip(candidates, offices, parties)
+        return list(zip(candidates, offices, parties))
 
     def _build_candidates_2002_special(self, sheet):
         offices = self._build_offices_2002_special(sheet)
@@ -332,7 +337,7 @@ class WYLoader(WYBaseLoader):
         for cand in raw_cands:
             parties.append(cand.split(' - ')[1])
             candidates.append(cand.split(' - ')[0])
-        return zip(candidates, offices, parties)
+        return list(zip(candidates, offices, parties))
 
     def _build_candidates_2002(self, sheet, party):
         offices = self._build_offices_2002(sheet)
@@ -347,7 +352,7 @@ class WYLoader(WYBaseLoader):
             else:
                 parties.append(cand.split('-')[1].strip())
                 candidates.append(cand.split('-')[0].strip())
-        return zip(candidates, offices, parties)
+        return list(zip(candidates, offices, parties))
 
     def _build_candidates_2000(self, sheet, party, primary):
         offices = self._build_offices_2000(sheet, party)
@@ -364,7 +369,7 @@ class WYLoader(WYBaseLoader):
             else:
                 parties.append(party)
                 candidates.append(cand)
-        return zip(candidates, offices, parties)
+        return list(zip(candidates, offices, parties))
 
     def _build_candidates(self, sheet, party):
         # map candidates to offices so we can lookup up one and get the other
@@ -414,7 +419,7 @@ class WYLoader(WYBaseLoader):
             candidates = [c.replace('\n', ' ') for c in cands[:len(offices)]]
             if parties[0] == '':
                 parties = parties[1:]
-        return zip(candidates, offices, parties)
+        return list(zip(candidates, offices, parties))
 
     def _build_contest_kwargs(self, office):
         # find a district number, if one exists (state house & senate only)

@@ -6,10 +6,12 @@ https://github.com/openelections/openelections-data-or.
 For regular primary and general elections, there are statewide county-level files. Each county has a
 precinct-level results file. Special and runoff elections for non-statewide offices are contained in a single file for each office.
 """
+from future import standard_library
+standard_library.install_aliases()
 from os.path import join
 import json
 import datetime
-import urlparse
+import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
@@ -24,7 +26,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

@@ -4,10 +4,13 @@ from the 2004 general to the 2012 general. All of those files are pre-processed 
 https://github.com/openelections/openelections-data-nv. Prior to the 2004 general and
 after the 2012 primary, county-level XML and HTML files are available from the Secretary of State's site.
 """
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 from os.path import join
 import json
 import datetime
-import urlparse
+import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
@@ -22,7 +25,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

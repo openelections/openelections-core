@@ -1,3 +1,4 @@
+from __future__ import print_function
 import click
 
 def load_module(state, mod_list=[]):
@@ -22,8 +23,8 @@ def default_state_options(f):
 
 def print_files(files):
     for f in files:
-        print f
-    print "%s files found" % len(files)
+        print(f)
+    print("%s files found" % len(files))
 
 def split_args(raw_args, separator=','):
     """Helper for parsing command-line options"""

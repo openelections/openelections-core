@@ -19,7 +19,7 @@ class Datasource(BaseDatasource):
     def mappings(self, year=None):
         """Return list of dicts linking urls, filenames, and election ids."""
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

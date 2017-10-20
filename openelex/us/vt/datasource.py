@@ -11,8 +11,12 @@ To run mappings from a shell:
     openelex datasource.mappings -s vt
 
 """
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import re
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 from bs4 import BeautifulSoup
 from string import Template
 from multiprocessing.pool import ThreadPool
@@ -25,15 +29,15 @@ class Datasource(BaseDatasource):
 
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        print(str(datetime.now()), "mappings begin")
+        print((str(datetime.now()), "mappings begin"))
         """Return array of dicts  containing source url and
         standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
-        print(str(datetime.now()), "mappings end")
+        print((str(datetime.now()), "mappings end"))
         return mappings
 
     def target_urls(self, year=None):
@@ -139,7 +143,7 @@ class Datasource(BaseDatasource):
     def _getElectionList(self, year, officeId):
         payload = []
         search_url = Template(self.search_url_expr).substitute(year=year, office_id=officeId)
-        response = urllib2.urlopen(search_url)
+        response = urllib.request.urlopen(search_url)
         html_doc = response.read()
 
         # load election from search results.
@@ -153,7 +157,7 @@ class Datasource(BaseDatasource):
             payload.append({'officeId': officeId,'id': elemElectId, 'year': year, 'office': office, 'district': district, 'stage': stage})
         return officeId, payload
     def _findElecByType(self, elecDict, str):
-        return filter(lambda e: e['stage'] == str, elecDict)
+        return [e for e in elecDict if e['stage'] == str]
 
     def _officeNameFromId(self, officeId):
         return self.OfficeIdToOfficeNameMap[officeId]

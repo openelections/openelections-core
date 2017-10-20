@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import unicodecsv
 
 from openelex.base.load import BaseLoader

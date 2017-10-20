@@ -1,5 +1,7 @@
+from future import standard_library
+standard_library.install_aliases()
 from os.path import splitext
-import urlparse
+import urllib.parse
 
 from openelex.base.datasource import BaseDatasource
 from openelex.lib import build_github_url
@@ -23,7 +25,7 @@ class Datasource(BaseDatasource):
 
     def mappings(self, year=None):
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 
@@ -123,7 +125,7 @@ class Datasource(BaseDatasource):
         return meta_entries
 
     def _reporting_level_from_url(self, url):
-        parts = urlparse.urlparse(url)
+        parts = urllib.parse.urlparse(url)
         root, ext = splitext(parts.path)
         root_lower = root.lower()
         if "county" in root_lower:

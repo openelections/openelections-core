@@ -18,7 +18,7 @@ class TestTransformRegistry(TestCase):
         registry.register("XX", mock_transform, validators) 
 
         transform = registry.get("XX", "mock_transform")
-        self.assertEqual(transform.validators.values(), validators)
+        self.assertEqual(list(transform.validators.values()), validators)
 
         transform()
         mock_transform.assert_called_once_with()

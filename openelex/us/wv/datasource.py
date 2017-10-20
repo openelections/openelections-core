@@ -10,10 +10,13 @@ These are represented in the dashboard API as the `direct_links` attribute on el
 Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
 https://github.com/openelections/openelections-data-wv repository.
 """
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
 from os.path import join
 import json
 import unicodecsv
-import urlparse
+import urllib.parse
 import requests
 from bs4 import BeautifulSoup
 
@@ -30,7 +33,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 
@@ -79,7 +82,7 @@ class Datasource(BaseDatasource):
             for election in elections:
                 csv_links = self._find_csv_links(election['direct_links'][0])
                 counties = self._jurisdictions()
-                results = zip(counties, csv_links[1:])
+                results = list(zip(counties, csv_links[1:]))
                 for result in results:
                     meta.append({
                         "generated_filename": self._generate_county_filename(result[0]['county'], election),
@@ -129,14 +132,14 @@ class Datasource(BaseDatasource):
             election_type,
             office
         ]
-        path = urlparse.urlparse(url).path
+        path = urllib.parse.urlparse(url).path
         name = "__".join(bits) + '.csv'
         return name
     
     def _find_csv_links(self, url):
         "Returns a list of dicts of counties and CSV formatted results files for elections 2008-present. First item is statewide, remainder are county-level."
         r = requests.get(url)
-        soup = BeautifulSoup(r.text)
+        soup = BeautifulSoup(r.text, 'html.parser')
         return ['http://apps.sos.wv.gov/elections/results/'+x['href'] for x in soup.find_all('a') if x.text == 'Download Comma Separated Values (CSV)']
 
     def _jurisdictions(self):

@@ -1,8 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import sys
 
 import click
 
-from validate import run_validation
+from .validate import run_validation
 
 from .utils import load_module, split_args
 
@@ -17,16 +19,16 @@ def list(state, raw=False):
     # Iniitialize transforms for the state in global registry
     state_mod = load_module(state, ['transform'])
     transforms = state_mod.transform.registry.all(state)
-    print "\n%s transforms, in order of execution:\n" % state.upper()
+    print("\n%s transforms, in order of execution:\n" % state.upper())
     for transform in transforms:
-        print "* %s" % transform
+        print("* %s" % transform)
         validators = transform.validators
 
         if validators:
-            print
-            print " Validators:"
-            for name in validators.keys():
-                print "    * %s" % name
+            print()
+            print(" Validators:")
+            for name in list(validators.keys()):
+                print("    * %s" % name)
 
 
 class IncludeExcludeError(Exception):
@@ -90,12 +92,12 @@ def run(state, include=None, exclude=None, no_reverse=False, raw=False):
             # Reverse the transform if it's been run previously
             transform.reverse()
 
-        print 'Executing %s' % transform 
+        print('Executing %s' % transform) 
         transform()
 
-        validators = transform.validators.values()
+        validators = list(transform.validators.values())
         if validators:
-            print "Executing validation"
+            print("Executing validation")
             run_validation(state, validators)
 
 @click.command(name='transform.reverse', help="Reverse a previously run transformation")

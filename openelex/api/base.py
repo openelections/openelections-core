@@ -1,6 +1,8 @@
 """OpenElex Api base wrapper"""
+from future import standard_library
+standard_library.install_aliases()
 from collections import OrderedDict
-from urlparse import urljoin
+from urllib.parse import urljoin
 import requests
 
 API_BASE_URL = "http://openelections.net/api/v1/"
@@ -54,7 +56,7 @@ def prepare_api_params(params):
         limit ='0'
 
     new_params = []
-    for key, val in params.items():
+    for key, val in list(params.items()):
         new_params.append((key, val))
     new_params.sort()
     new_params.extend([('format', fmt), ('limit', limit)])

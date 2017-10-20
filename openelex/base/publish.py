@@ -1,8 +1,11 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import getpass
 import glob
 import os.path
 import posixpath
-import urlparse
+import urllib.parse
 
 from blinker import signal
 import github3
@@ -268,4 +271,4 @@ def published_url(state, filename, raw=False):
     """Generate the publically accessible URL of a results file"""
     subdir = RAW_PREFIX if raw else CLEAN_PREFIX
     path = posixpath.join(state.lower(), subdir, filename)
-    return urlparse.urljoin(PUBLISH_BASE_URL, path)
+    return urllib.parse.urljoin(PUBLISH_BASE_URL, path)

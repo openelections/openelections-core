@@ -17,6 +17,8 @@ structured like so:
     {'primary_statewide':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_fed_prec.xls', 'primary_state_legislature':'http://www.sos.idaho.gov/elect/RESULTS/2012/Primary/12%20Pri_leg_prec.xls'}
 
 """
+from __future__ import print_function
+from builtins import str
 import requests
 from bs4 import BeautifulSoup
 
@@ -31,7 +33,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 
@@ -47,7 +49,7 @@ class Datasource(BaseDatasource):
         if not hasattr(self, '_results_links'):
             url = "http://www.sos.idaho.gov/elect/results.htm"
             r = requests.get(url)
-            soup = BeautifulSoup(r.text)
+            soup = BeautifulSoup(r.text, 'html.parser')
             table = soup.find_all('table')[3]
             precincts = [x for x in table.find_all('a') if str(year) in x['href']]
             self._results_links = [x for x in precincts if x.text == 'Statewide' or 'Legislature' in x.text]
@@ -89,7 +91,7 @@ class Datasource(BaseDatasource):
         try:
             links['primary_state_legislature']
         except:
-            print links
+            print(links)
         return [links['primary_statewide'], links['primary_state_legislature']], [links['general_statewide'], links['general_state_legislature']]
     
     def __build_absentee_metadata(self, year, election):

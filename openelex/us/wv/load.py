@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import re
 import csv
 import unicodecsv

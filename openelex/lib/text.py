@@ -1,3 +1,4 @@
+from builtins import str
 import re
 
 
@@ -47,7 +48,7 @@ def ocd_type_id(text, strip_leading_zeros=True):
     try:
         u_text = text.encode('utf-8')
     except AttributeError:
-        u_text = unicode(text, "utf-8")
+        u_text = str(text, "utf-8")
     # Convert to lowercase
     u_text = u_text.lower()
     u_text = u_text.replace('(','')

@@ -1,6 +1,9 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
 from os.path import join, splitext
 import re
-import urlparse
+import urllib.parse
 
 import unicodecsv
 
@@ -436,6 +439,6 @@ class BaseDatasource(StateBase):
         return "__".join(bits) + extension
 
     def _filename_extension(self, url):
-        parts = urlparse.urlparse(url)
+        parts = urllib.parse.urlparse(url)
         root, ext = splitext(parts.path)
         return ext

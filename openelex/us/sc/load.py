@@ -1,3 +1,4 @@
+from builtins import object
 import clarify
 
 from openelex.base.load import BaseLoader

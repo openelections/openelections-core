@@ -1,4 +1,5 @@
-from transforms import *
+from __future__ import absolute_import
+from .transforms import *
 from openelex.base.transform import Transform, registry
 
 registry.register('vt', CreateContestsTransform)

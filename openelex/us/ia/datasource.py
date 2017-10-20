@@ -1,4 +1,6 @@
-from urlparse import urlsplit
+from future import standard_library
+standard_library.install_aliases()
+from urllib.parse import urlsplit
 import os.path
 
 from openelex.base.datasource import BaseDatasource
@@ -9,7 +11,7 @@ class Datasource(BaseDatasource):
 
     def mappings(self, year=None):
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

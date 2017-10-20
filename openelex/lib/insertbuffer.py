@@ -1,3 +1,4 @@
+from builtins import object
 class BulkInsertBuffer(object):
     def __init__(self, doc_cls, maxsize=1000):
         """

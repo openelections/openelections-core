@@ -1,3 +1,4 @@
+from __future__ import print_function
 import csv
 from pprint import pprint
 import inspect
@@ -30,14 +31,14 @@ def handle_task(task, state, datefilter):
 def pprint_results(func_name, results):
     for result in results:
         pprint(result)
-    print "\n%s returned %s results" % (func_name, len(results))
+    print("\n%s returned %s results" % (func_name, len(results)))
 
 def csv_results(results):
     fieldname_set = set()
     # Since mappings can have extra fields needed  by a particular state,
     # iterate through the items and record all seen fields.
     for r in results:
-        for f in r.keys():
+        for f in list(r.keys()):
             fieldname_set.add(f)
     # Put known fieldnames first in CSV header output
     fieldnames = [] 
@@ -86,10 +87,10 @@ def elections(state, datefilter=''):
     func_name = inspect.stack()[0][3]
     results = handle_task(func_name, state, datefilter)
     count = 0
-    for year, elecs in results.items():
+    for year, elecs in list(results.items()):
         count += len(elecs)
         pprint(elecs)
-    print "\n%s returned %s results" % (func_name, count)
+    print("\n%s returned %s results" % (func_name, count))
 
 @click.command(name='datasource.filename_url_pairs', help="List mapping of standard filenames to source urls for a state")
 @default_state_options

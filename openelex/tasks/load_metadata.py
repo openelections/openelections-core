@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from csv import DictReader
 
@@ -48,7 +49,7 @@ def run(collection, filename=None, database='openelex', clear=False):
         # Only delete old data if we ask for it and if we can open the new
         # file. 
         if clear: 
-            print "Clearing all existing records.\n"
+            print("Clearing all existing records.\n")
             doc_cls.objects.delete()
 
         reader = DictReader(f)
@@ -65,4 +66,4 @@ def run(collection, filename=None, database='openelex', clear=False):
     if (num_created < count):
         msg = msg + "%d records already in database.\n" % (count - num_created)
 
-    print msg
+    print(msg)

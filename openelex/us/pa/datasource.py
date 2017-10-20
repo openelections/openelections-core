@@ -5,10 +5,12 @@ The state offers CSV files containing precinct-level results for regularly sched
 zip file into election-specific files and thus have no `raw_url` attribute. Special elections are pre-processed CSV files from HTML files. All files
 are available in the https://github.com/openelections/openelections-data-pa repository.
 """
+from future import standard_library
+standard_library.install_aliases()
 from os.path import join
 import json
 import unicodecsv
-import urlparse
+import urllib.parse
 import requests
 
 from openelex import PROJECT_ROOT
@@ -24,7 +26,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 
