@@ -1,5 +1,7 @@
 ## Open Elections core code
 
+[![Build Status](https://travis-ci.org/openelections/openelections-core.svg?branch=dev)](https://travis-ci.org/openelections/openelections-core)
+
 Core repo for election results data acquisition, transformation and output.
 
 OpenElections core is developed and tested using Python 2.7.*. The package
