@@ -1,11 +1,8 @@
-from builtins import object
-import re
-import csv
 import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
-from openelex.lib.text import ocd_type_id, slugify
+from openelex.lib.text import ocd_type_id
 from .datasource import Datasource
 
 """
@@ -94,7 +91,7 @@ class AZPrecinctLoader(AZBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -161,7 +158,7 @@ class AZCountyLoader(AZBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -221,7 +218,7 @@ class AZSpecialLoader(AZBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue

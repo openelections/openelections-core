@@ -87,8 +87,7 @@ class FlLoader(BaseLoader):
             results = []
             seen = set()
             self._common_kwargs = self._build_common_election_kwargs()
-            reader = unicodecsv.DictReader(csvfile, delimiter='\t',
-                encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t')
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row):
@@ -208,7 +207,7 @@ class PrecinctLoader(FlLoader):
         fieldnames = ['county_code', 'county_name', 'election_number', 'election_date', 'election_name', 'precinct_id', 'polling_location', 'registered_voters', 'registered_republicans', 'registered_democrats', 'registered_others', 'contest_name', 'district', 'contest_code', 'candidate', 'party', 'candidate_id', 'doe_candidate_number', 'votes']
         with self._file_handle as tsvfile:
             tsv = [x.replace('\0', '') for x in tsvfile] # remove NULL bytes
-            reader = unicodecsv.DictReader(tsv, fieldnames=fieldnames, delimiter='\t', encoding='latin-1')
+            reader = unicodecsv.DictReader(tsv, fieldnames=fieldnames, delimiter='\t')
             for row in reader:
                 if self._skip_row(row):
                     continue

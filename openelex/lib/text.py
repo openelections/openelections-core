@@ -42,26 +42,19 @@ def ocd_type_id(text, strip_leading_zeros=True):
         * Leading zeros should be dropped unless doing so changes the meaning
           of the identifier.
     """
-    # Use unicode for regexes
-    re.UNICODE = True
-    # Convert characters to unicode
-    try:
-        u_text = text.encode('utf-8')
-    except AttributeError:
-        u_text = str(text, "utf-8")
     # Convert to lowercase
-    u_text = u_text.lower()
-    u_text = u_text.replace('(','')
-    u_text = u_text.replace(')','')
+    text = text.lower()
+    text = text.replace('(','')
+    text = text.replace(')','')
     # Convert spaces to underscores
-    u_text = re.sub(r'\s', u'_', u_text)
-    u_text = re.sub(r'[^\w.\-~]', u'~', u_text)
+    text = re.sub(r'\s', '_', text)
+    text = re.sub(r'[^\w.\-~]', '~', text)
 
     if strip_leading_zeros:
         # Remove leading zeros
-        u_text = u_text.lstrip('0')
+        text = text.lstrip('0')
 
-    return u_text
+    return text
 
 
 def election_slug(state, start_date, race_type, special=False, **kwargs):

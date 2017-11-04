@@ -40,7 +40,7 @@ class VTBaseLoader(BaseLoader):
 
         self._common_kwargs['reporting_level'] = 'precinct' if self.mapping['isPrecinct'] else ''
         with self._file_handle as csvfile:
-            reader = unicodecsv.reader(csvfile, delimiter=',', encoding='latin-1')
+            reader = unicodecsv.reader(csvfile, delimiter=',')
             readerData = list(reader)
             candListRow = readerData[0]
             if not self._isValidHeaderRow(candListRow):

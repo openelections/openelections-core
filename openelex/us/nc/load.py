@@ -147,7 +147,7 @@ class NCTsvLoader(NCBaseLoader):
         results = []
         with self._file_handle as tsvfile:
             tsv = [x.replace('\0', '') for x in tsvfile] # remove NULL bytes
-            reader = unicodecsv.DictReader(tsv, delimiter='\t', encoding='latin-1')
+            reader = unicodecsv.DictReader(tsv, delimiter='\t')
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -229,7 +229,7 @@ class NCCsvLoader(NCBaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row):
@@ -342,7 +342,7 @@ class NCTsv2008Loader(NCBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -412,9 +412,9 @@ class NCTextLoader(NCBaseLoader):
         results = []
         with self._file_handle as csvfile:
             if '2004' in self.mapping['election']:
-                reader = unicodecsv.DictReader(csvfile, delimiter=',', encoding='latin-1')
+                reader = unicodecsv.DictReader(csvfile, delimiter=',')
             else:
-                reader = unicodecsv.DictReader(csvfile, delimiter='\t', encoding='latin-1')
+                reader = unicodecsv.DictReader(csvfile, delimiter='\t')
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -506,7 +506,7 @@ class NCTsv20022000Loader(NCBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue

@@ -623,8 +623,7 @@ class WALoaderPrecincts(OCDMixin, WABaseLoader):
         with self._file_handle as csvfile:
             party_flag = 0
             district_flag = 0
-            reader = unicodecsv.DictReader(
-                csvfile, encoding='latin-1', delimiter=',')
+            reader = unicodecsv.DictReader(csvfile, delimiter=',')
 
             # Declare column indices before the loop so we aren't making
             # a method call for each line in the file
@@ -727,8 +726,7 @@ class WALoaderPre2007(OCDMixin, WABaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1',
-                                           delimiter=',')
+            reader = unicodecsv.DictReader(csvfile, delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
 
             try:
@@ -833,8 +831,7 @@ class WALoaderPost2007(OCDMixin, WABaseLoader):
 
         with self._file_handle as csvfile:
             district_flag = 0
-            reader = unicodecsv.DictReader(
-                csvfile, encoding='latin-1', delimiter=',')
+            reader = unicodecsv.DictReader(csvfile, delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
             self.contest_index = normalize_contest(self.header)
             for row in reader:
