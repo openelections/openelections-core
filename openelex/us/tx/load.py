@@ -100,7 +100,7 @@ class TXPrecinctLoader(TXBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -156,7 +156,7 @@ class TXCountyLoader(TXBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -211,7 +211,7 @@ class TXLoader(TXBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue

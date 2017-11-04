@@ -113,7 +113,7 @@ class PreprocessedResultsLoader(BaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 if self._skip_row(row):
                     continue

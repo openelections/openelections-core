@@ -9,7 +9,6 @@ https://github.com/openelections/openelections-data-in repository.
 from __future__ import print_function
 
 from builtins import object
-import logging
 import unicodecsv
 
 from openelex.base.load import BaseLoader
@@ -50,7 +49,7 @@ class INPrecinctLoader(BaseLoader):
         results = []
         num_skipped = 0
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 if self._skip_row(row):
                     num_skipped += 1

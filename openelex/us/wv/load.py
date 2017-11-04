@@ -71,7 +71,7 @@ class WVLoader(WVBaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row):
@@ -197,7 +197,7 @@ class WVLoaderPre2008(WVBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue

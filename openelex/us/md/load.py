@@ -95,7 +95,7 @@ class MDLoader(MDBaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row):
@@ -322,7 +322,7 @@ class MDLoader2002(MDBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, delimiter='|', encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers, delimiter='|')
             for row in reader:
                 if self._skip_row(row):
                     continue

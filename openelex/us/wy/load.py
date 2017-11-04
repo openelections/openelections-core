@@ -516,7 +516,7 @@ class WYLoaderCSV(WYBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -580,7 +580,7 @@ class WYSpecialLoader2008(WYBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames=headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if row['votes'] == 'votes':
                     continue
