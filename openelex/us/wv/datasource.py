@@ -7,7 +7,7 @@ The state offers CSV files containing precinct-level results for each county by 
 
 These are represented in the dashboard API as the `direct_links` attribute on elections.
 
-Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the 
+Prior to 2008, county-level results are contained in office-specific PDF files. The CSV versions of those are contained in the
 https://github.com/openelections/openelections-data-wv repository.
 """
 from future import standard_library
@@ -25,11 +25,11 @@ from openelex.base.datasource import BaseDatasource
 from openelex.lib import build_github_url
 
 class Datasource(BaseDatasource):
-    
+
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
@@ -42,7 +42,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], self._url_for_fetch(item)) 
+        return [(item['generated_filename'], self._url_for_fetch(item))
                 for item in self.mappings(year)]
 
     def unprocessed_filename_url_pairs(self, year=None):
@@ -82,6 +82,14 @@ class Datasource(BaseDatasource):
             for election in elections:
                 csv_links = self._find_csv_links(election['direct_links'][0])
                 counties = self._jurisdictions()
+                meta.append({
+                        "generated_filename": self._generate_statewide_filename(election),
+                        "pre_processed_url": None,
+                        "raw_url": election['direct_links'][1],
+                        "ocd_id": 'ocd-division/country:us/state:wv',
+                        "name": 'West Virginia',
+                        "election": election['slug']
+                })
                 results = list(zip(counties, csv_links[1:]))
                 for result in results:
                     meta.append({
@@ -93,7 +101,7 @@ class Datasource(BaseDatasource):
                         "election": election['slug']
                     })
         return meta
-    
+
     def _build_raw_url(self, year, path):
         return "http://www.sos.wv.gov/elections/history/electionreturns/Documents/%s/%s" % (year, path)
 
@@ -107,7 +115,7 @@ class Datasource(BaseDatasource):
             election_type
         ]
         return "__".join(bits) + '.csv'
-        
+
     def _generate_county_filename(self, county, election):
         bits = [
             election['start_date'].replace('-',''),
@@ -135,7 +143,7 @@ class Datasource(BaseDatasource):
         path = urllib.parse.urlparse(url).path
         name = "__".join(bits) + '.csv'
         return name
-    
+
     def _find_csv_links(self, url):
         "Returns a list of dicts of counties and CSV formatted results files for elections 2008-present. First item is statewide, remainder are county-level."
         r = requests.get(url)

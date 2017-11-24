@@ -81,6 +81,10 @@ class WVLoader(WVBaseLoader):
                         results.append(self._prep_county_result(row))
                     else:
                         continue
+                elif '__precinct__' not in self.mapping['generated_filename']:
+                    if row['CountyName'] == '':
+                        continue
+                    results.append(self._prep_county_result(row))
                 else:
                     results.append(self._prep_precinct_result(row))
             RawResult.objects.insert(results)
@@ -135,7 +139,7 @@ class WVLoader(WVBaseLoader):
 
     def _prep_county_result(self, row):
         kwargs = self._base_kwargs(row)
-        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'] == row['CountyName']][0]['ocd_id']
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['CountyName'].upper()][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'county',
             'jurisdiction': row['CountyName'],
