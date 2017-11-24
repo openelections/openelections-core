@@ -3,6 +3,7 @@ import datetime
 import json
 from os.path import join
 import re
+import io
 
 import unicodecsv
 
@@ -99,7 +100,7 @@ class BaseLoader(StateBase):
 
     @property
     def _file_handle(self):
-        return open(join(self.cache.abspath, self.source), 'rU', encoding='latin-1')
+        return io.open(join(self.cache.abspath, self.source), 'rU', encoding='latin-1')
 
     @property
     def _xls_file_path(self):
