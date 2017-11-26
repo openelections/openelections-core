@@ -22,7 +22,7 @@ from bs4 import BeautifulSoup
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
-from openelex.lib import build_github_url
+from openelex.lib import build_github_url, build_raw_github_url
 
 class Datasource(BaseDatasource):
 
@@ -92,14 +92,24 @@ class Datasource(BaseDatasource):
                 })
                 results = list(zip(counties, csv_links[1:]))
                 for result in results:
-                    meta.append({
-                        "generated_filename": self._generate_county_filename(result[0]['county'], election),
-                        "pre_processed_url": None,
-                        "raw_url": result[1],
-                        "ocd_id": result[0]['ocd_id'],
-                        "name": result[0]['county'],
-                        "election": election['slug']
-                    })
+                    if election['start_date'] == "2016-11-08" and any(county == result[0]['county'] for county in ['Kanawha', 'Marshall', 'Nicholas', 'Cabell']):
+                        meta.append({
+                            "generated_filename": self._generate_county_filename(result[0]['county'], election),
+                            "pre_processed_url": build_raw_github_url(self.state, '2016', self._generate_county_filename(result[0]['county'], election)),
+                            "raw_url": result[1],
+                            "ocd_id": result[0]['ocd_id'],
+                            "name": result[0]['county'],
+                            "election": election['slug']
+                        })
+                    else:
+                        meta.append({
+                            "generated_filename": self._generate_county_filename(result[0]['county'], election),
+                            "pre_processed_url": None,
+                            "raw_url": result[1],
+                            "ocd_id": result[0]['ocd_id'],
+                            "name": result[0]['county'],
+                            "election": election['slug']
+                        })
         return meta
 
     def _build_raw_url(self, year, path):

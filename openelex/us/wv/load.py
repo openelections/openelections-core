@@ -85,6 +85,8 @@ class WVLoader(WVBaseLoader):
                     if row['CountyName'] == '':
                         continue
                     results.append(self._prep_county_result(row))
+                elif any(county == row['CountyName'] for county in ['Kanawha', 'Marshall', 'Nicholas', 'Cabell']):
+                    results.append(self._prep_github_precinct_result(row))
                 else:
                     results.append(self._prep_precinct_result(row))
             RawResult.objects.insert(results)
@@ -133,6 +135,21 @@ class WVLoader(WVBaseLoader):
             'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
             'party': row['PartyName'].strip(),
             'votes': self._votes(row['Votes']),
+            'vote_breakdowns': {},
+        })
+        return RawResult(**kwargs)
+
+    def _prep_github_precinct_result(self, row):
+        kwargs = self._base_kwargs(row)
+        precinct = str(row['precinct'])
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'precinct',
+            'jurisdiction': precinct,
+            'parent_jurisdiction': row['county'],
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
+            'party': row['party'].strip(),
+            'votes': self._votes(row['votes']),
             'vote_breakdowns': {},
         })
         return RawResult(**kwargs)
