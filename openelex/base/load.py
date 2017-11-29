@@ -1,7 +1,9 @@
+from __future__ import print_function
 import datetime
 import json
 from os.path import join
 import re
+import io
 
 import unicodecsv
 
@@ -88,9 +90,9 @@ class BaseLoader(StateBase):
         Given a tuple of headers, returns a JSON object of jurisdictional
         mappings based on OCD ids"
         """
-        filename = join(self.mappings_dir, self.state+'.csv')
+        filename = join(self.mappings_dir, self.state + '.csv')
         with open(filename, 'rU') as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers)
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             mappings = json.dumps([row for row in reader])
         return json.loads(mappings)
 
@@ -98,7 +100,7 @@ class BaseLoader(StateBase):
 
     @property
     def _file_handle(self):
-        return open(join(self.cache.abspath, self.source), 'rU')
+        return io.open(join(self.cache.abspath, self.source), 'rU', encoding='latin-1')
 
     @property
     def _xls_file_path(self):
@@ -117,8 +119,8 @@ class BaseLoader(StateBase):
         elecs = self.datasource.elections(year)[year]
         # Get election metadata by matching on election slug
         elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
-        kwargs = {
-            'created':  self.timestamp,
+        return {
+            'created': self.timestamp,
             'updated': self.timestamp,
             'source': self.source,
             'election_id': self.election_id,
@@ -130,4 +132,3 @@ class BaseLoader(StateBase):
             'result_type': elec_meta['result_type'],
             'special': elec_meta['special'],
         }
-        return kwargs

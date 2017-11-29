@@ -1,0 +1,59 @@
+county,fips,ocd_id
+Alameda,1,ocd-division/country:us/state:ca/county:alameda
+Alpine,3,ocd-division/country:us/state:ca/county:alpine
+Amador,5,ocd-division/country:us/state:ca/county:amador
+Butte,7,ocd-division/country:us/state:ca/county:butte
+Calaveras,9,ocd-division/country:us/state:ca/county:calaveras
+Colusa,11,ocd-division/country:us/state:ca/county:colusa
+Contra Costa,13,ocd-division/country:us/state:ca/county:contra_costa
+Del Norte,15,ocd-division/country:us/state:ca/county:del_norte
+El Dorado,17,ocd-division/country:us/state:ca/county:el_dorado
+Fresno,19,ocd-division/country:us/state:ca/county:fresno
+Glenn,21,ocd-division/country:us/state:ca/county:glenn
+Humboldt,23,ocd-division/country:us/state:ca/county:humboldt
+Imperial,25,ocd-division/country:us/state:ca/county:imperial
+Inyo,27,ocd-division/country:us/state:ca/county:inyo
+Kern,29,ocd-division/country:us/state:ca/county:kern
+Kings,31,ocd-division/country:us/state:ca/county:kings
+Lake,33,ocd-division/country:us/state:ca/county:lake
+Lassen,35,ocd-division/country:us/state:ca/county:lassen
+Los Angeles,37,ocd-division/country:us/state:ca/county:los_angeles
+Madera,39,ocd-division/country:us/state:ca/county:madera
+Marin,41,ocd-division/country:us/state:ca/county:marin
+Mariposa,43,ocd-division/country:us/state:ca/county:mariposa
+Mendocino,45,ocd-division/country:us/state:ca/county:mendocino
+Merced,47,ocd-division/country:us/state:ca/county:merced
+Modoc,49,ocd-division/country:us/state:ca/county:modoc
+Mono,51,ocd-division/country:us/state:ca/county:mono
+Monterey,53,ocd-division/country:us/state:ca/county:monterey
+Napa,55,ocd-division/country:us/state:ca/county:napa
+Nevada,57,ocd-division/country:us/state:ca/county:nevada
+Orange,59,ocd-division/country:us/state:ca/county:orange
+Placer,61,ocd-division/country:us/state:ca/county:placer
+Plumas,63,ocd-division/country:us/state:ca/county:plumas
+Riverside,65,ocd-division/country:us/state:ca/county:riverside
+Sacramento,67,ocd-division/country:us/state:ca/county:sacramento
+San Benito,69,ocd-division/country:us/state:ca/county:san_benito
+San Bernardino,71,ocd-division/country:us/state:ca/county:san_bernardino
+San Diego,73,ocd-division/country:us/state:ca/county:san_diego
+San Francisco,75,ocd-division/country:us/state:ca/county:san_francisco
+San Joaquin,77,ocd-division/country:us/state:ca/county:san_joaquin
+San Luis Obispo,79,ocd-division/country:us/state:ca/county:san_luis_obispo
+San Mateo,81,ocd-division/country:us/state:ca/county:san_mateo
+Santa Barbara,83,ocd-division/country:us/state:ca/county:santa_barbara
+Santa Clara,85,ocd-division/country:us/state:ca/county:santa_clara
+Santa Cruz,87,ocd-division/country:us/state:ca/county:santa_cruz
+Shasta,89,ocd-division/country:us/state:ca/county:shasta
+Sierra,91,ocd-division/country:us/state:ca/county:sierra
+Siskiyou,93,ocd-division/country:us/state:ca/county:siskiyou
+Solano,95,ocd-division/country:us/state:ca/county:solano
+Sonoma,97,ocd-division/country:us/state:ca/county:sonoma
+Stanislaus,99,ocd-division/country:us/state:ca/county:stanislaus
+Sutter,101,ocd-division/country:us/state:ca/county:sutter
+Tehama,103,ocd-division/country:us/state:ca/county:tehama
+Trinity,105,ocd-division/country:us/state:ca/county:trinity
+Tulare,107,ocd-division/country:us/state:ca/county:tulare
+Tuolumne,109,ocd-division/country:us/state:ca/county:tuolumne
+Ventura,111,ocd-division/country:us/state:ca/county:ventura
+Yolo,113,ocd-division/country:us/state:ca/county:yolo
+Yuba,115,ocd-division/country:us/state:ca/county:yuba

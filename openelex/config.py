@@ -1,5 +1,8 @@
 """Manage configuration for various OpenElections components"""
+from __future__ import print_function
 
+from past.builtins import execfile
+from builtins import object
 import imp
 import os
 from importlib import import_module

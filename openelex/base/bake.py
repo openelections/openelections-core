@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 from bson import json_util
 from unicodecsv import DictWriter
 from datetime import datetime
@@ -13,6 +15,7 @@ from openelex import COUNTRY_DIR
 from openelex.exceptions import UnsupportedFormatError
 from openelex.lib import format_date, standardized_filename
 from openelex.models import RawResult, Result, Contest, Candidate
+from future.utils import with_metaclass
 
 
 class FieldTransform(object):
@@ -68,7 +71,7 @@ class RollerMeta(type):
         transformed_fields_ordered = []
         calculated_fields_ordered = []
 
-        for k, v in attrs.items():
+        for k, v in list(attrs.items()):
             if isinstance(v, FieldTransform):
                 transforms = field_transforms.setdefault(v.collection, {})
                 transforms[v.db_field] = v 
@@ -92,12 +95,11 @@ class RollerMeta(type):
         return super(RollerMeta, cls).__new__(cls, name, bases, attrs)
 
 
-class Roller(object):
+class Roller(with_metaclass(RollerMeta, object)):
     """
     Filters and collects related data from document fields into a 
     serializeable format.
     """
-    __metaclass__ = RollerMeta
     
     def __init__(self):
         self._querysets = {}
@@ -199,7 +201,7 @@ class Roller(object):
         except KeyError:
             pass
 
-        for collection_name in self._querysets.keys():
+        for collection_name in list(self._querysets.keys()):
             filters[collection_name] = common_q
             try:
                 fn = getattr(self, 'build_filters_' + collection_name)
@@ -248,7 +250,7 @@ class Roller(object):
         """
         Filter querysets.
         """
-        for collection_name, qs in self._querysets.items():
+        for collection_name, qs in list(self._querysets.items()):
             q = queries.get(collection_name) 
             if q:
                 self._querysets[collection_name] = qs(q)
@@ -268,24 +270,24 @@ class Roller(object):
         """
         Limit the fields returned when evaluating the querysets.
         """
-        for collection_name, flds in exclude_fields.items():
+        for collection_name, flds in list(exclude_fields.items()):
             qs = self._querysets[collection_name].exclude(*flds)
             self._querysets[collection_name] = qs
 
-        for collection_name, flds in fields.items():
+        for collection_name, flds in list(fields.items()):
             qs = self._querysets[collection_name].only(*flds)
             self._querysets[collection_name] = qs
 
     def transform_fields(self, data, transforms):
         """Convert field names on a flat row of data"""
-        for field_name, transform in transforms.items():
+        for field_name, transform in list(transforms.items()):
             data = transform.transform(data)
 
         return data 
 
     def get_calculated_fields(self, data):
         calculated_fields = {}
-        for name, fn in self.field_calculators.items():
+        for name, fn in list(self.field_calculators.items()):
             calculated_fields[name] = fn(data)
         return calculated_fields
 
@@ -297,7 +299,7 @@ class Roller(object):
         flat = {}
         # Remove id and reference id fields
         primary.pop('_id', None)
-        for fname in self._relationships.keys():
+        for fname in list(self._relationships.keys()):
             primary.pop(fname, None)
             
         transforms = self.field_transforms.get(self.primary_collection_name)
@@ -305,7 +307,7 @@ class Roller(object):
             primary = self.transform_fields(primary, transforms)
 
         # Merge in the related data
-        for name, data in related.items():
+        for name, data in list(related.items()):
             # Prefix fields on related models for better readability in the
             # final output data, to prevent clobbering any duplicate keys
             # and to make the fields more accessible to our transformers
@@ -342,7 +344,7 @@ class Roller(object):
         # representation returned by pymongo, only to convert them back to
         # dictionaries for serialization.
         related_map = {}
-        for related_field, related_collection in self._relationships.items():
+        for related_field, related_collection in list(self._relationships.items()):
             related_map[related_field] = {
                 str(c['_id']):c for c 
                 in self._querysets[related_collection].as_pymongo()
@@ -354,11 +356,11 @@ class Roller(object):
         primary_qs = self._querysets[self.primary_collection_name].as_pymongo()
         for primary in primary_qs:
             related = {}
-            for fname, coll in self._relationships.items():
+            for fname, coll in list(self._relationships.items()):
                 related[fname] = related_map[coll][str(primary[fname])]
                     
             flat = self.flatten(primary, **related)
-            self._fields |= flat.keys()
+            self._fields |= list(flat.keys())
             self._items.append(flat)
 
         return self._items
@@ -690,7 +692,7 @@ class BaseBaker(object):
                 timestamp.strftime(self.timestamp_format))
             f.write("\n")
             f.write("Filters:\n\n")
-            for k, v in self.filter_kwargs.items():
+            for k, v in list(self.filter_kwargs.items()):
                 f.write("%s: %s\n" % (k, v))
 
         return self

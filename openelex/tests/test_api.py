@@ -1,3 +1,4 @@
+from builtins import object
 import json
 from os.path import abspath, dirname, join
 from collections import OrderedDict

@@ -1,3 +1,6 @@
+from builtins import str
+from builtins import range
+from builtins import object
 import re
 import xlrd
 from fuzzywuzzy import process
@@ -109,7 +112,7 @@ class NHDistrictLoader(NHBaseLoader):
         xlsfile = xlrd.open_workbook(self._xls_file_path)
         sheet = xlsfile.sheets()[0]
         # get office, district, primary_party from url_path?
-        for i in xrange(2, sheet.nrows):
+        for i in range(2, sheet.nrows):
             row = [r for r in sheet.row_values(i)]
             if self._skip_row(row):
                 continue
@@ -139,7 +142,7 @@ class NHSenateCountyLoader(NHBaseLoader):
         sheet = xlsfile.sheets()[0]
         office, primary_party = self._get_office_and_primary_party(sheet.row_values(1))
         district = None
-        for i in xrange(2, sheet.nrows):
+        for i in range(2, sheet.nrows):
             row = [r for r in sheet.row_values(i)]
             if self._skip_row(row):
                 continue
@@ -238,7 +241,7 @@ class NHXlsCountyLoader(NHBaseLoader):
         county = sheet.row_values(3)[0].split(' County')[0]
         candidates = sheet.row_values(3)[1:]
         start_row = 4
-        for i in xrange(start_row, sheet.nrows):
+        for i in range(start_row, sheet.nrows):
             row = [r for r in sheet.row_values(i)]
             if self._skip_row(row):
                 continue

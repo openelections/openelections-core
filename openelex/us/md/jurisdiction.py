@@ -2,6 +2,8 @@
 Maryland political jurisdictions
 """
 
+from builtins import str
+from builtins import range
 counties = [
     "Allegany",
     "Anne Arundel",

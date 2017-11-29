@@ -1,3 +1,8 @@
+from builtins import next
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import logging
 import re
 
@@ -108,7 +113,7 @@ class PreprocessedResultsLoader(BaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -319,7 +324,7 @@ class ExcelPrecinctResultLoader(BaseLoader):
         if sheet is None:
             sheet = self._get_sheet()
 
-        for row_index in xrange(sheet.nrows):
+        for row_index in range(sheet.nrows):
             yield [r for r in sheet.row_values(row_index)]
 
     def _get_sheet(self, workbook=None, sheet_index=0):

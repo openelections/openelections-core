@@ -1,0 +1,10 @@
+language: python
+python:
+- 3.6
+install:
+- pip install pipenv
+- pipenv install --dev
+script:
+- cp settings.py.tmplt settings.py
+- export OPENELEX_SETTINGS=$(pwd)/settings.py
+- pipenv run nosetests

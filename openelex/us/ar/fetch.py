@@ -1,7 +1,11 @@
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import os
 import os.path
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 from zipfile import ZipFile
 
 from bs4 import BeautifulSoup
@@ -51,14 +55,14 @@ class FetchResults(BaseFetcher):
             # to grab the file.
             super(FetchResults, self).fetch(report_url, fname, overwrite)
         else:
-            print "File is cached: %s" % local_file_name
+            print("File is cached: %s" % local_file_name)
 
     def _get_report_url(self, url):
         """
         Build the download URL for a results file from the election portal.
         """
         query_params = self._get_report_query_params(url)
-        qs = urllib.urlencode(query_params)
+        qs = urllib.parse.urlencode(query_params)
         return 'http://www.sos.arkansas.gov/electionresults/index.php?' + qs
 
     def _get_report_query_params(self, url):
@@ -95,15 +99,15 @@ class FetchResults(BaseFetcher):
 
         Return a list of contest id, office name tuples.
         """
-        soup = BeautifulSoup(html)
+        soup = BeautifulSoup(html, 'html.parser')
         return [(o['value'], o.get_text()) for o in soup.select("select#contests option")]
 
     def _elec_id(self, url):
         """
         Parse reporting portal election ID from the url
         """
-        parsed = urlparse.urlsplit(url)
-        query_params = urlparse.parse_qs(parsed.query)
+        parsed = urllib.parse.urlsplit(url)
+        query_params = urllib.parse.parse_qs(parsed.query)
         return int(query_params['elecid'][0])
 
     def _local_zip_file_name(self, url):
@@ -113,7 +117,7 @@ class FetchResults(BaseFetcher):
         We don't care too much about the format because we can delete the
         zip file later.
         """
-        parsed = urlparse.urlsplit(url)
+        parsed = urllib.parse.urlsplit(url)
         fname = parsed.path.split('/')[-1]
         return os.path.join(self.cache.abspath, fname)
 
@@ -131,9 +135,9 @@ class FetchResults(BaseFetcher):
                     extracted_file_name = os.path.join(self.cache.abspath,
                         mapping['raw_extracted_filename'])
                     os.rename(extracted_file_name, local_file_name)
-                    print "Added to cache: %s" % local_file_name
+                    print("Added to cache: %s" % local_file_name)
                 else:
-                    print "File is cached: %s" % local_file_name
+                    print("File is cached: %s" % local_file_name)
 
         if remove:
             os.remove(zip_fname)

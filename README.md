@@ -1,9 +1,11 @@
 ## Open Elections core code
 
+[![Build Status](https://travis-ci.org/openelections/openelections-core.svg?branch=dev)](https://travis-ci.org/openelections/openelections-core)
+
 Core repo for election results data acquisition, transformation and output.
 
-OpenElections core is developed and tested using Python 2.7.*. The package
-might not work with older or newer Python distributions.
+OpenElections core is developed and tested using Python 3. The package
+might not work with older Python distributions.
 
 ### Getting started as a developer
 
@@ -15,31 +17,24 @@ You'll:
 
 #### Setting up a virtual environment
 
-You should use [virtualenv](http://www.virtualenv.org/en/latest/) and [virtualenvwrapper](http://virtualenvwrapper.readthedocs.org/) to work on Open Elections inside a virtualized development environment.
+You should use [pipenv](https://pipenv.readthedocs.io/en/latest/) to work on Open Elections inside a virtualized development environment.
 
 The easiest way is to install these tools system-wide with `pip` (you may need to use `sudo`):
 
 ```bash
-$ pip install virtualenv
-$ pip install virtualenvwrapper
+$ pip install --upgrade pipenv
 ```
 
-Then, to make a virtual environment called `openelex` for open elections work:
+Then, to make a virtual environment for open elections work:
 
 ```bash
-$ mkvirtualenv openelex
+$ pipenv install --dev
 ```
 
-If your terminal is unable to find `mkvirtualenv`, you may need to add the `virtualenvwrapper.sh` script to your `.bashrc` (probably in `/usr/bin/` or `/usr/local/bin`):
+To activate the virtual environment, run:
 
 ```bash
-$ echo 'source "/usr/bin/virtualenvwrapper.sh"' >> ~/.bashrc
-```
-
-This will automatically activate the `openelex` environment. To turn it on for future sessions:
-
-```bash
-$ workon openelex
+$ pipenv shell
 ```
 
 #### Fork and set up this project
@@ -51,17 +46,11 @@ $ git clone https://github.com/[my_github_user]/openelections-core.git
 $ cd openelections-core
 ```
 
-Turn on your virtual environment from the previous step, if you haven't already:
+Turn setup and activate the virtual environment from the previous step, if you haven't already:
 
 ```bash
-$ workon openelex
-```
-
-Then install the openelex package in [editable mode](https://pip.pypa.io/en/latest/reference/pip_install/#editable-installs)
-
-
-```bash
-$ pip install -e .
+$ pipenv install --dev
+$ pipenv shell
 ```
 
 Create a `settings.py` file.
@@ -74,7 +63,13 @@ At the very least, you'll want to make sure the values in the ``MONGO`` variable
 
 You can put this settings file anywhere on your filesystem.  You'll need to set the ``OPENELEX_SETTINGS`` environment variable to the [absolute path](http://en.wikipedia.org/wiki/Path_(computing)) to the ``settings.py`` file that you created.
 
-You'll probably want to add a line to the ``postactivate`` [script](http://virtualenvwrapper.readthedocs.org/en/latest/scripts.html) (``$VIRTUAL_ENV/bin/postactivate``) in your virtualenv to set the ``OPENELEX_SETTINGS`` environment variable.
+You can set the `OPENELEX_SETTINGS` environment variable by creating a `.env` file in your repository. For example:
+
+```
+OPENELEX_SETTINGS=/Users/[myusername]/Development/openelections-core/settings.py
+```
+
+Running `pipenv shell` will automatically source any variable in your `.env` file.
 
 #### Running management commands
 

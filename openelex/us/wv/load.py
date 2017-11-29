@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -69,7 +71,7 @@ class WVLoader(WVBaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row):
@@ -79,6 +81,12 @@ class WVLoader(WVBaseLoader):
                         results.append(self._prep_county_result(row))
                     else:
                         continue
+                elif '__precinct__' not in self.mapping['generated_filename']:
+                    if row['CountyName'] == '':
+                        continue
+                    results.append(self._prep_county_result(row))
+                elif any(county == row['CountyName'] for county in ['Kanawha', 'Marshall', 'Nicholas', 'Cabell']):
+                    results.append(self._prep_github_precinct_result(row))
                 else:
                     results.append(self._prep_precinct_result(row))
             RawResult.objects.insert(results)
@@ -131,9 +139,24 @@ class WVLoader(WVBaseLoader):
         })
         return RawResult(**kwargs)
 
+    def _prep_github_precinct_result(self, row):
+        kwargs = self._base_kwargs(row)
+        precinct = str(row['precinct'])
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+        kwargs.update({
+            'reporting_level': 'precinct',
+            'jurisdiction': precinct,
+            'parent_jurisdiction': row['county'],
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(precinct)),
+            'party': row['party'].strip(),
+            'votes': self._votes(row['votes']),
+            'vote_breakdowns': {},
+        })
+        return RawResult(**kwargs)
+
     def _prep_county_result(self, row):
         kwargs = self._base_kwargs(row)
-        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'] == row['CountyName']][0]['ocd_id']
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['CountyName'].upper()][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'county',
             'jurisdiction': row['CountyName'],
@@ -195,7 +218,7 @@ class WVLoaderPre2008(WVBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue

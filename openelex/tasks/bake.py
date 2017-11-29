@@ -1,3 +1,4 @@
+from __future__ import print_function
 from datetime import datetime
 import json
 import os.path
@@ -218,7 +219,7 @@ def results_status_json(state=None, bakeall=False, outputdir=None):
 
     if state:
         # Bake metadata for a single state to stdout
-        print json.dumps(statuses_for_state(state))
+        print(json.dumps(statuses_for_state(state)))
         sys.exit(0)
 
     if not (bakeall and outputdir):

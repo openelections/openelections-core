@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -85,7 +87,7 @@ class MOPrecinctLoader(MOBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -97,7 +99,7 @@ class MOPrecinctLoader(MOBaseLoader):
                     rr_kwargs.update(self._build_contest_kwargs(row))
                     rr_kwargs.update(self._build_candidate_kwargs(row))
                     jurisdiction = row['precinct'].strip()
-                    print row['county']
+                    print(row['county'])
                     county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
                     rr_kwargs.update({
                         'party': row['party'].strip(),
@@ -156,7 +158,7 @@ class MOCountyLoader(MOBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -216,7 +218,7 @@ class MOSpecialLoader(MOBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue

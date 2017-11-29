@@ -1,6 +1,9 @@
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 from os.path import exists, join
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 
 from .state import StateBase
 
@@ -12,7 +15,7 @@ class HTTPError(Exception):
     def __str__(self):
         return "{}: {}".format(self.code, self.reason)
 
-class ErrorHandlingURLopener(urllib.FancyURLopener):
+class ErrorHandlingURLopener(urllib.request.FancyURLopener):
     def http_error_default(self, url, fp, errcode, errmsg, headers):
         """
         Custom subclass of urllib.FancyURLopener that handles HTTP errors.
@@ -22,7 +25,7 @@ class ErrorHandlingURLopener(urllib.FancyURLopener):
         if errcode == 404:
             raise HTTPError(errcode, errmsg)
 
-        return urllib.FancyURLopener.http_error_default(self, url, fp, errcode,
+        return urllib.request.FancyURLopener.http_error_default(self, url, fp, errcode,
             errmsg, headers)
 
 
@@ -78,7 +81,7 @@ class BaseFetcher(StateBase):
         #TODO: this is quick and dirty
         # see urlretrieve code for more robust conversion of
         # url to local filepath
-        result = urlparse.urlsplit(url)
+        result = urllib.parse.urlsplit(url)
         bits = [
             self.cache.abspath,
             result.netloc + '_' +

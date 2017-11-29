@@ -1,32 +1,34 @@
 """
 Wyoming offers XLS files containing precinct-level results for each county for all years except 2006.
 Elections in 2012 and 2010 are contained in zip files on the SoS site and These are represented in the dashboard API
-as the `direct_links` attribute on elections. Zip files for 2000, 2002, 2004 and 2008 elections were sent by the SoS 
+as the `direct_links` attribute on elections. Zip files for 2000, 2002, 2004 and 2008 elections were sent by the SoS
 and are stored in the https://github.com/openelections/openelections-data-wy repository in the `raw` directory. 2000
 files have been converted from the original Quattro Pro source to XLS files.
 
-For 2006, precinct-level results are contained in county-specific PDF files. The CSV versions of those are contained in the 
+For 2006, precinct-level results are contained in county-specific PDF files. The CSV versions of those are contained in the
 https://github.com/openelections/openelections-data-wy repository. Special elections are also contained in that repository.
 """
+from future import standard_library
+standard_library.install_aliases()
 from os.path import join
 import json
 import datetime
-import urlparse
+import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
 from openelex.lib import build_github_url, build_raw_github_url
 
 class Datasource(BaseDatasource):
-    
+
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 
@@ -35,7 +37,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], self._url_for_fetch(item)) 
+        return [(item['generated_filename'], self._url_for_fetch(item))
                 for item in self.mappings(year)]
 
     def unprocessed_filename_url_pairs(self, year=None):
@@ -56,7 +58,7 @@ class Datasource(BaseDatasource):
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
-                    if year == 2012:
+                    if year > 2010:
                         generated_filename = self._generate_county_filename(result, election, '.xlsx')
                     else:
                         generated_filename = self._generate_county_filename(result, election, '.xls')
@@ -112,7 +114,7 @@ class Datasource(BaseDatasource):
                         "election": election['slug']
                     })
         return meta
-        
+
     def _generate_county_filename(self, result, election, format):
         if election['race_type'] == 'general':
             bits = [

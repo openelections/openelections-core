@@ -4,10 +4,12 @@ for all years back to 2000, although some contests have a single statewide file.
 file can also have statewide summary results in it. NH has results by town, but larger towns
 have multiple wards, so both towns and wards are considered "precinct-like" reporting levels.
 """
+from future import standard_library
+standard_library.install_aliases()
 from os.path import join
 import json
 import datetime
-import urlparse
+import urllib.parse
 import xlrd
 
 from openelex import PROJECT_ROOT
@@ -22,7 +24,7 @@ class Datasource(BaseDatasource):
         with other pieces of metadata
         """
         mappings = []
-        for yr, elecs in self.elections(year).items():
+        for yr, elecs in list(self.elections(year).items()):
             mappings.extend(self._build_metadata(yr, elecs))
         return mappings
 

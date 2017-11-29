@@ -1,3 +1,5 @@
+from builtins import next
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -117,7 +119,7 @@ class NVPrecinctLoader(NVBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1', fieldnames=("Jurisdiction", "Precinct", "office", "candidate", "Votes"))
+            reader = unicodecsv.DictReader(csvfile, fieldnames=("Jurisdiction", "Precinct", "office", "candidate", "Votes"))
             next(reader, None)
             next(reader, None)
             next(reader, None)
@@ -133,7 +135,7 @@ class NVPrecinctLoader(NVBaseLoader):
                 if row['Votes'].strip() == '*':
                     votes = 'N/A'
                 else:
-                    votes = int(row['Votes'].replace(',','').strip())
+                    votes = int(row['Votes'].replace(',', '').strip())
                 rr_kwargs.update({
                     'jurisdiction': jurisdiction,
                     'ocd_id': "{}/precinct:{}".format(self.mapping['ocd_id'], ocd_type_id(row['Precinct'])),
@@ -159,7 +161,7 @@ class NVCountyLoader(NVBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 if self._skip_row(row):
                     continue

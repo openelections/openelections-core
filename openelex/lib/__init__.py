@@ -134,7 +134,7 @@ def format_date(datestr):
         "%Y%m%d": "%Y-%m-%d",
     }
 
-    for infmt, outfmt in datefilter_formats.items():
+    for infmt, outfmt in list(datefilter_formats.items()):
         try:
             return datetime.strptime(datestr, infmt).strftime(outfmt)
         except ValueError:

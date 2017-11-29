@@ -1,3 +1,8 @@
+from __future__ import print_function
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
 import re
 import csv
 import xlrd
@@ -142,7 +147,7 @@ class NCTsvLoader(NCBaseLoader):
         results = []
         with self._file_handle as tsvfile:
             tsv = [x.replace('\0', '') for x in tsvfile] # remove NULL bytes
-            reader = unicodecsv.DictReader(tsv, delimiter='\t', encoding='latin-1')
+            reader = unicodecsv.DictReader(tsv, delimiter='\t')
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -224,7 +229,7 @@ class NCCsvLoader(NCBaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row):
@@ -243,7 +248,7 @@ class NCCsvLoader(NCBaseLoader):
             try:
                 office, district = row['contest'].split(' DISTRICT ')
             except:
-                print row['contest']
+                print(row['contest'])
                 raise
         else:
             office = row['contest'].strip()
@@ -337,7 +342,7 @@ class NCTsv2008Loader(NCBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -407,9 +412,9 @@ class NCTextLoader(NCBaseLoader):
         results = []
         with self._file_handle as csvfile:
             if '2004' in self.mapping['election']:
-                reader = unicodecsv.DictReader(csvfile, delimiter=',', encoding='latin-1')
+                reader = unicodecsv.DictReader(csvfile, delimiter=',')
             else:
-                reader = unicodecsv.DictReader(csvfile, delimiter='\t', encoding='latin-1')
+                reader = unicodecsv.DictReader(csvfile, delimiter='\t')
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -501,7 +506,7 @@ class NCTsv20022000Loader(NCBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, delimiter='\t', fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -624,8 +629,8 @@ class NCXlsLoader(NCBaseLoader):
                 cands = [c for c in sheet.row_values(2)[2:] if c != '']
                 parties = [x.replace('(','').replace(')','') for x in sheet.row_values(3)[2:] if x != '']
                 start_row = 2
-            candidates = zip(cands, parties)
-            for i in xrange(start_row, sheet.nrows):
+            candidates = list(zip(cands, parties))
+            for i in range(start_row, sheet.nrows):
                 row = [r for r in sheet.row_values(i)]
                 if self._skip_row(row):
                     continue

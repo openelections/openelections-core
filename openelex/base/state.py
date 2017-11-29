@@ -1,3 +1,4 @@
+from builtins import object
 import os
 
 from .cache import StateCache

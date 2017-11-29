@@ -1,3 +1,5 @@
+from builtins import next
+from builtins import object
 import re
 import csv
 from lxml import etree
@@ -125,7 +127,7 @@ class NVPrecinctLoader(NVBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1', fieldnames=("Jurisdiction", "Precinct", "office", "candidate", "Votes"))
+            reader = unicodecsv.DictReader(csvfile, fieldnames=("Jurisdiction", "Precinct", "office", "candidate", "Votes"))
             next(reader, None)
             next(reader, None)
             next(reader, None)
@@ -168,7 +170,7 @@ class NVCountyLoader(NVBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 if self._skip_row(row):
                     continue

@@ -1,3 +1,7 @@
+from builtins import map
+from builtins import str
+from builtins import range
+from builtins import object
 import logging
 import os
 import re
@@ -346,7 +350,7 @@ def normalize_party(header):
 
     """
 
-    return filter(lambda x: regex.search(x), header)[0]
+    return [x for x in header if regex.search(x)][0]
 
 
 def normalize_candidate(header):
@@ -364,7 +368,7 @@ def normalize_candidate(header):
         r'.*(ballot\sname|candidate.*(name|title)|candidate\b).*',
         re.IGNORECASE)
 
-    return filter(lambda x: regex.search(x), header)[0]
+    return [x for x in header if regex.search(x)][0]
 
 
 def normalize_contest(header):
@@ -382,7 +386,7 @@ def normalize_contest(header):
         r'.*(officeposition|\bcontest\b|race\b|race(_|\s)(title|name)|(contest.*(title|name))).*',
         re.IGNORECASE)
 
-    return filter(lambda x: regex.search(x), header)[0]
+    return [x for x in header if regex.search(x)][0]
 
 
 def normalize_precinct(header):
@@ -397,7 +401,7 @@ def normalize_precinct(header):
 
     regex = re.compile(r'.*(precinct|precinct.*name).*', re.IGNORECASE)
 
-    return filter(lambda x: regex.search(x), header)[0]
+    return [x for x in header if regex.search(x)][0]
 
 
 def normalize_votes(header):
@@ -415,7 +419,7 @@ def normalize_votes(header):
         r'.*(.*vote.*for|\bvote|\bcount\b|total_votes|total.*votes).*',
         re.IGNORECASE)
 
-    return filter(lambda x: regex.search(x), header)[0]
+    return [x for x in header if regex.search(x)][0]
 
 
 def normalize_index(header, method):
@@ -454,12 +458,12 @@ def normalize_district(header, office, row):
         row = {}
 
     try:
-        row[filter(lambda x: bth_regex.search(x), header)[0]]
+        row[[x for x in header if bth_regex.search(x)][0]]
         if norm_office is 'U.S. Representative':
-            dist = row[filter(lambda x: leg_regex.search(x), header)[0]]
+            dist = row[[x for x in header if leg_regex.search(x)][0]]
             return dist
         if norm_office in ('State Representative', 'State Senate'):
-            dist = row[filter(lambda x: con_regex.search(x), header)[0]]
+            dist = row[[x for x in header if con_regex.search(x)][0]]
             return dist
     except IndexError:
         if dist_str is "":
@@ -619,8 +623,7 @@ class WALoaderPrecincts(OCDMixin, WABaseLoader):
         with self._file_handle as csvfile:
             party_flag = 0
             district_flag = 0
-            reader = unicodecsv.DictReader(
-                csvfile, encoding='latin-1', delimiter=',')
+            reader = unicodecsv.DictReader(csvfile, delimiter=',')
 
             # Declare column indices before the loop so we aren't making
             # a method call for each line in the file
@@ -723,8 +726,7 @@ class WALoaderPre2007(OCDMixin, WABaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1',
-                                           delimiter=',')
+            reader = unicodecsv.DictReader(csvfile, delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
 
             try:
@@ -829,8 +831,7 @@ class WALoaderPost2007(OCDMixin, WABaseLoader):
 
         with self._file_handle as csvfile:
             district_flag = 0
-            reader = unicodecsv.DictReader(
-                csvfile, encoding='latin-1', delimiter=',')
+            reader = unicodecsv.DictReader(csvfile, delimiter=',')
             self.header = [x.replace('"', '') for x in reader.fieldnames]
             self.contest_index = normalize_contest(self.header)
             for row in reader:
@@ -971,7 +972,7 @@ class WALoaderExcel(OCDMixin, WABaseLoader):
         except IndexError:
             pass
 
-        for row in xrange(sheet.nrows):
+        for row in range(sheet.nrows):
             if self._skip_row(row, sheet):
                 continue
             else:

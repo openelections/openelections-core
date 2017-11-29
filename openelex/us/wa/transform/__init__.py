@@ -1,3 +1,4 @@
+from __future__ import print_function
 from datetime import datetime
 import logging
 import re
@@ -295,7 +296,7 @@ class BaseTransform(Transform):
         try:
             fields['additional_name'] = name.middle
             fields['suffix'] = name.suffix
-        except Exception,e:
+        except Exception as e:
             logger.error(e)
         return fields
 
@@ -327,8 +328,8 @@ class BaseTransform(Transform):
                 #print contest
                 #quit("uuuuuuuuuuuu")
             except Exception:
-                print fields
-                print "\n"
+                print(fields)
+                print("\n")
                 raise
             self._contest_cache[key] = contest
             return contest
@@ -349,7 +350,7 @@ class CreateContestsTransform(BaseTransform):
                 contests.append(contest)
                 seen.add(key)
 
-        print seen
+        print(seen)
         Contest.objects.insert(contests, load_bulk=False)
         logger.info("Created {} contests.".format(len(contests)))
 
@@ -391,7 +392,7 @@ class CreateCandidatesTransform(BaseTransform):
 
     def reverse(self):
         old = Candidate.objects.filter(state=STATE)
-        print "\tDeleting %d previously created candidates" % old.count()
+        print("\tDeleting %d previously created candidates" % old.count())
         old.delete()
 
 class CreateResultsTransform(BaseTransform): 
@@ -455,11 +456,11 @@ class CreateResultsTransform(BaseTransform):
         Create the Result objects in the database.
         """
         results.flush()
-        print "Created %d results." % results.count()
+        print("Created %d results." % results.count())
 
     def reverse(self):
         old_results = self.get_results()
-        print "\tDeleting %d previously loaded results" % old_results.count() 
+        print("\tDeleting %d previously loaded results" % old_results.count()) 
         old_results.delete()
 
     def get_candidate(self, raw_result, extra={}):
@@ -482,7 +483,7 @@ class CreateResultsTransform(BaseTransform):
             try:
                 candidate = Candidate.objects.get(**fields)
             except Candidate.DoesNotExist:
-                print fields 
+                print(fields) 
                 raise
             self._candidate_cache[key] = candidate 
             return candidate

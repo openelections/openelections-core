@@ -1,3 +1,4 @@
+from builtins import object
 from collections import OrderedDict
 
 from .state import StateBase
@@ -99,7 +100,7 @@ class Registry(StateBase):
 
     def all(self, state, raw=False):
         registry = self._get_registry(raw)
-        return registry[state].values()
+        return list(registry[state].values())
 
     def _get_registry(self, raw=False):
         if raw:

@@ -9,4 +9,4 @@ except ValueError:
     pass
 
 from us import STATES
-STATE_POSTALS = map(lambda state: state.abbr, STATES)
+STATE_POSTALS = [state.abbr for state in STATES]

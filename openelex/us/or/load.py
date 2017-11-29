@@ -1,3 +1,5 @@
+from builtins import next
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -60,7 +62,7 @@ class ORBaseLoader(BaseLoader):
 
 class ORPrecinctLoader(ORBaseLoader):
     """
-    Loads Oregon precinct results for 2004-2014.
+    Loads Oregon precinct results for 2004-2016.
 
     Format:
 
@@ -74,7 +76,7 @@ class ORPrecinctLoader(ORBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             next(reader, None)
             for row in reader:
                 if self._skip_row(row):
@@ -115,7 +117,7 @@ class ORPrecinctLoader(ORBaseLoader):
 
 class ORLoader(ORBaseLoader):
     """
-    Loads Oregon county-level results for 2004-2014 elections.
+    Loads Oregon county-level results for 2004-2016 elections.
 
     Format:
 
@@ -137,7 +139,7 @@ class ORLoader(ORBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers)
             for row in reader:
                 if self._skip_row(row):
                     continue

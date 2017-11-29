@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import range
+from builtins import object
 import re
 import csv
 import unicodecsv
@@ -92,7 +95,7 @@ class MDLoader(MDBaseLoader):
     def load(self):
         with self._file_handle as csvfile:
             results = []
-            reader = unicodecsv.DictReader(csvfile, encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile)
             for row in reader:
                 # Skip non-target offices
                 if self._skip_row(row):
@@ -177,7 +180,7 @@ class MDLoader(MDBaseLoader):
         except KeyError as e:
             pass
         results = []
-        for field, val in row.items():
+        for field, val in list(row.items()):
             clean_field = field.strip()
             # Legislative fields prefixed with LEGS
             if not clean_field.startswith('LEGS'):
@@ -279,17 +282,17 @@ class MDLoader2002(MDBaseLoader):
      1: Office District - '-' is used to denote null values
      2: County
      3: Last Name - "zz998" is used for write-in candidates
-     4: Middle Name - "\N" is used to denote null values
+     4: Middle Name - "\\N" is used to denote null values
      5: First Name - "Other Write-Ins" is used for write-in candidates
      6: Party
      7: Winner - Value is 0 or 1
      8: UNKNOWN - Values are "(Vote for One)", "(Vote for No More Than Three)", etc.
      9: Votes
-    10: UNKNOWN - Values are "\N" for every row
+    10: UNKNOWN - Values are "\\N" for every row
 
     Sample row:
 
-    House of Delegates                                                  |32 |Anne Arundel County                               |Burton                                                      |W.              |Robert                                                      |Republican                                        |              0|(Vote for No More Than Three)                     |           1494|\N
+    House of Delegates                                                  |32 |Anne Arundel County                               |Burton                                                      |W.              |Robert                                                      |Republican                                        |              0|(Vote for No More Than Three)                     |           1494|\\N
 
     Notes:
 
@@ -319,7 +322,7 @@ class MDLoader2002(MDBaseLoader):
         results = []
 
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile, fieldnames = headers, delimiter='|', encoding='latin-1')
+            reader = unicodecsv.DictReader(csvfile, fieldnames=headers, delimiter='|')
             for row in reader:
                 if self._skip_row(row):
                     continue
@@ -470,7 +473,7 @@ class MDLoader2000Primary(MDBaseLoader):
         results = []
         cols = [x.strip() for x in row if x != '']
         county = cols[0].strip()
-        cand_results = zip(candidates, cols[1:])
+        cand_results = list(zip(candidates, cols[1:]))
 
         for cand, votes in cand_results:
             result_kwargs = common_kwargs.copy()
@@ -533,7 +536,7 @@ class MDLoader2008Special(CountyOCDMixin, BaseLoader):
         RawResult.objects.insert(results)
 
     def _get_html_table(self):
-        soup = BeautifulSoup(self._file_handle)
+        soup = BeautifulSoup(self._file_handle, 'html.parser')
         return soup.find(text=re.compile("Donna Edwards")).parent.parent.parent
 
     def _parse_html_table(self, table):
