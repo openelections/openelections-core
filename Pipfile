@@ -1,12 +1,18 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [packages]
+
 "bba4a4a" = {path = ".", editable = true}
+futures = "*"
+
 
 [dev-packages]
+
 mock = "*"
-"factory-boy" = "==2.4.1"
+factory-boy = "==2.4.1"
 nose = "*"

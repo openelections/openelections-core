@@ -16,28 +16,28 @@ https://github.com/openelections/openelections-data-wi repository.
 """
 
 class LoadResults(object):
-	  """
-	  Entry point for data loading.
-	  Determines appropriate loader for file and triggers load process.
-	  """
+      """
+      Entry point for data loading.
+      Determines appropriate loader for file and triggers load process.
+      """
 
-	  def run(self, mapping):
-	  	  election_id = mapping['generated_filename']
-	  	  if 'precinct' in election_id:
-	  	  	  loader = ORPrecinctLoader()
-	  	  else:
-	  	  	  loader = ORLoader()
-	  	  loader.run(mapping)
+      def run(self, mapping):
+          election_id = mapping['generated_filename']
+          if 'precinct' in election_id:
+              loader = ORPrecinctLoader()
+          else:
+              loader = ORLoader()
+          loader.run(mapping)
 
 class WIBaseLoader(BaseLoader):
-	  datasource = Datasource()
+      datasource = Datasource()
 
 class WIPrecinctLoader(WIBaseLoader):
     """
     Loads Wisconsin precinct results for 2002-2017.
 
     Format:
-    Wisconsin has Excel files that have been pre-processed to CSV for elections after	2002.
+    Wisconsin has Excel files that have been pre-processed to CSV for elections after 2002.
     """
 
     def load(self):
@@ -55,7 +55,7 @@ class WIPrecinctLoader(WIBaseLoader):
                 rr_kwargs.update(self._build_candidate_kwargs(row))
                 rr_kwargs.update(self._build_jurisdiction_kwargs(row))
                 rr_kwargs.update({
-                		'primary_party': row['party'].strip()
+                    'primary_party': row['party'].strip(),
                     'party': row['party'].strip(),
                     'votes': int(float(row['votes']))
                 })
@@ -63,13 +63,13 @@ class WIPrecinctLoader(WIBaseLoader):
         RawResult.objects.insert(results)
 
     def _build_jurisdiction_kwargs(self, row):
-    		jurisdiction = row['ward'].strip()
-    		county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].strip().upper() == row['county'].strip().upper()][0]['ocd_id']       
-    	  return {
-		        'jurisdiction': jurisdiction,
-            'parent_jurisdiction': row['county'],
-            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
-    	  }
+            jurisdiction = row['ward'].strip()
+            county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].strip().upper() == row['county'].strip().upper()][0]['ocd_id']       
+            return {
+                'jurisdiction': jurisdiction,
+                'parent_jurisdiction': row['county'],
+                'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
+            }
 
     def _build_contest_kwargs(self, row):
         return {
