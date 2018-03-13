@@ -15,7 +15,7 @@ import urllib.parse
 
 from openelex import PROJECT_ROOT
 from openelex.base.datasource import BaseDatasource
-from openelex.lib import build_raw_github_url
+from openelex.lib import build_github_url, build_raw_github_url
 
 class Datasource(BaseDatasource):
 
@@ -54,12 +54,6 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
-            # results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == election['special']]
-            # for result in results:
-            # if result['url']:
-            #     raw_url = result['url']
-            # else:
-            #     raw_url = None
             try:
                 raw_url = election['direct_links'][0] # In reality, the election may have multiple source files, but we shouldn't be using the raw_url for anything
             except IndexError:
@@ -97,3 +91,8 @@ class Datasource(BaseDatasource):
         mappings = [x for x in m if x['county'] != ""]
         return mappings
 
+    def _url_for_fetch(self, mapping):
+        if mapping['pre_processed_url']:
+            return mapping['pre_processed_url']
+        else:
+            return mapping['raw_url']

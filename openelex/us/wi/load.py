@@ -16,21 +16,18 @@ https://github.com/openelections/openelections-data-wi repository.
 """
 
 class LoadResults(object):
-      """
-      Entry point for data loading.
-      Determines appropriate loader for file and triggers load process.
-      """
+    """
+    Entry point for data loading.
+    Determines appropriate loader for file and triggers load process.
+    """
 
-      def run(self, mapping):
-          election_id = mapping['generated_filename']
-          if 'precinct' in election_id:
-              loader = ORPrecinctLoader()
-          else:
-              loader = ORLoader()
-          loader.run(mapping)
+    def run(self, mapping):
+        election_id = mapping['generated_filename']
+        loader = WIPrecinctLoader()
+        loader.run(mapping)
 
 class WIBaseLoader(BaseLoader):
-      datasource = Datasource()
+    datasource = Datasource()
 
 class WIPrecinctLoader(WIBaseLoader):
     """
