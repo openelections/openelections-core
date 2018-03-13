@@ -53,13 +53,17 @@ $ pipenv install --dev
 $ pipenv shell
 ```
 
+Install MongoDB
+
+To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/openelections-core/blob/master/settings.py.tmplt#L7-L20) should auto-create the databases and tables you need, as you need them.
+
+At the very least, you'll want to make sure the values in the ``MONGO`` variable work for the way you've installed and configured MongoDB on your system.
+
 Create a `settings.py` file.
 
 ```bash
 $ cp settings.py.tmplt settings.py
 ```
-
-At the very least, you'll want to make sure the values in the ``MONGO`` variable work for the way you've installed and configured MongoDB on your system.
 
 You can put this settings file anywhere on your filesystem.  You'll need to set the ``OPENELEX_SETTINGS`` environment variable to the [absolute path](http://en.wikipedia.org/wiki/Path_(computing)) to the ``settings.py`` file that you created.
 
@@ -129,12 +133,6 @@ To set GitHub credentials, you must first create a [personal access token](https
 GITHUB_USERNAME = ''
 GITHUB_ACCESS_TOKEN = ''
 ```
-
-#### Install MongoDB (optional)
-
-You only need to install MongoDB if you plan to write data loaders.
-
-To store your data in MongoDB, you need only [install Mongo](http://docs.mongodb.org/manual/installation/). The [default configuration](https://github.com/openelections/openelections-core/blob/master/settings.py.tmplt#L7-L20) should auto-create the databases and tables you need, as you need them.
 
 #### Load party and office metadata (optional)
 

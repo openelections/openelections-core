@@ -138,7 +138,6 @@ class WYLoader(WYBaseLoader):
                     candidates = self._build_candidates_2000(sheet, party, primary)
             else:
                 candidates = self._build_candidates(sheet, party)
-                print(candidates)
 
             for i in range(sheet.nrows):
                 row = [r for r in sheet.row_values(i) if not r == '']
@@ -148,7 +147,6 @@ class WYLoader(WYBaseLoader):
                     continue
                 else:
                     precinct = str(row[0])
-                    print(precinct)
                     if self.source == '20021126__wy__special__general__natrona__state_house__36__precinct.xls':
                         votes = [v for v in row[1:] if not v == '']
                     elif len(candidates) == 1:
@@ -160,7 +158,7 @@ class WYLoader(WYBaseLoader):
                         votes = [v for v in row[2:len(candidates)] if not v == '']
                     else:
                         votes = [v for v in row[1:len(candidates)] if not v == '']
-                    grouped_results = list(zip(candidates, votes))
+                        grouped_results = list(zip(candidates, votes))
                     for (candidate, office, candidate_party), votes in grouped_results:
                         if not votes == '-':
                             results.append(self._prep_precinct_result(precinct, self.mapping['name'], candidate, office, candidate_party, votes))
@@ -296,7 +294,7 @@ class WYLoader(WYBaseLoader):
             raw_offices = sheet.row_values(0)[1:]
         else:
             raw_offices = sheet.row_values(1)[1:]
-        if raw_offices[0] == '' or raw_offices[0] == 'Total':
+        if raw_offices[0] == '' or raw_offices[0] == 'Total' or raw_offices[0] == 'Total Ballots Cast':
             del raw_offices[0]
         if 'United States President, Continued' in raw_offices:
             raw_offices[raw_offices.index('United States President, Continued')] = ''
