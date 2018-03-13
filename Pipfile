@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 "bba4a4a" = {path = ".", editable = true}
-futures = "*"
 
 [dev-packages]
 mock = "*"
