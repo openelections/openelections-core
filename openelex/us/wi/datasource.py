@@ -36,14 +36,14 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(mapping['generated_filename'], self._url_for_fetch(mapping))
-                for mapping in self.mappings(year)]
+        return [(item['generated_filename'], self._url_for_fetch(item))
+                for item in self.mappings(year)]
 
-    def _url_for_fetch(self, mapping):
+    def _url_for_fetch(self, item):
         try:
-            return mapping['pre_processed_url']
+            return item['pre_processed_url']
         except KeyError:
-            return mapping['raw_url']
+            return item['raw_url']
 
     def mappings_for_url(self, url):
         return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
@@ -54,31 +54,37 @@ class Datasource(BaseDatasource):
         meta = []
         year_int = int(year)
         for election in elections:
-            results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == election['special']]
-            for result in results:
-                if result['url']:
-                    raw_url = result['url']
-                else:
-                    raw_url = None
-                generated_filename = self._generate_filename(election['start_date'], election['race_type'], result)
-                ocd_id = 'ocd-division/country:us/state:wi'
-                name = "Wisconsin"
-                meta.append({
-                    "generated_filename": generated_filename,
-                    "raw_url": raw_url,
-                    "pre_processed_url": build_raw_github_url(self.state, election['start_date'][0:4], generated_filename),
-                    "ocd_id": ocd_id,
-                    "name": name,
-                    "election": election['slug']
-                })
+            # results = [x for x in self._url_paths() if x['date'] == election['start_date'] and x['special'] == election['special']]
+            # for result in results:
+            # if result['url']:
+            #     raw_url = result['url']
+            # else:
+            #     raw_url = None
+            try:
+                raw_url = election['direct_links'][0] # In reality, the election may have multiple source files, but we shouldn't be using the raw_url for anything
+            except IndexError:
+                raw_url = election['direct_link']
+            generated_filename = self._generate_filename(election)
+            ocd_id = 'ocd-division/country:us/state:wi'
+            name = "Wisconsin"
+            meta.append({
+                "generated_filename": generated_filename,
+                "raw_url": raw_url,
+                "pre_processed_url": build_raw_github_url(self.state, election['start_date'][:4], generated_filename),
+                "ocd_id": ocd_id,
+                "name": name,
+                "election": election['slug']
+            })
         return meta
 
 
-    def _generate_filename(self, start_date, election_type, result):
-        if result['special']:
-            election_type = 'special__' + election_type
+    def _generate_filename(self, election):
+        if election['special']:
+            election_type = 'special__' + election['race_type']
+        else:
+            election_type = election['race_type']
         bits = [
-            start_date.replace('-',''),
+            election['start_date'].replace('-',''),
             self.state.lower(),
             election_type,
             'ward'
