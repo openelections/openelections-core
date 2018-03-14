@@ -1,5 +1,6 @@
 from builtins import next
 from builtins import object
+from os.path import exists, join
 import re
 import csv
 import unicodecsv
@@ -42,7 +43,8 @@ class WIPrecinctLoader(WIBaseLoader):
         self._common_kwargs['reporting_level'] = 'precinct'
         # Store result instances for bulk loading
         results = []
-
+        if not(exists(join(self.cache.abspath, self.source))):
+            return
         with self._file_handle as csvfile:
             reader = unicodecsv.DictReader(csvfile)
             next(reader, None)
@@ -60,13 +62,13 @@ class WIPrecinctLoader(WIBaseLoader):
         RawResult.objects.insert(results)
 
     def _build_jurisdiction_kwargs(self, row):
-            jurisdiction = row['ward'].strip()
-            county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].strip().upper() == row['county'].strip().upper()][0]['ocd_id']       
-            return {
-                'jurisdiction': jurisdiction,
-                'parent_jurisdiction': row['county'],
-                'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
-            }
+        jurisdiction = row['ward'].strip()
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].strip().upper() == row['county'].strip().upper()][0]['ocd_id']
+        return {
+            'jurisdiction': jurisdiction,
+            'parent_jurisdiction': row['county'],
+            'ocd_id': "{}/precinct:{}".format(county_ocd_id, ocd_type_id(jurisdiction)),
+        }
 
     def _build_contest_kwargs(self, row):
         return {
