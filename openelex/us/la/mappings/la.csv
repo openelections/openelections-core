@@ -1,12 +1,47 @@
-name,fips,ocd_idAcadia,1,ocd-division/country:us/state:la/parish:acadiaAllen,3,ocd-division/country:us/state:la/parish:allenAscension,5,ocd-division/country:us/state:la/parish:ascensionAssumption,7,ocd-division/country:us/state:la/parish:assumptionAvoyelles,9,ocd-division/country:us/state:la/parish:avoyellesBeauregard,11,ocd-division/country:us/state:la/parish:beauregardBienville,13,ocd-division/country:us/state:la/parish:bienvilleBossier,15,ocd-division/country:us/state:la/parish:bossierCaddo,17,ocd-division/country:us/state:la/parish:caddoCalcasieu,19,ocd-division/country:us/state:la/parish:calcasieuCaldwell,21,ocd-division/country:us/state:la/parish:caldwellCameron,23,ocd-division/country:us/state:la/parish:cameronCatahoula,25,ocd-division/country:us/state:la/parish:catahoulaClaiborne,27,ocd-division/country:us/state:la/parish:claiborneConcordia,29,ocd-division/country:us/state:la/parish:concordiaDe Soto,31,ocd-division/country:us/state:la/parish:de_soto
+name,fips,ocd_id
+Acadia,1,ocd-division/country:us/state:la/parish:acadia
+Allen,3,ocd-division/country:us/state:la/parish:allen
+Ascension,5,ocd-division/country:us/state:la/parish:ascension
+Assumption,7,ocd-division/country:us/state:la/parish:assumption
+Avoyelles,9,ocd-division/country:us/state:la/parish:avoyelles
+Beauregard,11,ocd-division/country:us/state:la/parish:beauregard
+Bienville,13,ocd-division/country:us/state:la/parish:bienville
+Bossier,15,ocd-division/country:us/state:la/parish:bossier
+Caddo,17,ocd-division/country:us/state:la/parish:caddo
+Calcasieu,19,ocd-division/country:us/state:la/parish:calcasieu
+Caldwell,21,ocd-division/country:us/state:la/parish:caldwell
+Cameron,23,ocd-division/country:us/state:la/parish:cameron
+Catahoula,25,ocd-division/country:us/state:la/parish:catahoula
+Claiborne,27,ocd-division/country:us/state:la/parish:claiborne
+Concordia,29,ocd-division/country:us/state:la/parish:concordia
+De Soto,31,ocd-division/country:us/state:la/parish:de_soto
 East Baton Rouge,33,ocd-division/country:us/state:la/parish:east_baton_rouge
 East Carroll,35,ocd-division/country:us/state:la/parish:east_carroll
 East Feliciana,37,ocd-division/country:us/state:la/parish:east_feliciana
-Evangeline,39,ocd-division/country:us/state:la/parish:evangelineFranklin,41,ocd-division/country:us/state:la/parish:franklinGrant,43,ocd-division/country:us/state:la/parish:grantIberia,45,ocd-division/country:us/state:la/parish:iberiaIberville,47,ocd-division/country:us/state:la/parish:ibervilleJackson,49,ocd-division/country:us/state:la/parish:jacksonJefferson,51,ocd-division/country:us/state:la/parish:jeffersonJefferson Davis,53,ocd-division/country:us/state:la/parish:jefferson_davis
-Lafayette,55,ocd-division/country:us/state:la/parish:lafayetteLafourche,57,ocd-division/country:us/state:la/parish:lafourcheLa Salle,59,ocd-division/country:us/state:la/parish:la_salle
-Lincoln,61,ocd-division/country:us/state:la/parish:lincolnLivingston,63,ocd-division/country:us/state:la/parish:livingstonMadison,65,ocd-division/country:us/state:la/parish:madisonMorehouse,67,ocd-division/country:us/state:la/parish:morehouseNatchitoches,69,ocd-division/country:us/state:la/parish:natchitochesOrleans,71,ocd-division/country:us/state:la/parish:orleansOuachita,73,ocd-division/country:us/state:la/parish:ouachitaPlaquemines,75,ocd-division/country:us/state:la/parish:plaqueminesPointe Coupee,77,ocd-division/country:us/state:la/parish:pointe_coupee
-Rapides,79,ocd-division/country:us/state:la/parish:rapidesRed River,81,ocd-division/country:us/state:la/parish:red_river
-Richland,83,ocd-division/country:us/state:la/parish:richlandSt. Bernard,87,ocd-division/country:us/state:la/parish:st_bernard
+Evangeline,39,ocd-division/country:us/state:la/parish:evangeline
+Franklin,41,ocd-division/country:us/state:la/parish:franklin
+Grant,43,ocd-division/country:us/state:la/parish:grant
+Iberia,45,ocd-division/country:us/state:la/parish:iberia
+Iberville,47,ocd-division/country:us/state:la/parish:iberville
+Jackson,49,ocd-division/country:us/state:la/parish:jackson
+Jefferson,51,ocd-division/country:us/state:la/parish:jefferson
+Jefferson Davis,53,ocd-division/country:us/state:la/parish:jefferson_davis
+Lafayette,55,ocd-division/country:us/state:la/parish:lafayette
+Lafourche,57,ocd-division/country:us/state:la/parish:lafourche
+La Salle,59,ocd-division/country:us/state:la/parish:lasalle
+Lincoln,61,ocd-division/country:us/state:la/parish:lincoln
+Livingston,63,ocd-division/country:us/state:la/parish:livingston
+Madison,65,ocd-division/country:us/state:la/parish:madison
+Morehouse,67,ocd-division/country:us/state:la/parish:morehouse
+Natchitoches,69,ocd-division/country:us/state:la/parish:natchitoches
+Orleans,71,ocd-division/country:us/state:la/parish:orleans
+Ouachita,73,ocd-division/country:us/state:la/parish:ouachita
+Plaquemines,75,ocd-division/country:us/state:la/parish:plaquemines
+Pointe Coupee,77,ocd-division/country:us/state:la/parish:pointe_coupee
+Rapides,79,ocd-division/country:us/state:la/parish:rapides
+Red River,81,ocd-division/country:us/state:la/parish:red_river
+Richland,83,ocd-division/country:us/state:la/parish:richland
+St. Bernard,87,ocd-division/country:us/state:la/parish:st_bernard
 St. Charles,89,ocd-division/country:us/state:la/parish:st_charles
 St. Helena,91,ocd-division/country:us/state:la/parish:st_helena
 St. James,93,ocd-division/country:us/state:la/parish:st_james
@@ -15,7 +50,16 @@ St. Landry,97,ocd-division/country:us/state:la/parish:st_landry
 St. Martin,99,ocd-division/country:us/state:la/parish:st_martin
 St. Mary,101,ocd-division/country:us/state:la/parish:st_mary
 St. Tammany,103,ocd-division/country:us/state:la/parish:st_tammany
-Sabine,85,ocd-division/country:us/state:la/parish:sabineTangipahoa,105,ocd-division/country:us/state:la/parish:tangipahoaTensas,107,ocd-division/country:us/state:la/parish:tensasTerrebonne,109,ocd-division/country:us/state:la/parish:terrebonneUnion,111,ocd-division/country:us/state:la/parish:unionVermilion,113,ocd-division/country:us/state:la/parish:vermilionVernon,115,ocd-division/country:us/state:la/parish:vernonWashington,117,ocd-division/country:us/state:la/parish:washingtonWebster,119,ocd-division/country:us/state:la/parish:websterWest Baton Rouge,121,ocd-division/country:us/state:la/parish:west_baton_rouge
+Sabine,85,ocd-division/country:us/state:la/parish:sabine
+Tangipahoa,105,ocd-division/country:us/state:la/parish:tangipahoa
+Tensas,107,ocd-division/country:us/state:la/parish:tensas
+Terrebonne,109,ocd-division/country:us/state:la/parish:terrebonne
+Union,111,ocd-division/country:us/state:la/parish:union
+Vermilion,113,ocd-division/country:us/state:la/parish:vermilion
+Vernon,115,ocd-division/country:us/state:la/parish:vernon
+Washington,117,ocd-division/country:us/state:la/parish:washington
+Webster,119,ocd-division/country:us/state:la/parish:webster
+West Baton Rouge,121,ocd-division/country:us/state:la/parish:west_baton_rouge
 West Carroll,123,ocd-division/country:us/state:la/parish:west_carroll
 West Feliciana,125,ocd-division/country:us/state:la/parish:west_feliciana
 Winn,127,ocd-division/country:us/state:la/parish:winn
