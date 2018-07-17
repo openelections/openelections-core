@@ -91,6 +91,14 @@ class Datasource(BaseDatasource):
         mappings = [x for x in m if x['county'] != ""]
         return mappings
 
+    def _ocd_id_for_county_map(self):
+        try:
+            return self.ocd_id_for_county_map
+        except AttributeError:
+            m = self.jurisdiction_mappings()
+            self.ocd_id_for_county_map = {j['county'].upper().strip(): j['ocd_id'] for j in m if j['county'] != ""}
+            return self.ocd_id_for_county_map
+
     def _url_for_fetch(self, mapping):
         if mapping['pre_processed_url']:
             return mapping['pre_processed_url']

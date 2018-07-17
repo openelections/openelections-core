@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
+
 from builtins import next
 from builtins import object
 from os.path import exists, join
 import re
-import csv
-import unicodecsv
+import unicodecsv as csv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
@@ -46,7 +47,7 @@ class WIPrecinctLoader(WIBaseLoader):
         if not(exists(join(self.cache.abspath, self.source))):
             return
         with self._file_handle as csvfile:
-            reader = unicodecsv.DictReader(csvfile)
+            reader = csv.DictReader(csvfile)
             next(reader, None)
             for row in reader:
                 rr_kwargs = self._common_kwargs.copy()
@@ -63,7 +64,8 @@ class WIPrecinctLoader(WIBaseLoader):
 
     def _build_jurisdiction_kwargs(self, row):
         jurisdiction = row['ward'].strip()
-        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].strip().upper() == row['county'].strip().upper()][0]['ocd_id']
+        county_map = self.datasource._ocd_id_for_county_map()
+        county_ocd_id = county_map[row['county'].strip().upper()]
         return {
             'jurisdiction': jurisdiction,
             'parent_jurisdiction': row['county'],
