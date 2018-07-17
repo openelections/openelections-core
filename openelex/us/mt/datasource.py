@@ -82,6 +82,10 @@ class Datasource(BaseDatasource):
         bits.extend([
             result['race_type'].lower(),
         ])
+        if '__precinct' in result['path']:
+            bits.extend([
+                'precinct'
+            ])
         filename = "__".join(bits) + '.csv'
         return filename
 

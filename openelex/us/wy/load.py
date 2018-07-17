@@ -96,6 +96,7 @@ class WYLoader(WYBaseLoader):
     """
     Parse Wyoming election results for all elections except those in 2006 or special elections.
     Works for:
+    2016 general & primary
     2014 general & primary
     2012 general & primary
     2010 general & primary
