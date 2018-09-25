@@ -74,7 +74,7 @@ class RollerMeta(type):
         for k, v in list(attrs.items()):
             if isinstance(v, FieldTransform):
                 transforms = field_transforms.setdefault(v.collection, {})
-                transforms[v.db_field] = v 
+                transforms[v.db_field] = v
                 # HACK Exclude flattened fields from the list of output fields.
                 # The flattened fields' contents will get added, but the
                 # original field shouldn't show up in the output.
@@ -82,7 +82,7 @@ class RollerMeta(type):
                     if not v.output_name:
                         v.output_name = k
                     transformed_fields_ordered.append(v.output_name)
-                
+
             elif isinstance(v, CalculatedField):
                 field_calculators[k] = v.apply
                 calculated_fields_ordered.append(k)
@@ -97,10 +97,10 @@ class RollerMeta(type):
 
 class Roller(with_metaclass(RollerMeta, object)):
     """
-    Filters and collects related data from document fields into a 
+    Filters and collects related data from document fields into a
     serializeable format.
     """
-    
+
     def __init__(self):
         self._querysets = {}
         self._relationships = {}
@@ -157,7 +157,7 @@ class Roller(with_metaclass(RollerMeta, object)):
 
     def build_filters(self, **filter_kwargs):
         """
-        Returns a dictionary of Q objects that will be used to limit the 
+        Returns a dictionary of Q objects that will be used to limit the
         mapper querysets.
 
         This allows for translating arguments from upstream code to the
@@ -172,20 +172,20 @@ class Roller(with_metaclass(RollerMeta, object)):
         * state: Required. Postal code for a state.  For example, "md".
         * datefilter: Date specified in "YYYY" or "YYYY-MM-DD" used to filter
           elections before they are baked.
-        * election_type: Election type. For example, general, primary, etc. 
+        * election_type: Election type. For example, general, primary, etc.
         * reporting_level: Reporting level of the election results.  For example, "state",
           "county", "precinct", etc. Value must be one of the options specified
           in openelex.models.Result.REPORTING_LEVEL_CHOICES.
-          
+
         """
-        # TODO: Implement filtering by office, district and party after the 
+        # TODO: Implement filtering by office, district and party after the
         # the data is standardized
 
-        # By default, should filter to all state/contest-wide results for all 
+        # By default, should filter to all state/contest-wide results for all
         # races when no filters are specified.
         filters= {}
         q_kwargs = {}
-        
+
         q_kwargs['state'] = filter_kwargs['state'].upper()
 
         try:
@@ -205,9 +205,9 @@ class Roller(with_metaclass(RollerMeta, object)):
             filters[collection_name] = common_q
             try:
                 fn = getattr(self, 'build_filters_' + collection_name)
-                collection_q = fn(**filter_kwargs) 
+                collection_q = fn(**filter_kwargs)
                 if collection_q:
-                    filters[collection_name] &= collection_q 
+                    filters[collection_name] &= collection_q
             except AttributeError:
                 pass
 
@@ -233,7 +233,7 @@ class Roller(with_metaclass(RollerMeta, object)):
         # For now we filter on the date string in the election IDs
         # under the assumption that this will be faster than filtering
         # across a reference.
-        filters['election_id__contains'] = format_date(datefilter) 
+        filters['election_id__contains'] = format_date(datefilter)
 
         # Return a Q object rather than just a dict because the non-date
         # filters might also filter with a ``election_id__contains`` keyword
@@ -245,13 +245,13 @@ class Roller(with_metaclass(RollerMeta, object)):
             return Q(reporting_level=filter_kwargs['reporting_level'])
         except KeyError:
             return None
-        
+
     def apply_filters(self, **queries):
         """
         Filter querysets.
         """
         for collection_name, qs in list(self._querysets.items()):
-            q = queries.get(collection_name) 
+            q = queries.get(collection_name)
             if q:
                 self._querysets[collection_name] = qs(q)
 
@@ -264,7 +264,7 @@ class Roller(with_metaclass(RollerMeta, object)):
         return {}
 
     def build_exclude_fields(self, **filter_kwargs):
-        return self.excluded_fields 
+        return self.excluded_fields
 
     def apply_field_limits(self, fields={}, exclude_fields={}):
         """
@@ -283,7 +283,7 @@ class Roller(with_metaclass(RollerMeta, object)):
         for field_name, transform in list(transforms.items()):
             data = transform.transform(data)
 
-        return data 
+        return data
 
     def get_calculated_fields(self, data):
         calculated_fields = {}
@@ -301,7 +301,7 @@ class Roller(with_metaclass(RollerMeta, object)):
         primary.pop('_id', None)
         for fname in list(self._relationships.keys()):
             primary.pop(fname, None)
-            
+
         transforms = self.field_transforms.get(self.primary_collection_name)
         if transforms:
             primary = self.transform_fields(primary, transforms)
@@ -321,7 +321,7 @@ class Roller(with_metaclass(RollerMeta, object)):
         flat.update(primary)
         flat.update(self.get_calculated_fields(flat))
 
-        return flat 
+        return flat
 
     def get_list(self, **filter_kwargs):
         """
@@ -346,22 +346,25 @@ class Roller(with_metaclass(RollerMeta, object)):
         related_map = {}
         for related_field, related_collection in list(self._relationships.items()):
             related_map[related_field] = {
-                str(c['_id']):c for c 
+                str(c['_id']):c for c
                 in self._querysets[related_collection].as_pymongo()
             }
 
-        # We'll save the flattened items as an attribute to support a 
+        # We'll save the flattened items as an attribute to support a
         # chainable interface.
         self._items = []
         primary_qs = self._querysets[self.primary_collection_name].as_pymongo()
-        for primary in primary_qs:
-            related = {}
-            for fname, coll in list(self._relationships.items()):
-                related[fname] = related_map[coll][str(primary[fname])]
-                    
-            flat = self.flatten(primary, **related)
-            self._fields |= list(flat.keys())
-            self._items.append(flat)
+        try:
+            for primary in primary_qs:
+                related = {}
+                for fname, coll in list(self._relationships.items()):
+                    related[fname] = related_map[coll][str(primary[fname])]
+
+                flat = self.flatten(primary, **related)
+                self._fields |= list(flat.keys())
+                self._items.append(flat)
+        except:
+            pass
 
         return self._items
 
@@ -396,8 +399,8 @@ class ResultRoller(Roller):
 
     # Field name transformations so output fields match the specs at
     # https://github.com/openelections/specs/wiki/Results-Data-Spec-Version-1
-    # and 
-    # https://github.com/openelections/specs/wiki/Elections-Data-Spec-Version-2 
+    # and
+    # https://github.com/openelections/specs/wiki/Elections-Data-Spec-Version-2
 
     # HACK: election_id will get converted to 'id' in the final output.  Had to work around
     # the fact that id is a builtin in Python < 3
@@ -430,9 +433,9 @@ class ResultRoller(Roller):
         'contest': ['election_id', 'party', 'source', 'slug',],
     }
     """
-    Mongodb fields that should be excluded from output data. 
-    
-    The excluded fields can be altered dynamically by overriding the 
+    Mongodb fields that should be excluded from output data.
+
+    The excluded fields can be altered dynamically by overriding the
     ``build_excluded_fields()`` method.
     """
 
@@ -453,8 +456,8 @@ class RawResultRoller(Roller):
 
     # Field name transformations so output fields match the specs at
     # https://github.com/openelections/specs/wiki/Results-Data-Spec-Version-1
-    # and 
-    # https://github.com/openelections/specs/wiki/Elections-Data-Spec-Version-2 
+    # and
+    # https://github.com/openelections/specs/wiki/Elections-Data-Spec-Version-2
 
     # HACK: election_id will get converted to 'id' in the final output.  Had to work around
     # the fact that id is a builtin in Python < 3
@@ -508,9 +511,9 @@ class BaseBaker(object):
 
     timestamp_format = "%Y%m%dT%H%M%S"
     """
-    stftime() format string used to format timestamps. Mostly used for 
+    stftime() format string used to format timestamps. Mostly used for
     creating filenames.
-    
+
     Defaults to a version of ISO-8601 without '-' or ':' characters.
     """
 
@@ -520,7 +523,7 @@ class BaseBaker(object):
     def default_outputdir(self):
         """
         Returns the default path for storing output files.
-       
+
         This will be used if a directory is not specifically passed to the
         constructor.  It's implemented as a method in case subclasses
         want to base the directory name on instance attributes.
@@ -549,7 +552,7 @@ class BaseBaker(object):
 
         state = filter_kwargs.get('state')
         return "%s_%s.%s" % (state.lower(),
-            timestamp.strftime(cls.timestamp_format), fmt) 
+            timestamp.strftime(cls.timestamp_format), fmt)
 
     @classmethod
     def manifest_filename(cls, timestamp, **filter_kwargs):
@@ -558,7 +561,7 @@ class BaseBaker(object):
         """
         state = filter_kwargs.get('state')
         return "%s_%s_manifest.txt" % (state.lower(),
-            timestamp.strftime(cls.timestamp_format)) 
+            timestamp.strftime(cls.timestamp_format))
 
     def collect_items(self):
         """
@@ -583,7 +586,7 @@ class BaseBaker(object):
 
     def get_items(self):
         """
-        Retrieve a flattened, filtered list of election results. 
+        Retrieve a flattened, filtered list of election results.
 
         Returns:
             A list of result dictionaries.  By default, this is the value of
@@ -615,23 +618,23 @@ class BaseBaker(object):
 
         """
         return self._fields
-           
+
     def write(self, fmt='csv', outputdir=None, timestamp=None):
         """
         Writes collected data to a file.
-        
+
         Arguments:
-        
-        * fmt: Output format. Either 'csv' or 'json'. Default is 'csv'. 
-        * outputdir: Directory where output files will be written. Defaults to 
+
+        * fmt: Output format. Either 'csv' or 'json'. Default is 'csv'.
+        * outputdir: Directory where output files will be written. Defaults to
           "openelections/us/bakery"
-          
+
         """
         try:
-            fmt_method = getattr(self, 'write_' + fmt) 
+            fmt_method = getattr(self, 'write_' + fmt)
         except AttributeError:
             raise UnsupportedFormatError("Format %s is not supported" % (fmt))
-        
+
         if outputdir is None:
             outputdir = self.default_outputdir()
 
@@ -649,7 +652,7 @@ class BaseBaker(object):
 
         if items is None:
             items = self.get_items()
-            
+
         with open(path, 'w') as csvfile:
             writer = DictWriter(csvfile, self.get_fields())
             writer.writeheader()
@@ -686,7 +689,7 @@ class BaseBaker(object):
         path = os.path.join(outputdir,
             self.manifest_filename(timestamp, **self.filter_kwargs))
 
-        # TODO: Decide on best format for manifest file. 
+        # TODO: Decide on best format for manifest file.
         with open(path, 'w') as f:
             f.write("Generated on %s\n" %
                 timestamp.strftime(self.timestamp_format))
@@ -723,8 +726,8 @@ class RawBaker(BaseBaker):
     def write_manifest(self, outputdir=None, timestamp=None):
         # Don't write a manifest with the raw baker
         pass
-   
-   
+
+
 class Baker(BaseBaker):
     """Writes (filtered) election and candidate data to structured files"""
     def collect_items(self):
@@ -742,9 +745,9 @@ def reporting_levels_for_election(state, election_date, election_type, raw=False
         state (string): State abbreviation.
         election_date (string): String representing election start date in
             format "YYYYMMDD".
-        election_type: Election type. For example, general, primary, etc. 
+        election_type: Election type. For example, general, primary, etc.
         raw: Consider available reporting levels for raw results.  The default
-            is to consider standardized/cleaned results. 
+            is to consider standardized/cleaned results.
 
     Returns:
         A  list of available reporting levels.
