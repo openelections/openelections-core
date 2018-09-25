@@ -76,7 +76,7 @@ class VABaseLoader(BaseLoader):
 
 class CSVLoader(VABaseLoader):
     """
-    Loads Virginia primary, special and general election results for 2005-2015.
+    Loads Virginia primary, special and general election results for 2005-2017.
     """
 
     offices = {
