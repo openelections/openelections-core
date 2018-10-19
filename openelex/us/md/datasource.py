@@ -30,8 +30,8 @@ class Datasource(BaseDatasource):
 
     # PUBLIC INTERFACE
     def mappings(self, year=None):
-        """Return array of dicts  containing source url and 
-        standardized filename for raw results file, along 
+        """Return array of dicts  containing source url and
+        standardized filename for raw results file, along
         with other pieces of metadata
         """
         mappings = []
@@ -44,7 +44,7 @@ class Datasource(BaseDatasource):
         return [item['raw_url'] for item in self.mappings(year)]
 
     def filename_url_pairs(self, year=None):
-        return [(item['generated_filename'], item['raw_url']) 
+        return [(item['generated_filename'], item['raw_url'])
                 for item in self.mappings(year)]
 
 
@@ -53,16 +53,17 @@ class Datasource(BaseDatasource):
         "Filter races by type and add election slug"
         races = {
           'special': None,
+          'general': None,
         }
         for elec in elections:
-            rtype = self._race_type(elec) 
+            rtype = self._race_type(elec)
             elec['slug'] = self._election_slug(elec)
             races[rtype] = elec
         return races['general'], races['primary'], races['special']
 
     def _race_type(self, election):
         if election['special']:
-            return 'special' 
+            return 'special'
 
         return election['race_type'].lower()
 
@@ -111,16 +112,17 @@ class Datasource(BaseDatasource):
 
         general, primary, special = self._races_by_type(elections)
 
-        # Add General meta to payload
-        general_url = self._build_state_leg_url(year)
-        general_filename = self._generate_state_leg_filename(general_url, general['start_date'])
-        gen_meta = meta.copy()
-        gen_meta.update({
-            'raw_url': general_url,
-            'generated_filename': general_filename,
-            'election': general['slug']
-        })
-        payload.append(gen_meta)
+        if general is not None:
+            # Add General meta to payload
+            general_url = self._build_state_leg_url(year)
+            general_filename = self._generate_state_leg_filename(general_url, general['start_date'])
+            gen_meta = meta.copy()
+            gen_meta.update({
+                'raw_url': general_url,
+                'generated_filename': general_filename,
+                'election': general['slug']
+            })
+            payload.append(gen_meta)
 
         # Add Primary meta to payload
         if primary and int(year) > 2000:
@@ -190,15 +192,16 @@ class Datasource(BaseDatasource):
             # GENERALS
             # Create countywide and precinct-level metadata for general
             for precinct_val in (True, False):
-                general_url = self._build_county_url(year, county, precinct=precinct_val)
-                general_filename = self._generate_county_filename(general_url, general['start_date'], jurisdiction)
-                gen_meta = meta.copy()
-                gen_meta.update({
-                    'raw_url': general_url,
-                    'generated_filename': general_filename,
-                    'election': general['slug']
-                })
-                payload.append(gen_meta)
+                if general is not None:
+                    general_url = self._build_county_url(year, county, precinct=precinct_val)
+                    general_filename = self._generate_county_filename(general_url, general['start_date'], jurisdiction)
+                    gen_meta = meta.copy()
+                    gen_meta.update({
+                        'raw_url': general_url,
+                        'generated_filename': general_filename,
+                        'election': general['slug']
+                    })
+                    payload.append(gen_meta)
 
             # PRIMARIES
             # For each primary and party and party combo, generate countywide and precinct metadata
@@ -312,9 +315,9 @@ class Datasource(BaseDatasource):
             'us_house_of_representatives__4',
         ]
         return {
-            "generated_filename": 
+            "generated_filename":
             "__".join(filename_bits) + ".html",
-            "raw_url": special['direct_links'][0], 
+            "raw_url": special['direct_links'][0],
             "ocd_id": 'ocd-division/country:us/state:md',
             "name": 'Maryland',
             "election": special['slug']
