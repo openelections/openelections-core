@@ -31,3 +31,4 @@ date,race_type,county,party,special,office,district,url,path
 2017-06-13,primary,,Republican,,,,https://apps.elections.virginia.gov/SBE_CSV/ELECTIONS/ELECTIONRESULTS/2017/2017%20June%20Republican%20Primary.csv,20170613__va__republican__primary__precinct.csv
 2018-06-12,primary,,Democratic,,,,https://apps.elections.virginia.gov/SBE_CSV/ELECTIONS/ELECTIONRESULTS/2018/2018%20June%20Democratic%20Primary%20.csv,20180612__va__democratic__primary__precinct.csv
 2018-06-12,primary,,Republican,,,,https://apps.elections.virginia.gov/SBE_CSV/ELECTIONS/ELECTIONRESULTS/2018/2018%20June%20Republican%20Primary%20.csv,20180612__va__republican__primary__precinct.csv
+2018-11-06,general,,,,,,https://apps.elections.virginia.gov/SBE_CSV/ELECTIONS/ELECTIONRESULTS/2018/2018%20November%20General.csv,20181106__va__general__precinct.csv
