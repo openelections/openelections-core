@@ -380,7 +380,7 @@ class WYLoader(WYBaseLoader):
             # find indexes of empty cand cells and remove them from offices
             empty_cells = [i for i , c in enumerate(cands) if c == '']
             offices = [i for j, i in enumerate(offices) if j not in empty_cells]
-            candidates = [c for c in cands if not c == ''][:len(offices)]
+            candidates = [c.replace('\n', ' ') for c in cands if not c == ''][:len(offices)]
             raw_parties = sheet.row_values(1)[1:-1][:len(offices)]
             parties = []
             for p in raw_parties:
