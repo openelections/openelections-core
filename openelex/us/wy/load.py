@@ -402,8 +402,8 @@ class WYLoader(WYBaseLoader):
                 else:
                     parties.append(None)
                     cands.append(cand)
-            candidates = [c.replace('\n', ' ') for c in cands[2:]][:len(offices)]
-            parties = parties[2:][:len(offices)]
+            candidates = [c.replace('\n', ' ') for c in cands[1:]][:len(offices)]
+            parties = parties[1:][:len(offices)]
         else:
             cands = []
             parties = []
