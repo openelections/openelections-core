@@ -26,7 +26,7 @@ setup(
         'nameparser==0.5.3',
         'ordered-set==2.0.2',
         'pymongo==2.8',
-        'requests>=2.0',
+        'requests>=2.20.0',
         'unicodecsv==0.12.0',
         'us==1.0.0',
         'xlrd==0.9.2',
