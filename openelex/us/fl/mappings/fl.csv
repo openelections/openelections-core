@@ -1,1 +1,68 @@
-ocd_id,fips,countyocd-division/country:us/state:fl/county:alachua,001,Alachua Countyocd-division/country:us/state:fl/county:baker,003,Baker Countyocd-division/country:us/state:fl/county:bay,005,Bay Countyocd-division/country:us/state:fl/county:bradford,007,Bradford Countyocd-division/country:us/state:fl/county:brevard,009,Brevard Countyocd-division/country:us/state:fl/county:broward,011,Broward Countyocd-division/country:us/state:fl/county:calhoun,013,Calhoun Countyocd-division/country:us/state:fl/county:charlotte,015,Charlotte Countyocd-division/country:us/state:fl/county:citrus,017,Citrus Countyocd-division/country:us/state:fl/county:clay,019,Clay Countyocd-division/country:us/state:fl/county:collier,021,Collier Countyocd-division/country:us/state:fl/county:columbia,023,Columbia Countyocd-division/country:us/state:fl/county:desoto,025,DeSoto Countyocd-division/country:us/state:fl/county:dixie,027,Dixie Countyocd-division/country:us/state:fl/county:duval,029,Duval Countyocd-division/country:us/state:fl/county:escambia,031,Escambia Countyocd-division/country:us/state:fl/county:flagler,033,Flagler Countyocd-division/country:us/state:fl/county:franklin,035,Franklin Countyocd-division/country:us/state:fl/county:gadsden,037,Gadsden Countyocd-division/country:us/state:fl/county:gilchrist,039,Gilchrist Countyocd-division/country:us/state:fl/county:glades,041,Glades Countyocd-division/country:us/state:fl/county:gulf,043,Gulf Countyocd-division/country:us/state:fl/county:hamilton,045,Hamilton Countyocd-division/country:us/state:fl/county:hardee,047,Hardee Countyocd-division/country:us/state:fl/county:hendry,049,Hendry Countyocd-division/country:us/state:fl/county:hernando,051,Hernando Countyocd-division/country:us/state:fl/county:highlands,053,Highlands Countyocd-division/country:us/state:fl/county:hillsborough,055,Hillsborough Countyocd-division/country:us/state:fl/county:holmes,057,Holmes Countyocd-division/country:us/state:fl/county:indian_river,059,Indian River Countyocd-division/country:us/state:fl/county:jackson,061,Jackson Countyocd-division/country:us/state:fl/county:jefferson,063,Jefferson Countyocd-division/country:us/state:fl/county:lafayette,065,Lafayette Countyocd-division/country:us/state:fl/county:lake,067,Lake Countyocd-division/country:us/state:fl/county:lee,069,Lee Countyocd-division/country:us/state:fl/county:leon,071,Leon Countyocd-division/country:us/state:fl/county:levy,073,Levy Countyocd-division/country:us/state:fl/county:liberty,075,Liberty Countyocd-division/country:us/state:fl/county:madison,077,Madison Countyocd-division/country:us/state:fl/county:manatee,079,Manatee Countyocd-division/country:us/state:fl/county:marion,081,Marion Countyocd-division/country:us/state:fl/county:martin,083,Martin Countyocd-division/country:us/state:fl/county:miami-dade,085,Miami-Dade Countyocd-division/country:us/state:fl/county:monroe,087,Monroe Countyocd-division/country:us/state:fl/county:nassau,089,Nassau Countyocd-division/country:us/state:fl/county:okaloosa,091,Okaloosa Countyocd-division/country:us/state:fl/county:okeechobee,093,Okeechobee Countyocd-division/country:us/state:fl/county:orange,095,Orange Countyocd-division/country:us/state:fl/county:osceola,097,Osceola Countyocd-division/country:us/state:fl/county:palm_beach,099,Palm Beach Countyocd-division/country:us/state:fl/county:pasco,101,Pasco Countyocd-division/country:us/state:fl/county:pinellas,103,Pinellas Countyocd-division/country:us/state:fl/county:polk,105,Polk Countyocd-division/country:us/state:fl/county:putnam,107,Putnam Countyocd-division/country:us/state:fl/county:santa_rosa,113,Santa Rosa Countyocd-division/country:us/state:fl/county:sarasota,115,Sarasota Countyocd-division/country:us/state:fl/county:seminole,117,Seminole Countyocd-division/country:us/state:fl/county:st_johns,109,St. Johns Countyocd-division/country:us/state:fl/county:st_lucie,111,St. Lucie Countyocd-division/country:us/state:fl/county:sumter,119,Sumter Countyocd-division/country:us/state:fl/county:suwannee,121,Suwannee Countyocd-division/country:us/state:fl/county:taylor,123,Taylor Countyocd-division/country:us/state:fl/county:union,125,Union Countyocd-division/country:us/state:fl/county:volusia,127,Volusia Countyocd-division/country:us/state:fl/county:wakulla,129,Wakulla Countyocd-division/country:us/state:fl/county:walton,131,Walton Countyocd-division/country:us/state:fl/county:washington,133,Washington County
+ocd_id,fips,county
+ocd-division/country:us/state:fl/county:alachua,1,Alachua County
+ocd-division/country:us/state:fl/county:baker,3,Baker County
+ocd-division/country:us/state:fl/county:bay,5,Bay County
+ocd-division/country:us/state:fl/county:bradford,7,Bradford County
+ocd-division/country:us/state:fl/county:brevard,9,Brevard County
+ocd-division/country:us/state:fl/county:broward,11,Broward County
+ocd-division/country:us/state:fl/county:calhoun,13,Calhoun County
+ocd-division/country:us/state:fl/county:charlotte,15,Charlotte County
+ocd-division/country:us/state:fl/county:citrus,17,Citrus County
+ocd-division/country:us/state:fl/county:clay,19,Clay County
+ocd-division/country:us/state:fl/county:collier,21,Collier County
+ocd-division/country:us/state:fl/county:columbia,23,Columbia County
+ocd-division/country:us/state:fl/county:desoto,25,DeSoto County
+ocd-division/country:us/state:fl/county:dixie,27,Dixie County
+ocd-division/country:us/state:fl/county:duval,29,Duval County
+ocd-division/country:us/state:fl/county:escambia,31,Escambia County
+ocd-division/country:us/state:fl/county:flagler,33,Flagler County
+ocd-division/country:us/state:fl/county:franklin,35,Franklin County
+ocd-division/country:us/state:fl/county:gadsden,37,Gadsden County
+ocd-division/country:us/state:fl/county:gilchrist,39,Gilchrist County
+ocd-division/country:us/state:fl/county:glades,41,Glades County
+ocd-division/country:us/state:fl/county:gulf,43,Gulf County
+ocd-division/country:us/state:fl/county:hamilton,45,Hamilton County
+ocd-division/country:us/state:fl/county:hardee,47,Hardee County
+ocd-division/country:us/state:fl/county:hendry,49,Hendry County
+ocd-division/country:us/state:fl/county:hernando,51,Hernando County
+ocd-division/country:us/state:fl/county:highlands,53,Highlands County
+ocd-division/country:us/state:fl/county:hillsborough,55,Hillsborough County
+ocd-division/country:us/state:fl/county:holmes,57,Holmes County
+ocd-division/country:us/state:fl/county:indian_river,59,Indian River County
+ocd-division/country:us/state:fl/county:jackson,61,Jackson County
+ocd-division/country:us/state:fl/county:jefferson,63,Jefferson County
+ocd-division/country:us/state:fl/county:lafayette,65,Lafayette County
+ocd-division/country:us/state:fl/county:lake,67,Lake County
+ocd-division/country:us/state:fl/county:lee,69,Lee County
+ocd-division/country:us/state:fl/county:leon,71,Leon County
+ocd-division/country:us/state:fl/county:levy,73,Levy County
+ocd-division/country:us/state:fl/county:liberty,75,Liberty County
+ocd-division/country:us/state:fl/county:madison,77,Madison County
+ocd-division/country:us/state:fl/county:manatee,79,Manatee County
+ocd-division/country:us/state:fl/county:marion,81,Marion County
+ocd-division/country:us/state:fl/county:martin,83,Martin County
+ocd-division/country:us/state:fl/county:miami-dade,85,Miami-Dade County
+ocd-division/country:us/state:fl/county:monroe,87,Monroe County
+ocd-division/country:us/state:fl/county:nassau,89,Nassau County
+ocd-division/country:us/state:fl/county:okaloosa,91,Okaloosa County
+ocd-division/country:us/state:fl/county:okeechobee,93,Okeechobee County
+ocd-division/country:us/state:fl/county:orange,95,Orange County
+ocd-division/country:us/state:fl/county:osceola,97,Osceola County
+ocd-division/country:us/state:fl/county:palm_beach,99,Palm Beach County
+ocd-division/country:us/state:fl/county:pasco,101,Pasco County
+ocd-division/country:us/state:fl/county:pinellas,103,Pinellas County
+ocd-division/country:us/state:fl/county:polk,105,Polk County
+ocd-division/country:us/state:fl/county:putnam,107,Putnam County
+ocd-division/country:us/state:fl/county:santa_rosa,113,Santa Rosa County
+ocd-division/country:us/state:fl/county:sarasota,115,Sarasota County
+ocd-division/country:us/state:fl/county:seminole,117,Seminole County
+ocd-division/country:us/state:fl/county:st_johns,109,St. Johns County
+ocd-division/country:us/state:fl/county:st_lucie,111,St. Lucie County
+ocd-division/country:us/state:fl/county:sumter,119,Sumter County
+ocd-division/country:us/state:fl/county:suwannee,121,Suwannee County
+ocd-division/country:us/state:fl/county:taylor,123,Taylor County
+ocd-division/country:us/state:fl/county:union,125,Union County
+ocd-division/country:us/state:fl/county:volusia,127,Volusia County
+ocd-division/country:us/state:fl/county:wakulla,129,Wakulla County
+ocd-division/country:us/state:fl/county:walton,131,Walton County
+ocd-division/country:us/state:fl/county:washington,133,Washington County

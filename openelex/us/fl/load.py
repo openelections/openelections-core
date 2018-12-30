@@ -73,10 +73,13 @@ class FlLoader(BaseLoader):
         "Attorney General",
         "Chief Financial Officer",
         "Commissioner of Agriculture",
+        "Representative In Congress",
+        "President Of The United States"
     ])
 
     district_offices = set([
         "United States Representative",
+        "Representative In Congress",
         "State Representative",
         "State Senate",
         "State Senator",
@@ -113,7 +116,7 @@ class FlLoader(BaseLoader):
             RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        return row['OfficeDesc'].strip() not in self.target_offices
+        return row['OfficeDesc'].strip().title() not in self.target_offices
 
     def _prep_result(self, row):
         """
@@ -215,7 +218,7 @@ class PrecinctLoader(FlLoader):
         RawResult.objects.insert(results)
 
     def _skip_row(self, row):
-        if any(o in row['contest_name'] for o in self.target_offices):
+        if any(o in row['contest_name'].title() for o in self.target_offices):
             return False
         else:
             return True
