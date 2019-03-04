@@ -250,7 +250,7 @@ class PrecinctLoader(FlLoader):
         kwargs.update(self._build_contest_kwargs(row))
         kwargs.update(self._build_candidate_kwargs(row))
         precinct = str(row['precinct_id']+' '+row['polling_location']).strip()
-        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county_name'].upper() + ' COUNTY'][0]['ocd_id']
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county_name'].upper()][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,

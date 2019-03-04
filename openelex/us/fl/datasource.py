@@ -31,28 +31,57 @@ class Datasource(BaseDatasource):
         return [(item['generated_filename'], item['raw_url'])
                 for item in self.mappings(year)]
 
+    def mappings_for_url(self, url):
+        return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
+    
+
     # PRIVATE METHODS
 
     def _build_metadata(self, year, elections):
         meta = []
+        year_int = int(year)
         for election in elections:
-            meta.append({
-                "generated_filename": self._generate_filename(election),
-                "raw_url": election['direct_links'][0],
-                "ocd_id": 'ocd-division/country:us/state:fl',
-                "name": 'Florida',
-                "election": election['slug']
-            })
-            if year > 2011:
+            results = [x for x in self._url_paths() if x['date'] == election['start_date']]
+            for result in results:
+                county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
+                generated_filename = self._generate_county_filename(result, election, '.tsv')
                 meta.append({
-                    "generated_filename": self._generate_precinct_filename(election),
-                    "raw_url": election['direct_links'][1],
-                    "ocd_id": 'ocd-division/country:us/state:fl',
-                    "name": 'Florida',
+                    "generated_filename": generated_filename,
+                    'raw_url': result['url'],
+                    'raw_extracted_filename': result['raw_extracted_filename'],
+                    "ocd_id": county['ocd_id'],
+                    "name": county['county'],
                     "election": election['slug']
                 })
-
         return meta
+
+    def _generate_county_filename(self, result, election, format):
+        if election['race_type'] == 'general':
+            bits = [
+                election['start_date'].replace('-',''),
+                self.state.lower(),
+                election['race_type'],
+                result['county'].lower().replace(' ','_'),
+                'precinct'
+            ]
+        elif result['party'] == '':
+            bits = [
+                election['start_date'].replace('-',''),
+                self.state.lower(),
+                election['race_type'],
+                result['county'].lower().replace(' ','_'),
+                'precinct'
+            ]
+        else:
+            bits = [
+                election['start_date'].replace('-',''),
+                self.state.lower(),
+                result['party'].lower(),
+                election['race_type'],
+                result['county'].lower().replace(' ','_'),
+                'precinct'
+            ]
+        return "__".join(bits) + format
 
     def _generate_filename(self, election):
         # example: 20021105__fl__general.tsv
