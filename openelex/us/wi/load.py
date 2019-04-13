@@ -79,6 +79,12 @@ class WIPrecinctLoader(WIBaseLoader):
         }
 
     def _build_candidate_kwargs(self, row):
+        name = row['candidate'].strip()
+        write_in = (name.find('(Write-In)') != -1 ) or (name.find('(Write In)') != -1 )
+        if write_in:
+            write_in = True
+            name = row['candidate'].rstrip('(Write-In)').rstrip('(Write In)').strip()
         return {
-            'full_name': row['candidate'].strip()
+            'full_name': name,
+            'write_in': write_in
         }
