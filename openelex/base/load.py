@@ -100,7 +100,7 @@ class BaseLoader(StateBase):
 
     @property
     def _file_handle(self):
-        return io.open(join(self.cache.abspath, self.source), 'rU', encoding='latin-1')
+        return io.open(join(self.cache.abspath, self.source), 'rbU')
 
     @property
     def _xls_file_path(self):

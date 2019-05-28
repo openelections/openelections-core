@@ -47,7 +47,7 @@ class WIPrecinctLoader(WIBaseLoader):
         if not(exists(join(self.cache.abspath, self.source))):
             return
         with self._file_handle as csvfile:
-            reader = csv.DictReader(csvfile)
+            reader = csv.DictReader(csvfile, encoding='utf8')
             next(reader, None)
             for row in reader:
                 rr_kwargs = self._common_kwargs.copy()
@@ -79,12 +79,10 @@ class WIPrecinctLoader(WIBaseLoader):
         }
 
     def _build_candidate_kwargs(self, row):
-        name = row['candidate'].strip()
-        write_in = (name.find('(Write-In)') != -1 ) or (name.find('(Write In)') != -1 )
-        if write_in:
-            write_in = True
-            name = row['candidate'].rstrip('(Write-In)').rstrip('(Write In)').strip()
+        original_name = row['candidate'].strip()
+        clean_name = original_name.replace(' (Write-In)', '').replace(' (Write In)', '')
+        write_in = (original_name != clean_name)
         return {
-            'full_name': name,
+            'full_name': clean_name,
             'write_in': write_in
         }
