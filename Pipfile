@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 "bba4a4a" = {path = ".", editable = true}
+"urllib3" = ">=1.2.3"
+"requests" = ">=2.20.0"
 
 [dev-packages]
 mock = "*"

@@ -31,7 +31,7 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2014', '2016']):
+        if any(s in election_id for s in ['2014', '2016', '2018']):
             loader = NCTsvLoader()
         elif any(s in election_id for s in ['nc-2008-11-04-general', '2010', '2012']):
             loader = NCCsvLoader()
@@ -151,8 +151,8 @@ class NCTsvLoader(NCBaseLoader):
             for row in reader:
                 if self._skip_row(row):
                     continue
-                if row['Precinct'] in ('CURBSIDE', 'PROVISIONAL', 'ABSENTEE BY MAIL', 'ONESTOP', 'TRANSFER'):
-                    results.append(self._prep_county_result(row))
+#                if row['Precinct'] in ('CURBSIDE', 'PROVISIONAL', 'ABSENTEE BY MAIL', 'ONESTOP', 'TRANSFER'):
+#                    results.append(self._prep_county_result(row))
                 else:
                     results.append(self._prep_precinct_result(row))
         RawResult.objects.insert(results)
