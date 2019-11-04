@@ -79,13 +79,6 @@
             ],
             "version": "==0.16.0"
         },
-        "futures": {
-            "hashes": [
-                "sha256:9ec02aa7d674acb8618afb127e27fde7fc68994c0437ad759fa094a574adb265",
-                "sha256:ec0a6cb848cc212002b9828c3e34c675e0c9ff6741dc445cab6fdd4e1085d1f1"
-            ],
-            "version": "==3.2.0"
-        },
         "github3.py": {
             "hashes": [
                 "sha256:9021a2b3a2e2059cbc0af1473a10e51c24f894d0ce158def87cc65b5486b0f78",
