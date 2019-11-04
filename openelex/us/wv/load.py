@@ -81,31 +81,46 @@ class WVLoader(WVBaseLoader):
                         results.append(self._prep_county_result(row))
                     else:
                         continue
-                elif '__precinct__' not in self.mapping['generated_filename']:
+                elif '__precinct' not in self.source:
                     if row['CountyName'] == '':
                         continue
                     results.append(self._prep_county_result(row))
-                elif any(county == row['CountyName'] for county in ['Kanawha', 'Marshall', 'Nicholas', 'Cabell']):
+                elif 'county' in row:
                     results.append(self._prep_github_precinct_result(row))
                 else:
                     results.append(self._prep_precinct_result(row))
             RawResult.objects.insert(results)
 
     def _skip_row(self, row):
+        if 'county' in row:
+            return False
         if row['OfficialResults'] and row['OfficialResults'] == 'No':
             return True
-        return row['OfficeDescription'].strip() not in self.target_offices
+        if 'OfficeDescription' in row:
+            return row['OfficeDescription'].strip() not in self.target_offices
+        else:
+            return False
 
-    def _build_contest_kwargs(self, row, primary_type):
-        kwargs = {
-            'office': row['OfficeDescription'].strip(),
-            'district': row['District'].strip(),
-            'primary_party': row['PartyName'].strip()
-        }
+    def _build_contest_kwargs(self, row):
+        if 'county' in row:
+            kwargs = {
+                'office': row['office'].strip(),
+                'district': row['district'].strip(),
+                'party': row['party'].strip()
+            }
+        else:
+            kwargs = {
+                'office': row['OfficeDescription'].strip(),
+                'district': row['District'].strip(),
+                'primary_party': row['PartyName'].strip()
+            }
         return kwargs
 
     def _build_candidate_kwargs(self, row):
-        full_name = row['Name'].strip()
+        if 'county' in row:
+            full_name = row['candidate'].strip()
+        else:
+            full_name = row['Name'].strip()
         slug = slugify(full_name, substitute='-')
         kwargs = {
             'full_name': full_name,
@@ -118,7 +133,7 @@ class WVLoader(WVBaseLoader):
         "Build base set of kwargs for RawResult"
         # TODO: Can this just be called once?
         kwargs = self._build_common_election_kwargs()
-        contest_kwargs = self._build_contest_kwargs(row, kwargs['primary_type'])
+        contest_kwargs = self._build_contest_kwargs(row)
         candidate_kwargs = self._build_candidate_kwargs(row)
         kwargs.update(contest_kwargs)
         kwargs.update(candidate_kwargs)
@@ -142,7 +157,7 @@ class WVLoader(WVBaseLoader):
     def _prep_github_precinct_result(self, row):
         kwargs = self._base_kwargs(row)
         precinct = str(row['precinct'])
-        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].upper()][0]['ocd_id']
+        county_ocd_id = [c for c in self.datasource._jurisdictions() if c['county'].upper() == row['county'].strip().upper()][0]['ocd_id']
         kwargs.update({
             'reporting_level': 'precinct',
             'jurisdiction': precinct,
