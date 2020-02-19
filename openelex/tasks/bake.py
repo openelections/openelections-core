@@ -57,11 +57,11 @@ def state_file(state, fmt='csv', outputdir=None, datefilter=None,
         state: Required. Postal code for a state.  For example, "md".
         fmt: Format of output files.  This can be "csv" or "json".  Defaults
           to "csv".
-        outputdir: Directory where output files will be written. Defaults to 
+        outputdir: Directory where output files will be written. Defaults to
             "openelections/us/bakery"
         datefilter: Date specified in "YYYY" or "YYYY-MM-DD" used to filter
             elections before they are baked.
-        electiontype: Election type. For example, general, primary, etc. 
+        electiontype: Election type. For example, general, primary, etc.
         level: Reporting level of the election results.  For example, "state",
             "county", "precinct", etc. Value must be one of the options
             specified in openelex.models.Result.REPORTING_LEVEL_CHOICES.
@@ -70,8 +70,8 @@ def state_file(state, fmt='csv', outputdir=None, datefilter=None,
     """
     # TODO: Decide if datefilter should be required due to performance
     # considerations.
- 
-    # TODO: Implement filtering by office, district and party after the 
+
+    # TODO: Implement filtering by office, district and party after the
     # the data is standardized
 
     # TODO: Filtering by election type and level
@@ -94,7 +94,7 @@ def state_file(state, fmt='csv', outputdir=None, datefilter=None,
          .write(fmt, outputdir=outputdir, timestamp=timestamp) \
          .write_manifest(outputdir=outputdir, timestamp=timestamp)
 
-def get_elections(state, datefilter=None):
+def get_elections(state, datefilter):
     """
     Get all elections.
 
@@ -108,7 +108,7 @@ def get_elections(state, datefilter=None):
         state.  The elections are sorted by date.
 
     """
-    elections = elec_api.find(state.upper())
+    elections = elec_api.find(state.upper(), datefilter)
 
     if datefilter:
         date_prefix = format_date(datefilter)
@@ -223,11 +223,11 @@ def results_status_json(state=None, bakeall=False, outputdir=None):
         sys.exit(0)
 
     if not (bakeall and outputdir):
-        # Bad arguments.  Output a message and exit. 
+        # Bad arguments.  Output a message and exit.
         msg = ("You must specify a state or the --bakeall flag and an "
                "output directory")
         sys.exit(msg)
-     
+
     # The use has specified the bakeall flag and an outputdir.  Bake files for
     # all states.
     for state in STATE_POSTALS:
@@ -267,7 +267,7 @@ def statuses_for_state(state):
             'state_officers': election['state_officers'],
             'state_leg': election['state_leg'],
             'state_level_status': reporting_level_status(election, 'state'),
-            'county_level_status': reporting_level_status(election, 'county'), 
+            'county_level_status': reporting_level_status(election, 'county'),
             'precinct_level_status': reporting_level_status(election,
                 'precinct'),
             'cong_dist_level_status': reporting_level_status(election,
@@ -286,7 +286,7 @@ def reporting_level_status(election, reporting_level):
     This uses provisional logic to prepare the metadata for the website
     launch for ONA 2014.  It is designed to show the likely availability of
     results with a minimum of backfilling the '{reporting_level}_level_status'.
-    As we progress, we should just use the value of the 
+    As we progress, we should just use the value of the
     '{reporting_level}_level_status' fields.
 
     Args:
@@ -304,12 +304,12 @@ def reporting_level_status(election, reporting_level):
     levels = ('county', 'precinct', 'cong_dist', 'state_leg')
 
     for level in levels:
-        # If any of the level status fields are set to a non-default value 
+        # If any of the level status fields are set to a non-default value
         # (None or an empty  string). Just return this value.
         if election[level + '_level_status']:
             return level_status
 
-    # The level status has not been explicitly set.  Look at the 
+    # The level status has not been explicitly set.  Look at the
     # {reporting_level}_level field
     if election[reporting_level + '_level']:
         return 'yes'
