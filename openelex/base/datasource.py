@@ -62,14 +62,10 @@ class BaseDatasource(StateBase):
         if not hasattr(self, '_elections'):
             # Store elections by year
             self._elections = {}
-            for elec in elec_api.find(self.state):
-                yr = int(elec['start_date'][:4])
+            for elec in elec_api.find(self.state, year):
                 # Add elec slug
                 elec['slug'] = self._election_slug(elec)
-                self._elections.setdefault(yr, []).append(elec)
-        if year:
-            year_int = int(year)
-            return {year_int: self._elections[year_int]}
+                self._elections.setdefault(year, []).append(elec)
         return self._elections
 
     def mappings(self, year=None):
