@@ -33,7 +33,7 @@ class Datasource(BaseDatasource):
 
     def mappings_for_url(self, url):
         return [mapping for mapping in self.mappings() if mapping['raw_url'] == url]
-    
+
 
     # PRIVATE METHODS
 
