@@ -5,13 +5,13 @@ from collections import OrderedDict
 from urllib.parse import urljoin
 import requests
 
-API_BASE_URL = "http://openelections.net/api/v1/"
-BASE_PARAMS = ['format=json', 'limit=0']
+API_BASE_URL = "https://openelections.github.io/openelections-metadata/"
+BASE_PARAMS = ['limit=0']
 
-def get(base_url=API_BASE_URL, resource_type='', params={}):
+def get(base_url=API_BASE_URL, resource_type='', state='', year='', params={}):
     """
     Constructs API call from base url, resource type and GET
-    params. Resource type should be valid endpoint for OpenElex API, 
+    params. Resource type should be valid endpoint for OpenElex API,
     and params should be valid Tastypie filters for a given endpoint.
 
     Details on both can be explored at:
@@ -27,14 +27,12 @@ def get(base_url=API_BASE_URL, resource_type='', params={}):
         get()
 
         # Get
-        get('election', {'start_date=':'2012-11-02'})
+        get('election', 'WV', '2016')
 
 
     """ % {'base_url': API_BASE_URL}
     ordered_params = prepare_api_params(params)
-    url = urljoin(base_url, resource_type)
-    if not url.endswith('/'):
-        url += '/'
+    url = base_url+state.upper()+"/"+str(year)+".json"
     response = requests.get(url, params=ordered_params)
     return response
 
@@ -46,11 +44,6 @@ def prepare_api_params(params):
 
     """
     try:
-        fmt = params.pop('format')
-    except KeyError:
-        fmt = 'json'
-
-    try:
         limit = params.pop('limit')
     except KeyError:
         limit ='0'
@@ -59,6 +52,6 @@ def prepare_api_params(params):
     for key, val in list(params.items()):
         new_params.append((key, val))
     new_params.sort()
-    new_params.extend([('format', fmt), ('limit', limit)])
+    new_params.extend([('limit', limit)])
     ordered = OrderedDict(new_params)
     return ordered
