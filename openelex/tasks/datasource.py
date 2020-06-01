@@ -41,7 +41,7 @@ def csv_results(results):
         for f in list(r.keys()):
             fieldname_set.add(f)
     # Put known fieldnames first in CSV header output
-    fieldnames = [] 
+    fieldnames = []
     fieldnames.extend(MAPPING_FIELDNAMES)
     fieldnames.extend(fieldname_set.difference(set(MAPPING_FIELDNAMES)))
     writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)

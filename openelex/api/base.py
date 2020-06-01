@@ -5,7 +5,7 @@ from collections import OrderedDict
 from urllib.parse import urljoin
 import requests
 
-API_BASE_URL = "https://openelections.github.io/openelections-metadata/"
+API_BASE_URL = "https://openelections-metadata.herokuapp.com/openelections_metadata/elections.json"
 BASE_PARAMS = ['limit=0']
 
 def get(base_url=API_BASE_URL, resource_type='', state='', year='', params={}):
@@ -32,7 +32,7 @@ def get(base_url=API_BASE_URL, resource_type='', state='', year='', params={}):
 
     """ % {'base_url': API_BASE_URL}
     ordered_params = prepare_api_params(params)
-    url = base_url+state.upper()+"/"+str(year)+".json"
+    url = base_url+"?state="+state.upper()+"&year="+str(year)+"&_shape=array"
     response = requests.get(url, params=ordered_params)
     return response
 
@@ -43,15 +43,9 @@ def prepare_api_params(params):
     to maximize cache hits on the API.
 
     """
-    try:
-        limit = params.pop('limit')
-    except KeyError:
-        limit ='0'
-
     new_params = []
     for key, val in list(params.items()):
         new_params.append((key, val))
     new_params.sort()
-    new_params.extend([('limit', limit)])
     ordered = OrderedDict(new_params)
     return ordered
