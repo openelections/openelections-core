@@ -53,12 +53,12 @@ class Datasource(BaseDatasource):
     def _build_metadata(self, year, elections):
         meta = []
         year_int = int(year)
-        if year > 2008:
+        if year_int > 2008:
             for election in elections:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
                     county = [c for c in self._jurisdictions() if c['county'] == result['county']][0]
-                    if year > 2010:
+                    if year_int > 2010:
                         generated_filename = self._generate_county_filename(result, election, '.xlsx')
                     else:
                         generated_filename = self._generate_county_filename(result, election, '.xls')
@@ -70,7 +70,7 @@ class Datasource(BaseDatasource):
                         "name": county['county'],
                         "election": election['slug']
                     })
-        elif year == 2006:
+        elif year_int == 2006:
             for election in elections:
                 results = [x for x in self._url_paths() if x['date'] == election['start_date']]
                 for result in results:
