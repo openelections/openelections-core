@@ -5,10 +5,10 @@ from collections import OrderedDict
 from urllib.parse import urljoin
 import requests
 
-API_BASE_URL = "https://openelections-metadata.herokuapp.com/openelections_metadata/elections.json"
+API_BASE_URL = "https://openelections.herokuapp.com/api/v1/"
 BASE_PARAMS = ['limit=0']
 
-def get(base_url=API_BASE_URL, resource_type='', state='', year='', params={}):
+def get(base_url=API_BASE_URL, resource_type='', state='', date='', params={}):
     """
     Constructs API call from base url, resource type and GET
     params. Resource type should be valid endpoint for OpenElex API,
@@ -27,12 +27,12 @@ def get(base_url=API_BASE_URL, resource_type='', state='', year='', params={}):
         get()
 
         # Get
-        get('election', 'WV', '2016')
+        get('election', 'WV', '2016-11-08')
 
 
     """ % {'base_url': API_BASE_URL}
     ordered_params = prepare_api_params(params)
-    url = base_url+"?state="+state.upper()+"&year="+str(year)+"&_shape=array"
+    url = base_url+resource_type+"?state="+state.upper()+"&start_date="+str(date)
     response = requests.get(url, params=ordered_params)
     return response
 

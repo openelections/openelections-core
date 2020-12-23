@@ -38,7 +38,7 @@ class BaseDatasource(StateBase):
         super(BaseDatasource, self).__init__(state)
         self._cached_url_paths = {}
 
-    def elections(self, year=None):
+    def elections(self, date=None):
         """
         Retrieve election metadata for this state.
 
@@ -62,7 +62,8 @@ class BaseDatasource(StateBase):
         if not hasattr(self, '_elections'):
             # Store elections by year
             self._elections = {}
-            for elec in elec_api.find(self.state, year):
+            for elec in elec_api.find(self.state, date):
+                year = str(date)[:4]
                 # Add elec slug
                 elec['slug'] = self._election_slug(elec)
                 self._elections.setdefault(year, []).append(elec)

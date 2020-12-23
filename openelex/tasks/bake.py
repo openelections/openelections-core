@@ -111,7 +111,7 @@ def get_elections(state, datefilter):
     elections = elec_api.find(state.upper(), datefilter)
 
     if datefilter:
-        date_prefix = format_date(datefilter)
+        date_prefix = datefilter[0:4]#format_date(datefilter)
         elections = [elec for elec in elections
                      if elec['start_date'].startswith(date_prefix)]
 

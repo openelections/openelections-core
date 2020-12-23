@@ -115,8 +115,9 @@ class BaseLoader(StateBase):
         arguments when constructing new RawResult records in a
         load implementation.
         """
-        year = int(re.search(r'\d{4}', self.election_id).group())
-        elecs = self.datasource.elections(year)[year]
+        date = self.election_id[3:13]
+        year = re.search(r'\d{4}', self.election_id).group()
+        elecs = self.datasource.elections(date)[year]
         # Get election metadata by matching on election slug
         elec_meta = [e for e in elecs if e['slug'] == self.election_id][0]
         return {
