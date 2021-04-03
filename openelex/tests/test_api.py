@@ -33,19 +33,21 @@ class TestUrlBuilder(TestCase):
         actual = prepare_api_params(unordered)
         self.assertEquals(expected, actual)
 
-tests_dir = abspath(dirname(__file__))
-fixture_path = join(tests_dir, 'fixtures/election_api_response_md.json')
-with open(fixture_path, 'r') as f:
-    md_data = f.read()
 
 class FakeApiResponse(object):
 
     def __init__(self, status):
         self.status_code = status
+
+        tests_dir = abspath(dirname(__file__))
+        fixture_path = join(tests_dir, 'fixtures/election_api_response_md.json')
+        with open(fixture_path, 'r') as f:
+            md_data = f.read()
+
         self.content = md_data
 
     def json(self):
-        return json.loads(md_data)
+        return json.loads(self.content)
 
 
 class TestApi(TestCase):
