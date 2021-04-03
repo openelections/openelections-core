@@ -54,7 +54,7 @@ class TestApi(TestCase):
 
     @patch('openelex.api.elections.get')
     def test_find(self, mock_get):
-        "openelex.api.find method checks response status and returns array of elections"
+        "openelex.api.elections.find method checks response status and returns array of elections"
         mock_get.return_value = FakeApiResponse(200)
         elecs = api.elections.find('md', None)
         self.assertEquals(len(elecs), 15)
