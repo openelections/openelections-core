@@ -42,9 +42,7 @@ class FakeApiResponse(object):
         tests_dir = abspath(dirname(__file__))
         fixture_path = join(tests_dir, 'fixtures/election_api_response_md.json')
         with open(fixture_path, 'r') as f:
-            md_data = f.read()
-
-        self.content = md_data
+            self.content = f.read()
 
     def json(self):
         return json.loads(self.content)
