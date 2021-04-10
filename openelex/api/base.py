@@ -6,7 +6,6 @@ from urllib.parse import urljoin
 import requests
 
 API_BASE_URL = "https://openelections.herokuapp.com/api/v1/"
-BASE_PARAMS = ['limit=0']
 
 def get(base_url=API_BASE_URL, resource_type='', state='', date='', params={}):
     """
@@ -33,7 +32,7 @@ def get(base_url=API_BASE_URL, resource_type='', state='', date='', params={}):
     """ % {'base_url': API_BASE_URL}
     ordered_params = prepare_api_params(params)
     url = base_url+resource_type+"?state="+state.upper()+"&start_date="+str(date)
-    response = requests.get(url, params=ordered_params)
+    response = requests.get(url, params=ordered_params, verify=False)
     return response
 
 def prepare_api_params(params):
