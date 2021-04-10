@@ -67,7 +67,7 @@ class Datasource(BaseDatasource):
                         "raw_url": result['url'],
                         "pre_processed_url": build_raw_github_url(self.state, str(year), result['path']),
                         "ocd_id": ocd_id,
-                        "name": 'Mississippi',
+                        "name": 'California',
                         "election": election['slug']
                     })
             else:
