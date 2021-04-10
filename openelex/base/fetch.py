@@ -2,8 +2,7 @@ from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 from os.path import exists, join
-import urllib.request, urllib.parse, urllib.error
-import urllib.parse
+import requests
 
 from .state import StateBase
 
@@ -14,20 +13,6 @@ class HTTPError(Exception):
 
     def __str__(self):
         return "{}: {}".format(self.code, self.reason)
-
-class ErrorHandlingURLopener(urllib.request.FancyURLopener):
-    def http_error_default(self, url, fp, errcode, errmsg, headers):
-        """
-        Custom subclass of urllib.FancyURLopener that handles HTTP errors.
-
-        See https://docs.python.org/2/library/urllib.html#urllib.FancyURLopener
-        """
-        if errcode == 404:
-            raise HTTPError(errcode, errmsg)
-
-        return urllib.request.FancyURLopener.http_error_default(self, url, fp, errcode,
-            errmsg, headers)
-
 
 class BaseFetcher(StateBase):
     """
@@ -51,16 +36,19 @@ class BaseFetcher(StateBase):
         """
         headers = None
         local_file_name = self._standardized_filename(url, fname)
-        retriever = ErrorHandlingURLopener()
 
         try:
             if overwrite:
-                dl_name, headers = retriever.retrieve(url, local_file_name)
+                r = requests.get(url, verify=False)
+                file = open(local_file_name, 'w')
+                file.write(r.text)
             else:
                 if exists(local_file_name):
                     print("File is cached: {}".format(local_file_name))
                 else:
-                    dl_name, headers = retriever.retrieve(url, local_file_name)
+                    r = requests.get(url, verify=False)
+                    file = open(local_file_name, 'w')
+                    file.write(r.text)
                     print("Added to cache: {}".format(local_file_name))
         except HTTPError:
             print("Error downloading {}".format(url))
