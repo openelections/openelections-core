@@ -5,7 +5,7 @@ from os.path import join, splitext
 import re
 import urllib.parse
 
-import unicodecsv
+import csv
 
 from openelex.api import elections as elec_api
 from openelex.lib.text import election_slug, slugify
@@ -43,8 +43,8 @@ class BaseDatasource(StateBase):
         Retrieve election metadata for this state.
 
         Args:
-            year: Only return metadata for elections from the specified year,
-            provided as an integer.  Defaults to returning elections
+            date: Only return metadata for elections from the specified date,
+            provided as a string.  Defaults to returning elections
             for all years.
 
         Returns:
@@ -230,8 +230,8 @@ class BaseDatasource(StateBase):
             if filename is None:
                 filename = join(self.mappings_dir, self.state + '.csv')
 
-            with open(filename, 'rU') as csvfile:
-                reader = unicodecsv.DictReader(csvfile)
+            with open(filename, 'r') as csvfile:
+                reader = csv.DictReader(csvfile)
                 self._cached_jurisdiction_mappings = [row for row in reader]
 
             return self._cached_jurisdiction_mappings
@@ -243,8 +243,8 @@ class BaseDatasource(StateBase):
             if filename is None:
                 filename = join(self.mappings_dir, self.state + '_places.csv')
 
-            with open(filename, 'rU') as csvfile:
-                reader = unicodecsv.DictReader(csvfile)
+            with open(filename, 'r') as csvfile:
+                reader = csv.DictReader(csvfile)
                 self._cached_place_mappings = [row for row in reader]
 
             return self._cached_place_mappings
@@ -285,12 +285,11 @@ class BaseDatasource(StateBase):
         # to just pass the value of self.state to election_slug.
         # We can probably delete the key from argument without consequence,
         # but to be safe and avoid side effects,copy the argument first.
-        election_attrs = election.copy()
-        try:
-            del election_attrs['state']
-        except  KeyError:
-            pass
-        return election_slug(self.state, **election_attrs)
+#        try:
+#            del election_attrs['state']
+#        except  KeyError:
+#            pass
+        return election_slug(self.state, election['start_date'], election['race_type'], election['special'])
 
     def _url_paths(self, filename=None):
         """
@@ -319,8 +318,8 @@ class BaseDatasource(StateBase):
             return self._cached_url_paths[filename]
         except KeyError:
             cached = self._cached_url_paths[filename] = []
-            with open(filename, 'rU') as csvfile:
-                reader = unicodecsv.DictReader(csvfile)
+            with open(filename, 'r') as csvfile:
+                reader = csv.DictReader(csvfile)
                 for row in reader:
                     cached.append(self._parse_url_path(row))
             return cached
