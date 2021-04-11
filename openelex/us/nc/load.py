@@ -6,7 +6,6 @@ from builtins import object
 import re
 import csv
 import xlrd
-import unicodecsv
 
 from openelex.base.load import BaseLoader
 from openelex.models import RawResult
@@ -31,7 +30,7 @@ class LoadResults(object):
 
     def run(self, mapping):
         election_id = mapping['election']
-        if any(s in election_id for s in ['2014', '2016', '2018']):
+        if any(s in election_id for s in ['2014', '2016', '2018', '2020']):
             loader = NCTsvLoader()
         elif any(s in election_id for s in ['nc-2008-11-04-general', '2010', '2012']):
             loader = NCCsvLoader()
@@ -147,13 +146,16 @@ class NCTsvLoader(NCBaseLoader):
         results = []
         with self._file_handle as tsvfile:
             tsv = [x.replace('\0', '') for x in tsvfile] # remove NULL bytes
-            reader = unicodecsv.DictReader(tsv, delimiter='\t')
+            reader = csv.DictReader(tsv, delimiter='\t')
             for row in reader:
                 if self._skip_row(row):
+                    continue
+                if row['Contest Name'] == 'CAMDEN COUNTY BOARD OF COMMISSIONERS COURTHOUSE DISTRICT':
                     continue
 #                if row['Precinct'] in ('CURBSIDE', 'PROVISIONAL', 'ABSENTEE BY MAIL', 'ONESTOP', 'TRANSFER'):
 #                    results.append(self._prep_county_result(row))
                 else:
+                    print(row)
                     results.append(self._prep_precinct_result(row))
         RawResult.objects.insert(results)
 

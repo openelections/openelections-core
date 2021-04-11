@@ -42,3 +42,4 @@ date,office,district,race_type,party,special,raw_extracted_filename,url
 2016-11-08,,,general,,,results_pct_20161108.txt,http://dl.ncsbe.gov/ENRS/2016_11_08/results_pct_20161108.zip
 2018-11-06,,,general,,,results_pct_20181106.txt,https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2018_11_06/results_pct_20181106.zip
 2018-05-08,,,primary,,,results_pct_20180508.txt,https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2018_05_08/results_pct_20180508.zip
+2020-11-03,,,general,,,results_pct_20201103.txt,https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2020_11_03/results_pct_20201103.zip
