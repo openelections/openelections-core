@@ -238,8 +238,8 @@ class MDLoader(MDBaseLoader):
             'parent_jurisdiction': self.mapping['name'],
             'ocd_id': ocd_id,
             'party': row['Party'].strip(),
-            'votes': self._votes(row['Election Night Votes']),
-            'votes_type': 'election_day',
+            'votes': self._votes(row['Total Votes']),
+            'votes_type': 'total',
             'winner': row['Winner'],
             'write_in': self._writein(row),
         })

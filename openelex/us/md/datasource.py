@@ -1,7 +1,7 @@
 """
 Standardize names of data files on Maryland State Board of Elections.
 
-File-name convention on MD site (2004-2012):
+File-name convention on MD site (2004-2020):
 
     general election
         precinct:            countyname_by_precinct_year_general.csv
@@ -54,6 +54,7 @@ class Datasource(BaseDatasource):
         races = {
           'special': None,
           'general': None,
+          'primary': None
         }
         for elec in elections:
             rtype = self._race_type(elec)
@@ -100,7 +101,17 @@ class Datasource(BaseDatasource):
                 })
             elif year_int == 2008:
                 meta.append(self._special_meta_2008(elections))
-
+            elif year_int == 2020:
+                general, primary, special = self._races_by_type(elections)
+                meta = [
+                    {
+                        "generated_filename": "__".join((general['start_date'].replace('-',''), self.state, "general__precinct.csv")),
+                        "raw_url": general['direct_links'][0],
+                        "ocd_id": 'ocd-division/country:us/state:md',
+                        "name": 'Maryland',
+                        "election": general['slug']
+                    }
+                ]
         return meta
 
     def _state_leg_meta(self, year, elections):
