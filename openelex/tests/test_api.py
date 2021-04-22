@@ -13,7 +13,7 @@ class TestUrlBuilder(TestCase):
 
     def test_default_params(self):
         "default params should include format and limit"
-        expected = OrderedDict([('format', 'json'), ('limit', '0')])
+        expected = OrderedDict()
         actual = prepare_api_params({})
         self.assertEquals(expected, actual)
 
@@ -27,7 +27,6 @@ class TestUrlBuilder(TestCase):
 
         ordered = params[:]
         ordered.sort()
-        ordered.extend([('format', 'json'), ('limit', '0')])
         expected = OrderedDict(ordered)
 
         actual = prepare_api_params(unordered)
