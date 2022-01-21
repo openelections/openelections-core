@@ -21,7 +21,7 @@ setup(
     install_requires=[
         'beautifulsoup4==4.6.0',
         'blinker==1.3',
-        'ipython==0.13.2',
+        'ipython==7.16.3',
         'mongoengine==0.9.0',
         'nameparser==0.5.3',
         'ordered-set==2.0.2',
