@@ -90,8 +90,11 @@ def state_file(state, fmt='csv', outputdir=None, datefilter=None,
     else:
         baker = Baker(state=state, datefilter=datefilter, **filter_kwargs)
 
-    baker.collect_items() \
-         .write(fmt, outputdir=outputdir, timestamp=timestamp) \
+    baker.collect_items()
+    if not baker.get_items():
+        sys.stdout.write("No results to bake for {}.\n".format(state))
+        return
+    baker.write(fmt, outputdir=outputdir, timestamp=timestamp) \
          .write_manifest(outputdir=outputdir, timestamp=timestamp)
 
 def get_elections(state, datefilter):
@@ -173,8 +176,11 @@ def election_file(state, fmt='csv', outputdir=None, datefilter=None,
             baker = baker_cls(state=state, datefilter=election_date,
                   election_type=election_type, reporting_level=reporting_level)
 
-            baker.collect_items()\
-                 .write(fmt, outputdir=outputdir, timestamp=timestamp) \
+            baker.collect_items()
+            if not baker.get_items():
+                sys.stdout.write("  Nothing to bake.\n")
+                continue
+            baker.write(fmt, outputdir=outputdir, timestamp=timestamp) \
                  .write_manifest(outputdir=outputdir, timestamp=timestamp)
 
 def result_urls(election, raw=False):
