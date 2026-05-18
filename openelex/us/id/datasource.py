@@ -90,7 +90,7 @@ class Datasource(BaseDatasource):
                     links['general_state_legislature'] = 'http://www.sos.idaho.gov/elect/'+link['href']
         try:
             links['primary_state_legislature']
-        except:
+        except KeyError:
             print(links)
         return [links['primary_statewide'], links['primary_state_legislature']], [links['general_statewide'], links['general_state_legislature']]
     

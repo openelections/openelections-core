@@ -92,12 +92,12 @@ class Datasource(BaseDatasource):
 
         try:
             general = [e for e in elections if e['race_type'] == 'general'][0]
-        except:
+        except IndexError:
             general = None
 
         try:
             primary = [e for e in elections if e['race_type'] == 'primary'][0]
-        except:
+        except IndexError:
             primary = None
 
         if general:
