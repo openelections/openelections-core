@@ -15,7 +15,7 @@ class TestUrlBuilder(TestCase):
         "default params should include format and limit"
         expected = OrderedDict()
         actual = prepare_api_params({})
-        self.assertEquals(expected, actual)
+        self.assertEqual(expected, actual)
 
     def test_default_params_values(self):
         "params should always be alphabetized, and end with format and limit"
@@ -30,7 +30,7 @@ class TestUrlBuilder(TestCase):
         expected = OrderedDict(ordered)
 
         actual = prepare_api_params(unordered)
-        self.assertEquals(expected, actual)
+        self.assertEqual(expected, actual)
 
 
 class FakeApiResponse(object):
@@ -54,4 +54,4 @@ class TestApi(TestCase):
         "openelex.api.elections.find method checks response status and returns array of elections"
         mock_get.return_value = FakeApiResponse(200)
         elecs = api.elections.find('md', None)
-        self.assertEquals(len(elecs), 15)
+        self.assertEqual(len(elecs), 15)
