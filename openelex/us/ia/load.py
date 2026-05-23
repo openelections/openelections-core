@@ -88,7 +88,7 @@ class LoadResults(object):
 
 class SkipLoader(object):
     def run(self, mapping):
-        logging.warn("Skipping file {}".format(mapping['generated_filename']))
+        logging.warning("Skipping file {}".format(mapping['generated_filename']))
 
 
 class PreprocessedResultsLoader(BaseLoader):
@@ -757,13 +757,13 @@ class ExcelPrecinct2010GeneralResultLoader(ExcelPrecinctResultLoader):
 
         m = self._office_re.match(raw_office)
         if not m:
-            logging.warn("Skipping office '{}'".format(raw_office))
+            logging.warning("Skipping office '{}'".format(raw_office))
             return None
 
         candidate = self._get_candidate(row, race_offset)
 
         if candidate in self._skip_candidates:
-            logging.warn("Skipping candidate '{}'".format(candidate))
+            logging.warning("Skipping candidate '{}'".format(candidate))
             return None
 
         office = m.group('office')

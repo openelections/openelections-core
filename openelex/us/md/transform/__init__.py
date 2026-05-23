@@ -271,7 +271,7 @@ class CreateCandidatesTransform(BaseTransform):
                         # As far as I can tell the value should always be
                         # "Other Write-Ins", but output a warning to let us
                         # know about some cases we may be missing.
-                        logging.warn("'other' found in candidate name field"
+                        logging.warning("'other' found in candidate name field"
                                 "value: '%s'" % rr.full_name)
                 candidate = Candidate(**fields)
                 candidates.append(candidate)
